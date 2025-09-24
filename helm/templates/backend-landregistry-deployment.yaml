@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-landregistry
+spec:
+  replicas: {{ index .Values "backend-landregistry" "replicaCount" }}
+  selector:
+    matchLabels:
+      app: backend-landregistry
+  template:
+    metadata:
+      labels:
+        app: backend-landregistry
+    spec:
+      containers:
+      - name: backend-landregistry
+        image: "{{ index .Values "backend-landregistry" "image" "repository" }}:{{ index .Values "backend-landregistry" "image" "tag" }}"
+        imagePullPolicy: {{ index .Values "backend-landregistry" "image" "pullPolicy" }}
+        ports:
+        - containerPort: {{ index .Values "backend-landregistry" "service" "port" }}

@@ -1,0 +1,9 @@
+backend-landregistry:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-landregistry
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
