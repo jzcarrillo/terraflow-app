@@ -18,3 +18,16 @@ spec:
         imagePullPolicy: {{ index .Values "backend-landregistry" "image" "pullPolicy" }}
         ports:
         - containerPort: {{ index .Values "backend-landregistry" "service" "port" }}
+        env:
+        - name: DB_HOST
+          value: {{ index .Values "backend-landregistry" "env" "DB_HOST" }}
+        - name: DB_PORT
+          value: "{{ index .Values "backend-landregistry" "env" "DB_PORT" }}"
+        - name: DB_NAME
+          value: {{ index .Values "backend-landregistry" "env" "DB_NAME" }}
+        - name: DB_USER
+          value: {{ index .Values "backend-landregistry" "env" "DB_USER" }}
+        - name: DB_PASSWORD
+          value: {{ index .Values "backend-landregistry" "env" "DB_PASSWORD" }}
+        - name: RABBITMQ_URL
+          value: "amqp://admin:password@rabbitmq-service:5672"

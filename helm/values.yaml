@@ -1,3 +1,5 @@
+namespace: terraflow-app
+
 backend-landregistry:
   replicaCount: 1
   image:
@@ -7,3 +9,32 @@ backend-landregistry:
   service:
     type: ClusterIP
     port: 3000
+  env:
+    DB_HOST: postgres-service
+    DB_PORT: 5432
+    DB_NAME: terraflow_landregistry
+    DB_USER: postgres
+    DB_PASSWORD: password
+
+api-gateway:
+  replicaCount: 1
+  image:
+    repository: terraflow/api-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8081
+
+postgres:
+  enabled: true
+  database: terraflow_landregistry
+  username: postgres
+  password: password
+
+rabbitmq:
+  enabled: true
+  username: admin
+  password: password
+  management:
+    enabled: true

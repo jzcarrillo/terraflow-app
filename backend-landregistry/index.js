@@ -1,24 +1,33 @@
 const express = require('express');
 const helmet = require('helmet');
 const corsMiddleware = require('./middleware/cors');
-const landTitlesRoutes = require('./routes/landtitles');
 const config = require('./config/services');
+const { testConnection } = require('./config/db');
+const landTitleProcessor = require('./processors/landTitleProcessor');
 
 const app = express();
 
-// Middleware
+// MIDDLEWARE 
 app.use(helmet());
 app.use(corsMiddleware);
 app.use(express.json());
 
-// Health check
+// HEALTH CHECK ENDPOINT ONLY
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Land Registry Service' });
+  res.json({ 
+    status: 'healthy', 
+    service: 'backend-landregistry',
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Routes
-app.use('/', landTitlesRoutes);
+// TEST DATABASE CONNECTION
+testConnection();
+
+// START MESSAGE QUEUE CONSUMER
+landTitleProcessor.startConsumer();
 
 app.listen(config.server.port, () => {
   console.log(`Land Registry Service running on port ${config.server.port}`);
+  console.log('Listening for land title processing messages...');
 });

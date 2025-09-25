@@ -19,7 +19,16 @@ if (-not (Test-Path "Dockerfile")) {
 Write-Host "Killing existing processes on port $PORT..." -ForegroundColor Yellow
 $processes = Get-NetTCPConnection -LocalPort $PORT -ErrorAction SilentlyContinue
 if ($processes) {
-    $processes | ForEach-Object { Stop-Process -Id (Get-Process -Id $_.OwningProcess).Id -Force -ErrorAction SilentlyContinue }
+    $processes | ForEach-Object { 
+        try {
+            $processId = (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Id
+            if ($processId) {
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            # Ignore errors - process might already be gone
+        }
+    }
 }
 
 # === Kill existing process on port ===
@@ -33,8 +42,36 @@ if ($LASTEXITCODE -ne 0) {
     exit 1 
 }
 
-# === Go back to root directory for Helm ===
+# === Go back to root directory ===
 Set-Location -Path ".."
+
+# === Build API Gateway ===
+Write-Host "Building api-gateway..." -ForegroundColor Green
+$API_PORT = 8081
+
+# Kill existing processes on API Gateway port
+Write-Host "Killing existing processes on port $API_PORT..." -ForegroundColor Yellow
+$processes = Get-NetTCPConnection -LocalPort $API_PORT -ErrorAction SilentlyContinue
+if ($processes) {
+    $processes | ForEach-Object { 
+        try {
+            $processId = (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Id
+            if ($processId) {
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            # Ignore errors - process might already be gone
+        }
+    }
+}
+
+# Build API Gateway Docker image
+Write-Host "Building API Gateway Docker image..." -ForegroundColor Yellow
+docker build -t terraflow/api-gateway:latest ./api-gateway
+if ($LASTEXITCODE -ne 0) { 
+    Write-Host "API Gateway Docker build failed!" -ForegroundColor Red
+    exit 1 
+}
 
 # === Clear any pending Helm operations ===
 Write-Host "Clearing pending Helm operations..." -ForegroundColor Yellow

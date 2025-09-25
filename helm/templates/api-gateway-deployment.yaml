@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: {{ .Values.namespace | default "terraflow-app" }}
+spec:
+  replicas: {{ index .Values "api-gateway" "replicaCount" }}
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: "{{ index .Values "api-gateway" "image" "repository" }}:{{ index .Values "api-gateway" "image" "tag" }}"
+        imagePullPolicy: {{ index .Values "api-gateway" "image" "pullPolicy" }}
+        ports:
+        - containerPort: {{ index .Values "api-gateway" "service" "port" }}
+        env:
+        - name: RABBITMQ_URL
+          value: "amqp://admin:password@rabbitmq-service:5672"
+        - name: JWT_SECRET
+          value: "default-secret-key"
