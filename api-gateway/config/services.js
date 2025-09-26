@@ -11,6 +11,10 @@ const config = {
       landRegistry: process.env.QUEUE_LAND_REGISTRY || 'queue_land_registry'
     }
   },
+  redis: {
+    host: process.env.REDIS_HOST || 'redis-service',
+    port: process.env.REDIS_PORT || 6379
+  },
   jwt: {
     secret: process.env.JWT_SECRET || 'default-secret-key',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'

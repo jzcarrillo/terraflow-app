@@ -12,6 +12,25 @@ spec:
       labels:
         app: backend-landregistry
     spec:
+      initContainers:
+      - name: wait-for-services
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Waiting for PostgreSQL to be ready..."
+          until nc -z postgres-service 5432; do
+            echo "PostgreSQL not ready, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "PostgreSQL is ready!"
+          
+          echo "Waiting for RabbitMQ to be ready..."
+          until nc -z rabbitmq-service 5672; do
+            echo "RabbitMQ not ready, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "RabbitMQ is ready!"
       containers:
       - name: backend-landregistry
         image: "{{ index .Values "backend-landregistry" "image" "repository" }}:{{ index .Values "backend-landregistry" "image" "tag" }}"

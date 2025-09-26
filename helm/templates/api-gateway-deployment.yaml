@@ -13,6 +13,25 @@ spec:
       labels:
         app: api-gateway
     spec:
+      initContainers:
+      - name: wait-for-services
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Waiting for Redis to be ready..."
+          until nc -z redis-service 6379; do
+            echo "Redis not ready, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "Redis is ready!"
+          
+          echo "Waiting for RabbitMQ to be ready..."
+          until nc -z rabbitmq-service 5672; do
+            echo "RabbitMQ not ready, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "RabbitMQ is ready!"
       containers:
       - name: api-gateway
         image: "{{ index .Values "api-gateway" "image" "repository" }}:{{ index .Values "api-gateway" "image" "tag" }}"
@@ -24,3 +43,15 @@ spec:
           value: "amqp://admin:password@rabbitmq-service:5672"
         - name: JWT_SECRET
           value: "default-secret-key"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ index .Values "api-gateway" "service" "port" }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ index .Values "api-gateway" "service" "port" }}
+          initialDelaySeconds: 30
+          periodSeconds: 10

@@ -38,3 +38,6 @@ rabbitmq:
   password: password
   management:
     enabled: true
+
+redis:
+  enabled: true

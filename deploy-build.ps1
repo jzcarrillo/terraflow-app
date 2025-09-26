@@ -1,9 +1,12 @@
 # Define variables
 $SERVICE_NAME = "backend-landregistry"
+$API_SERVICE_NAME = "api-gateway"
 $RELEASE_NAME = "terraflow"
 $NAMESPACE = "terraflow-app"
 $PORT = 3000
+$API_PORT = 8081
 $DOCKER_IMAGE = "terraflow/backend-landregistry:latest"
+$API_DOCKER_IMAGE = "terraflow/api-gateway:latest"
 $HELM_CHART = "./helm"
 
 Write-Host "Building $SERVICE_NAME..." -ForegroundColor Green
@@ -46,8 +49,7 @@ if ($LASTEXITCODE -ne 0) {
 Set-Location -Path ".."
 
 # === Build API Gateway ===
-Write-Host "Building api-gateway..." -ForegroundColor Green
-$API_PORT = 8081
+Write-Host "Building $API_SERVICE_NAME..." -ForegroundColor Green
 
 # Kill existing processes on API Gateway port
 Write-Host "Killing existing processes on port $API_PORT..." -ForegroundColor Yellow
@@ -67,7 +69,7 @@ if ($processes) {
 
 # Build API Gateway Docker image
 Write-Host "Building API Gateway Docker image..." -ForegroundColor Yellow
-docker build -t terraflow/api-gateway:latest ./api-gateway
+docker build -t $API_DOCKER_IMAGE ./api-gateway
 if ($LASTEXITCODE -ne 0) { 
     Write-Host "API Gateway Docker build failed!" -ForegroundColor Red
     exit 1 
@@ -91,17 +93,32 @@ if ($LASTEXITCODE -ne 0) {
     exit 1 
 }
 
-# === Restart Deployment ===
-Write-Host "Restarting deployment..." -ForegroundColor Yellow
+# === Restart Deployments ===
+Write-Host "Restarting deployments..." -ForegroundColor Yellow
 kubectl rollout restart deployment/$SERVICE_NAME --namespace=$NAMESPACE
+kubectl rollout restart deployment/$API_SERVICE_NAME --namespace=$NAMESPACE
 
-# === Wait for backend-landregistry pod to be ready ===
-Write-Host "Waiting for pod to be ready..." -ForegroundColor Yellow
-kubectl wait --for=condition=ready pod -l app=$SERVICE_NAME --timeout=60s --namespace=$NAMESPACE
+# === Ensure proper startup order ===
+Write-Host "Ensuring proper startup order..." -ForegroundColor Yellow
 
-# === Port-forward backend-landregistry ===
-Write-Host "Setting up port-forward on port $PORT..." -ForegroundColor Yellow
-Start-Process -NoNewWindow kubectl -ArgumentList "port-forward", "service/$SERVICE_NAME-service", "${PORT}:${PORT}", "--namespace=$NAMESPACE"
+# Wait for Redis to be ready first
+Write-Host "Waiting for Redis pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=redis --timeout=120s --namespace=$NAMESPACE
 
-Write-Host "$SERVICE_NAME build and deployment completed!" -ForegroundColor Green
-Write-Host "Service available at: http://localhost:$PORT" -ForegroundColor Cyan
+# Wait for RabbitMQ to be ready
+Write-Host "Waiting for RabbitMQ pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=rabbitmq --timeout=120s --namespace=$NAMESPACE
+
+# Wait for PostgreSQL to be ready
+Write-Host "Waiting for PostgreSQL pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s --namespace=$NAMESPACE
+
+# Then wait for backend-landregistry
+Write-Host "Waiting for backend-landregistry pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=$NAMESPACE
+
+# Finally wait for API Gateway
+Write-Host "Waiting for API Gateway pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=$NAMESPACE
+
+Write-Host "Build and deployment completed!" -ForegroundColor Green

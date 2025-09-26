@@ -1,73 +1,61 @@
-const amqp = require('amqplib');
 const config = require('../config/services');
 const { landTitleSchema } = require('../schemas/landTitleSchema');
+const rabbitmqService = require('../services/rabbitmqService');
+const backendService = require('../services/backendService');
 
-const QUEUE_NAME = config.rabbitmq.queues.landRegistry;
-const RABBITMQ_URL = config.rabbitmq.url;
+const QUEUE_NAME = 'queue_landregistry';
 
-// RabbitMQ connection
-let connection = null;
-let channel = null;
-
-// Connect to RabbitMQ
-const connectRabbitMQ = async () => {
-  try {
-    if (!connection) {
-      connection = await amqp.connect(RABBITMQ_URL);
-      channel = await connection.createChannel();
-      await channel.assertQueue(QUEUE_NAME, { durable: true });
-      console.log(`Connected to RabbitMQ - Queue: ${QUEUE_NAME}`);
-    }
-    return true;
-  } catch (error) {
-    console.error('RabbitMQ connection failed:', error.message);
-    return false;
-  }
-};
-
-
-
-// Create land title
+// CREATE LAND TITLE
 const createLandTitle = async (req, res) => {
   try {
-    // Validate request
-    const { error, value } = landTitleSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: error.details[0].message 
+    // LOG REQUEST PAYLOAD
+    console.log('📋 === CREATE LAND TITLE REQUEST ===');
+    console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
+    
+    // VALIDATE REQUEST USING ZOD
+    const validatedData = landTitleSchema.parse(req.body);
+    console.log('✅ Validation successful for title:', validatedData.title_number);
+
+    // VALIDATE TITLE NUMBER VIA BACKEND
+    console.log(`🔎 Checking duplicate for title: ${validatedData.title_number}`);
+    const isDuplicate = await backendService.validateTitleNumber(validatedData.title_number);
+    console.log(`🔵 Duplicate check result: ${isDuplicate}`);
+    
+    if (isDuplicate) {
+      console.log(`❌ Rejecting duplicate title: ${validatedData.title_number}`);
+      return res.status(409).json({
+        error: 'Duplicate title number',
+        message: `Title number ${validatedData.title_number} already exists`
       });
     }
+    
+    console.log(`➡️ Title ${validatedData.title_number} is valid, sending to queue`);
 
-    // Connect to RabbitMQ
-    const connected = await connectRabbitMQ();
-    if (!connected) {
-      return res.status(500).json({ error: 'Message queue unavailable' });
-    }
-
-    // Add metadata
-    const messageData = {
-      ...value,
-      requestId: Date.now(),
-      createdBy: req.user.id,
-      timestamp: new Date().toISOString()
-    };
-
-    // Publish to queue
-    const message = Buffer.from(JSON.stringify(messageData));
-    channel.sendToQueue(QUEUE_NAME, message, { persistent: true });
-
-    console.log('Land title request published to queue:', messageData);
+// PUBLISH TO QUEUE
+    await rabbitmqService.publishToQueue(QUEUE_NAME, validatedData);
 
     res.status(202).json({
       message: 'Land title request submitted for processing',
-      requestId: messageData.requestId,
+      title_number: validatedData.title_number,
       status: 'QUEUED'
     });
 
   } catch (error) {
     console.error('Create land title error:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    
+// HANDLE ZOD VALIDATION ERRORS
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      });
+    }
+    
+    if (error.message.includes('RabbitMQ')) {
+      res.status(500).json({ error: 'Message queue unavailable' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
 

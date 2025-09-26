@@ -9,19 +9,18 @@ const pool = new Pool({
   password: config.database.password,
 });
 
-// Initialize database tables with retry logic
+// INITIALIZE DATABASE WITH RETRY LOGIC
 const initializeDatabase = async (retries = 5) => {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`Initializing database... (attempt ${i + 1}/${retries})`);
-      
-      // Test connection first
+      // TEST CONNECTION FIRST
       const client = await pool.connect();
       client.release();
       
-      // Create land_titles table
+      // CREATE LAND_TITLES TABLE
+      const { TABLES, STATUS } = require('./constants');
       await pool.query(`
-        CREATE TABLE IF NOT EXISTS land_titles (
+        CREATE TABLE IF NOT EXISTS ${TABLES.LAND_TITLES} (
           id SERIAL PRIMARY KEY,
           owner_name VARCHAR(255),
           contact_no VARCHAR(20),
@@ -36,39 +35,39 @@ const initializeDatabase = async (retries = 5) => {
           registrar_office VARCHAR(100),
           previous_title_number VARCHAR(100),
           encumbrances TEXT,
-          status VARCHAR(50) DEFAULT 'PENDING',
+          status VARCHAR(50) DEFAULT '${STATUS.PENDING}',
           created_at TIMESTAMP DEFAULT NOW()
         )
       `);
       
-      console.log('Database tables initialized successfully');
+      console.log('✅ Database initialized successfully');
       return;
+
     } catch (error) {
-      console.error(`Database initialization attempt ${i + 1} failed:`, error.message);
       if (i === retries - 1) {
-        console.error('All database initialization attempts failed');
+        console.error('❌ Database initialization failed after all retries:', error.message);
         return;
       }
-      // Wait 5 seconds before retry
+      // WAIT 5 SECONDS BEFORE RETRY
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 };
 
-// Test database connection
+// TEST DATABASE CONNECTION
 const testConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('Database connected successfully');
+    console.log('🔗 Database connected');
     client.release();
   } catch (error) {
-    console.error('Database connection error:', error);
+    console.error('❌ Database connection failed:', error.message);
   }
 };
 
-// Initialize on startup with delay
+// INITIALIZE ON STARTUP WITH DELAY
 setTimeout(() => {
   initializeDatabase();
-}, 10000); // Wait 10 seconds for PostgreSQL to be ready
+}, 10000); // WAIT 10 SECONDS FOR POSTGRESQL TO BE READY
 
 module.exports = { pool, testConnection, initializeDatabase };
