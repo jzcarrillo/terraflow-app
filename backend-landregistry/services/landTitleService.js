@@ -35,6 +35,22 @@ class LandTitleService {
     return result.rows[0];
   }
 
+  async getAllLandTitles() {
+    const result = await pool.query(`
+      SELECT * FROM ${TABLES.LAND_TITLES} 
+      ORDER BY created_at DESC
+    `);
+    return result.rows;
+  }
+
+  async getLandTitleById(id) {
+    const result = await pool.query(`
+      SELECT * FROM ${TABLES.LAND_TITLES} 
+      WHERE id = $1
+    `, [id]);
+    return result.rows[0] || null;
+  }
+
   validateRequiredFields(data) {
     const { 
       owner_name, contact_no, title_number, address, property_location, 

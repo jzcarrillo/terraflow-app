@@ -15,6 +15,7 @@ app.use(express.json());
 
 // ROUTES
 app.use('/api', validationRoutes);
+app.use('/api/land-titles', require('./routes/landTitles'));
 
 // HEALTH CHECK ENDPOINT ONLY
 app.get('/health', (req, res) => {

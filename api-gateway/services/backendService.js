@@ -15,6 +15,26 @@ class BackendService {
       throw new Error('Validation service unavailable');
     }
   }
+
+  async getLandTitles() {
+    try {
+      const response = await axios.get(`${this.backendUrl}/api/land-titles`);
+      return response.data;
+    } catch (error) {
+      console.error('Backend get land titles failed:', error.message);
+      throw new Error('Backend service unavailable');
+    }
+  }
+
+  async getLandTitle(id) {
+    try {
+      const response = await axios.get(`${this.backendUrl}/api/land-titles/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Backend get land title failed:', error.message);
+      throw new Error('Backend service unavailable');
+    }
+  }
 }
 
 const backendService = new BackendService();

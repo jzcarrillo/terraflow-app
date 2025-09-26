@@ -54,7 +54,7 @@ class RedisService {
   }
 
   // Cache land titles
-  async cacheLandTitles(data, ttl = 300) {
+  async cacheLandTitles(data, ttl = 30) {
     try {
       const connected = await this.connect();
       if (!connected) return false;
@@ -69,7 +69,7 @@ class RedisService {
   }
 
   // Cache single land title
-  async cacheLandTitle(id, data, ttl = 300) {
+  async cacheLandTitle(id, data, ttl = 30) {
     try {
       const connected = await this.connect();
       if (!connected) return false;
@@ -79,6 +79,20 @@ class RedisService {
       return true;
     } catch (error) {
       console.error('Redis cache error:', error.message);
+      return false;
+    }
+  }
+
+  async clearLandTitlesCache() {
+    try {
+      const connected = await this.connect();
+      if (!connected) return false;
+
+      await this.client.del('land_titles:all');
+      console.log('Redis cache cleared for land titles');
+      return true;
+    } catch (error) {
+      console.error('Redis clear cache error:', error.message);
       return false;
     }
   }

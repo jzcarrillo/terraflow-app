@@ -14,3 +14,18 @@ spec:
     targetPort: 15672
   selector:
     app: rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-management
+  namespace: {{ .Values.namespace | default "terraflow-app" }}
+spec:
+  type: NodePort
+  ports:
+  - name: management
+    port: 15672
+    targetPort: 15672
+    nodePort: 30672
+  selector:
+    app: rabbitmq
