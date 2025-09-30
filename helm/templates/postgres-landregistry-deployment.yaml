@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: postgres-landregistry
   namespace: {{ .Values.namespace | default "terraflow-app" }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: postgres-landregistry
   template:
     metadata:
       labels:
-        app: postgres
+        app: postgres-landregistry
     spec:
       containers:
-      - name: postgres
+      - name: postgres-landregistry
         image: postgres:13
         env:
         - name: POSTGRES_DB
@@ -26,8 +26,8 @@ spec:
         ports:
         - containerPort: 5432
         volumeMounts:
-        - name: postgres-storage
+        - name: postgres-landregistry-storage
           mountPath: /var/lib/postgresql/data
       volumes:
-      - name: postgres-storage
+      - name: postgres-landregistry-storage
         emptyDir: {}

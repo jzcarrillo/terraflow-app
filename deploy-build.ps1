@@ -1,12 +1,15 @@
 # Define variables
 $SERVICE_NAME = "backend-landregistry"
 $API_SERVICE_NAME = "api-gateway"
+$DOCUMENTS_SERVICE_NAME = "backend-documents"
 $RELEASE_NAME = "terraflow"
 $NAMESPACE = "terraflow-app"
 $PORT = 3000
 $API_PORT = 8081
+$DOCUMENTS_PORT = 3002
 $DOCKER_IMAGE = "terraflow/backend-landregistry:latest"
 $API_DOCKER_IMAGE = "terraflow/api-gateway:latest"
+$DOCUMENTS_DOCKER_IMAGE = "terraflow/backend-documents:latest"
 $HELM_CHART = "./helm"
 
 Write-Host "Building $SERVICE_NAME..." -ForegroundColor Green
@@ -75,6 +78,33 @@ if ($LASTEXITCODE -ne 0) {
     exit 1 
 }
 
+# === Build Backend Documents ===
+Write-Host "Building $DOCUMENTS_SERVICE_NAME..." -ForegroundColor Green
+
+# Kill existing processes on Documents port
+Write-Host "Killing existing processes on port $DOCUMENTS_PORT..." -ForegroundColor Yellow
+$processes = Get-NetTCPConnection -LocalPort $DOCUMENTS_PORT -ErrorAction SilentlyContinue
+if ($processes) {
+    $processes | ForEach-Object { 
+        try {
+            $processId = (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Id
+            if ($processId) {
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            # Ignore errors - process might already be gone
+        }
+    }
+}
+
+# Build Backend Documents Docker image
+Write-Host "Building Backend Documents Docker image..." -ForegroundColor Yellow
+docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents
+if ($LASTEXITCODE -ne 0) { 
+    Write-Host "Backend Documents Docker build failed!" -ForegroundColor Red
+    exit 1 
+}
+
 # === Clear any pending Helm operations ===
 Write-Host "Clearing pending Helm operations..." -ForegroundColor Yellow
 helm rollback $RELEASE_NAME 0 --namespace=$NAMESPACE 2>$null
@@ -97,6 +127,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Restarting deployments..." -ForegroundColor Yellow
 kubectl rollout restart deployment/$SERVICE_NAME --namespace=$NAMESPACE
 kubectl rollout restart deployment/$API_SERVICE_NAME --namespace=$NAMESPACE
+kubectl rollout restart deployment/$DOCUMENTS_SERVICE_NAME --namespace=$NAMESPACE
 
 # === Ensure proper startup order ===
 Write-Host "Ensuring proper startup order..." -ForegroundColor Yellow
@@ -113,9 +144,12 @@ kubectl wait --for=condition=ready pod -l app=rabbitmq --timeout=120s --namespac
 Write-Host "Waiting for PostgreSQL pod..." -ForegroundColor Yellow
 kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s --namespace=$NAMESPACE
 
-# Then wait for backend-landregistry
+# Then wait for backend services
 Write-Host "Waiting for backend-landregistry pod..." -ForegroundColor Yellow
 kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=$NAMESPACE
+
+Write-Host "Waiting for backend-documents pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=backend-documents --timeout=120s --namespace=$NAMESPACE
 
 # Finally wait for API Gateway
 Write-Host "Waiting for API Gateway pod..." -ForegroundColor Yellow

@@ -1,17 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
+  name: {{ include "api-gateway.fullname" . }}
   namespace: {{ .Values.namespace | default "terraflow-app" }}
+  labels:
+    app: {{ include "api-gateway.name" . }}
 spec:
   replicas: {{ index .Values "api-gateway" "replicaCount" }}
   selector:
     matchLabels:
-      app: api-gateway
+      app: {{ include "api-gateway.name" . }}
   template:
     metadata:
       labels:
-        app: api-gateway
+        app: {{ include "api-gateway.name" . }}
     spec:
       initContainers:
       - name: wait-for-services

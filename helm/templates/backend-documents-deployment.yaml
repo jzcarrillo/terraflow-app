@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend-documents.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "backend-documents.name" . }}
+spec:
+  replicas: {{ .Values.backendDocuments.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "backend-documents.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "backend-documents.name" . }}
+    spec:
+      containers:
+      - name: backend-documents
+        image: "{{ .Values.backendDocuments.image.repository }}:{{ .Values.backendDocuments.image.tag }}"
+        imagePullPolicy: {{ .Values.backendDocuments.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.backendDocuments.service.port }}
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "{{ .Values.backendDocuments.service.port }}"
+        - name: DB_HOST
+          value: "postgres-landregistry-service"
+        - name: DB_PORT
+          value: "{{ .Values.postgresDocuments.service.port }}"
+        - name: DB_NAME
+          value: "{{ .Values.postgresDocuments.auth.database }}"
+        - name: DB_USER
+          value: "{{ .Values.postgresDocuments.auth.username }}"
+        - name: DB_PASSWORD
+          value: "{{ .Values.postgresDocuments.auth.password }}"
+        - name: RABBITMQ_URL
+          value: "amqp://{{ .Values.rabbitmq.auth.username }}:{{ .Values.rabbitmq.auth.password }}@{{ .Values.rabbitmq.service.name }}:{{ .Values.rabbitmq.service.port }}"
+        resources:
+          {{- toYaml .Values.backendDocuments.resources | nindent 12 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: uploads-volume
+          mountPath: /app/uploads
+      volumes:
+      - name: uploads-volume
+        emptyDir: {}

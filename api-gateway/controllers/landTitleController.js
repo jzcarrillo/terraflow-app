@@ -3,15 +3,19 @@ const { landTitleSchema } = require('../schemas/landTitleSchema');
 const rabbitmqService = require('../services/rabbitmqService');
 const backendService = require('../services/backendService');
 const redisService = require('../services/redisService');
+const { QUEUES, STATUS, CACHE } = require('../config/constants');
 
-const QUEUE_NAME = 'queue_landregistry';
-
-// CREATE LAND TITLE
+// CREATE LAND TITLE WITH DOCUMENTS
 const createLandTitle = async (req, res) => {
+
+// CORRELATION ID 
+  const transactionId = require('crypto').randomUUID();
+  
   try {
-    // LOG REQUEST PAYLOAD
-    console.log('📋 === CREATE LAND TITLE REQUEST ===');
+// LOG REQUEST PAYLOAD
+    console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
     console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
+    console.log('📎 Files:', req.files ? req.files.length : 0);
     
 // VALIDATE REQUEST USING ZOD
     const validatedData = landTitleSchema.parse(req.body);
@@ -30,27 +34,44 @@ const createLandTitle = async (req, res) => {
       });
     }
     
-    console.log(`➡️ Title ${validatedData.title_number} is valid, sending to queue`);
+    console.log(`➡️ Title ${validatedData.title_number} is valid, preparing event payload`);
 
-    // Clear cache since new data will be added
+// PREPARE COMPLETE PAYLOAD WITH ATTACHMENTS
+    const payload = {
+      transaction_id: transactionId,
+      land_title_data: validatedData,
+      attachments: req.files ? req.files.map(file => ({
+        original_name: file.originalname,
+        mime_type: file.mimetype,
+        size: file.size,
+        buffer: file.buffer.toString('base64'),
+        document_type: file.fieldname
+      })) : [],
+      user_id: req.user.id,
+      timestamp: new Date().toISOString()
+    };
+
+// CLEAR CACHE SINCE NEW DATA WILL BE ADDED 
     try {
       await redisService.clearLandTitlesCache();
-      console.log('🗑️ [API] Cache cleared after new land title submission');
+      console.log('🗑️ Cache cleared after new land title submission');
     } catch (error) {
-      console.log('⚠️ [API] Cache clear failed (non-critical):', error.message);
+      console.log('⚠️  Cache clear failed (non-critical):', error.message);
     }
 
-    // PUBLISH TO QUEUE
-    await rabbitmqService.publishToQueue(QUEUE_NAME, validatedData);
+// PUBLISH TO LAND REGISTRY QUEUE
+    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, payload);
 
     res.status(202).json({
-      message: 'Land title request submitted for processing',
+      success: true,
+      message: '✅ Land title submission received and is being processed',
+      transaction_id: transactionId,
       title_number: validatedData.title_number,
-      status: 'QUEUED'
+      status: STATUS.PROCESSING
     });
 
   } catch (error) {
-    console.error('Create land title error:', error.message);
+    console.error('❌ Create land title error:', error.message);
     
 // HANDLE ZOD VALIDATION ERRORS
     if (error.name === 'ZodError') {
@@ -89,8 +110,8 @@ const getAllLandTitles = async (req, res) => {
     console.log('📡 Cache miss, calling backend');
     const response = await backendService.getLandTitles();
     
-    // CACHE THE RESULT
-    await redisService.cacheLandTitles(response.data, 30); // 30 seconds TTL
+// CACHE THE RESULT
+    await redisService.cacheLandTitles(response.data, CACHE.TTL_SECONDS);
     
     console.log('✅ Land titles retrieved and cached');
     res.json({
@@ -129,7 +150,7 @@ const getLandTitle = async (req, res) => {
     const response = await backendService.getLandTitle(id);
     
     // CACHE THE RESULT
-    await redisService.cacheLandTitle(id, response.data, 30); // 30 seconds TTL
+    await redisService.cacheLandTitle(id, response.data, CACHE.TTL_SECONDS);
     
     console.log(`✅ Land title ${id} retrieved and cached`);
     res.json({

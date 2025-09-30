@@ -3,7 +3,6 @@ const { TABLES, STATUS } = require('../config/constants');
 
 class LandTitleService {
 
-
   async checkTitleExists(titleNumber) {
     const result = await pool.query(
       `SELECT COUNT(*) as count FROM ${TABLES.LAND_TITLES} WHERE title_number = $1`,
@@ -16,22 +15,55 @@ class LandTitleService {
     const { 
       owner_name, contact_no, title_number, address, property_location, 
       lot_number, survey_number, area_size, classification,
-      registration_date, registrar_office, previous_title_number, encumbrances 
+      registration_date, registrar_office, previous_title_number, encumbrances,
+      transaction_id, status = STATUS.PENDING, created_by
     } = data;
 
     const result = await pool.query(`
       INSERT INTO ${TABLES.LAND_TITLES} (
         owner_name, contact_no, title_number, address, property_location,
         lot_number, survey_number, area_size, classification, registration_date,
-        registrar_office, previous_title_number, encumbrances, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        registrar_office, previous_title_number, encumbrances, transaction_id, status, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `, [
       owner_name, contact_no, title_number, address, property_location,
       lot_number, survey_number, area_size, classification, registration_date,
-      registrar_office, previous_title_number, encumbrances, STATUS.PENDING
+      registrar_office, previous_title_number, encumbrances, transaction_id, status, created_by
     ]);
 
+    return result.rows[0];
+  }
+
+  async updateStatusToPendingPayment(landTitleId) {
+    const result = await pool.query(`
+      UPDATE ${TABLES.LAND_TITLES} 
+      SET status = 'PENDING_PAYMENT', updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `, [landTitleId]);
+    
+    return result.rows[0];
+  }
+
+  async activateLandTitle(landTitleId) {
+    const result = await pool.query(`
+      UPDATE ${TABLES.LAND_TITLES} 
+      SET status = 'ACTIVE', updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `, [landTitleId]);
+    
+    return result.rows[0];
+  }
+
+  async deleteLandTitle(landTitleId) {
+    const result = await pool.query(`
+      DELETE FROM ${TABLES.LAND_TITLES} 
+      WHERE id = $1
+      RETURNING *
+    `, [landTitleId]);
+    
     return result.rows[0];
   }
 

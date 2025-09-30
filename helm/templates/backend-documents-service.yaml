@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "backend-documents.fullname" . }}-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "backend-documents.name" . }}
+spec:
+  type: {{ .Values.backendDocuments.service.type }}
+  ports:
+    - port: {{ .Values.backendDocuments.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "backend-documents.name" . }}

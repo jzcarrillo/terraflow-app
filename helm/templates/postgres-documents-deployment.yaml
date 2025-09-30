@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-documents
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: postgres-documents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-documents
+  template:
+    metadata:
+      labels:
+        app: postgres-documents
+    spec:
+      containers:
+      - name: postgres-documents
+        image: "{{ .Values.postgresDocuments.image.repository }}:{{ .Values.postgresDocuments.image.tag }}"
+        imagePullPolicy: {{ .Values.postgresDocuments.image.pullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: "{{ .Values.postgresDocuments.auth.database }}"
+        - name: POSTGRES_USER
+          value: "{{ .Values.postgresDocuments.auth.username }}"
+        - name: POSTGRES_PASSWORD
+          value: "{{ .Values.postgresDocuments.auth.password }}"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          {{- toYaml .Values.postgresDocuments.resources | nindent 12 }}
+        volumeMounts:
+        - name: postgres-documents-storage
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "{{ .Values.postgresDocuments.auth.username }}" -d "{{ .Values.postgresDocuments.auth.database }}" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "{{ .Values.postgresDocuments.auth.username }}" -d "{{ .Values.postgresDocuments.auth.database }}" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-documents-storage
+        emptyDir: {}

@@ -8,7 +8,7 @@ const config = {
   rabbitmq: {
     url: process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq-service:5672',
     queues: {
-      landRegistry: process.env.QUEUE_LAND_REGISTRY || 'queue_land_registry'
+      landRegistry: process.env.QUEUE_LANDREGISTRY || 'queue_landregistry'
     }
   },
   redis: {

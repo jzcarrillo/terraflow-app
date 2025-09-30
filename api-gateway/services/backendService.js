@@ -11,7 +11,7 @@ class BackendService {
       const response = await axios.get(`${this.backendUrl}/api/validate/${titleNumber}`);
       return response.data.exists;
     } catch (error) {
-      console.error('Backend validation failed:', error.message);
+      console.error('❌ Backend validation failed:', error.message);
       throw new Error('Validation service unavailable');
     }
   }
@@ -21,7 +21,7 @@ class BackendService {
       const response = await axios.get(`${this.backendUrl}/api/land-titles`);
       return response.data;
     } catch (error) {
-      console.error('Backend get land titles failed:', error.message);
+      console.error('❌ Backend get land titles failed:', error.message);
       throw new Error('Backend service unavailable');
     }
   }
@@ -31,7 +31,7 @@ class BackendService {
       const response = await axios.get(`${this.backendUrl}/api/land-titles/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Backend get land title failed:', error.message);
+      console.error('❌ Backend get land title failed:', error.message);
       throw new Error('Backend service unavailable');
     }
   }

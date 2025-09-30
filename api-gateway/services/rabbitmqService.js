@@ -16,7 +16,7 @@ class RabbitMQService {
       }
       return true;
     } catch (error) {
-      console.error('RabbitMQ connection failed:', error.message);
+      console.error('❌ RabbitMQ connection failed:', error.message);
       return false;
     }
   }
@@ -37,7 +37,7 @@ class RabbitMQService {
       return true;
       
     } catch (error) {
-      console.error('Failed to publish message:', error.message);
+      console.error('❌ Failed to publish message:', error.message);
       throw error;
     }
   }
@@ -51,7 +51,7 @@ class RabbitMQService {
       if (this.channel) await this.channel.close();
       if (this.connection) await this.connection.close();
     } catch (error) {
-      console.error('Error closing RabbitMQ connection:', error.message);
+      console.error('❌ Error closing RabbitMQ connection:', error.message);
     }
   }
 }

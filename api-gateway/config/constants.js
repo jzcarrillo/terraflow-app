@@ -8,9 +8,6 @@ module.exports = {
     DOCUMENT_COMPLETED: 'DOCUMENT_COMPLETED',
     DOCUMENT_FAILED: 'DOCUMENT_FAILED'
   },
-  TABLES: {
-    LAND_TITLES: 'land_titles'
-  },
   STATUS: {
     PENDING: 'PENDING',
     PENDING_DOCUMENTS: 'PENDING_DOCUMENTS',
@@ -19,5 +16,18 @@ module.exports = {
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
     FAILED: 'FAILED'
+  },
+  FILE_UPLOAD: {
+    MAX_SIZE: 10 * 1024 * 1024, // 10MB
+    MAX_FILES: 5,
+    ALLOWED_TYPES: ['application/pdf', 'image/jpeg', 'image/png'],
+    ALLOWED_EXTENSIONS: ['.pdf', '.jpg', '.jpeg', '.png']
+  },
+  CACHE: {
+    TTL_SECONDS: 30,
+    KEYS: {
+      LAND_TITLES_ALL: 'land_titles:all',
+      LAND_TITLE_BY_ID: 'land_title:id:'
+    }
   }
 };

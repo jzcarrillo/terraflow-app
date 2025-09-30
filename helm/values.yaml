@@ -1,5 +1,15 @@
 namespace: terraflow-app
 
+api-gateway:
+  replicaCount: 1
+  image:
+    repository: terraflow/api-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8081
+
 backend-landregistry:
   replicaCount: 1
   image:
@@ -16,26 +26,65 @@ backend-landregistry:
     DB_USER: postgres
     DB_PASSWORD: password
 
-api-gateway:
+backendDocuments:
   replicaCount: 1
   image:
-    repository: terraflow/api-gateway
+    repository: terraflow/backend-documents
     tag: latest
     pullPolicy: IfNotPresent
   service:
-    type: NodePort
-    port: 8081
+    type: ClusterIP
+    port: 3002
+  database:
+    name: terraflow_documents
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
 
-postgres:
+postgresql:
   enabled: true
-  database: terraflow_landregistry
-  username: postgres
-  password: password
+  service:
+    name: postgres-service
+    port: "5432"
+  auth:
+    username: postgres
+    password: password
+    database: terraflow_landregistry
+
+postgresDocuments:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5432
+    name: postgres-documents-service
+  auth:
+    username: postgres
+    password: password
+    database: terraflow_documents
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
 
 rabbitmq:
   enabled: true
-  username: admin
-  password: password
+  service:
+    name: rabbitmq-service
+    port: "5672"
+  auth:
+    username: admin
+    password: password
   management:
     enabled: true
 

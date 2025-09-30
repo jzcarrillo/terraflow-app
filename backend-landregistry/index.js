@@ -28,9 +28,11 @@ app.get('/health', (req, res) => {
 
 // TEST DATABASE CONNECTION
 testConnection();
+// console.log('✅ Database connection skipped for local testing');
 
 // START MESSAGE QUEUE CONSUMER
 rabbitmqConsumer.startConsumer();
+// console.log('✅ RabbitMQ consumer skipped for local testing');
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {

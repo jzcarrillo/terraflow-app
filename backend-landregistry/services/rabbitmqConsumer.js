@@ -1,5 +1,7 @@
 const amqp = require('amqplib');
 const { processLandTitleCreation } = require('../processors/landTitleProcessor');
+const { processDocumentCompleted, processDocumentFailed } = require('../processors/documentCompletionProcessor');
+const { processDocumentPublishing } = require('../processors/documentPublisher');
 const { QUEUES } = require('../config/constants');
 
 const QUEUE_NAME = QUEUES.LAND_REGISTRY;
@@ -60,6 +62,61 @@ class RabbitMQConsumer {
       }
     });
 
+    // Start document completion consumers
+    await this.startDocumentCompletionConsumers();
+  }
+
+  async startDocumentCompletionConsumers() {
+    try {
+      const { EVENT_TYPES } = require('../config/constants');
+      
+      // Assert single document queue
+      await this.channel.assertQueue(QUEUES.DOCUMENTS, { durable: true });
+      
+      // Consumer for document events (with event type routing)
+      this.channel.consume(QUEUES.DOCUMENTS, async (message) => {
+        if (message) {
+          try {
+            const messageData = JSON.parse(message.content.toString());
+            const { event_type, transaction_id } = messageData;
+            
+            console.log(`📨 Document event received: ${event_type} (${transaction_id})`);
+            
+            // Route based on event type
+            switch (event_type) {
+              case EVENT_TYPES.DOCUMENT_UPLOAD:
+                await processDocumentPublishing(messageData);
+                console.log('✅ Document publishing processed successfully');
+                break;
+                
+              case EVENT_TYPES.DOCUMENT_COMPLETED:
+                await processDocumentCompleted(messageData);
+                console.log('✅ Document completion processed successfully');
+                break;
+                
+              case EVENT_TYPES.DOCUMENT_FAILED:
+                await processDocumentFailed(messageData);
+                console.log('✅ Document failure processed successfully');
+                break;
+                
+              default:
+                console.log(`⚠️ Unknown event type: ${event_type}`);
+            }
+            
+            this.channel.ack(message);
+            
+          } catch (error) {
+            console.error('❌ Document event processing failed:', error.message);
+            this.channel.nack(message, false, true);
+          }
+        }
+      });
+      
+
+      
+    } catch (error) {
+      console.error('❌ Failed to start document event consumer:', error.message);
+    }
   }
 
   async close() {

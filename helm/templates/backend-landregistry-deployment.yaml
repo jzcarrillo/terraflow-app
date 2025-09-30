@@ -19,7 +19,7 @@ spec:
         args:
         - |
           echo "Waiting for PostgreSQL to be ready..."
-          until nc -z postgres-service 5432; do
+          until nc -z postgres-landregistry-service 5432; do
             echo "PostgreSQL not ready, waiting 5 seconds..."
             sleep 5
           done
@@ -39,7 +39,7 @@ spec:
         - containerPort: {{ index .Values "backend-landregistry" "service" "port" }}
         env:
         - name: DB_HOST
-          value: {{ index .Values "backend-landregistry" "env" "DB_HOST" }}
+          value: "postgres-landregistry-service"
         - name: DB_PORT
           value: "{{ index .Values "backend-landregistry" "env" "DB_PORT" }}"
         - name: DB_NAME

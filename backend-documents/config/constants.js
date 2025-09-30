@@ -1,6 +1,5 @@
 module.exports = {
   QUEUES: {
-    LAND_REGISTRY: 'queue_landregistry',
     DOCUMENTS: 'queue_documents'
   },
   EVENT_TYPES: {
@@ -9,15 +8,17 @@ module.exports = {
     DOCUMENT_FAILED: 'DOCUMENT_FAILED'
   },
   TABLES: {
-    LAND_TITLES: 'land_titles'
+    DOCUMENTS: 'documents'
   },
   STATUS: {
     PENDING: 'PENDING',
-    PENDING_DOCUMENTS: 'PENDING_DOCUMENTS',
-    PENDING_PAYMENT: 'PENDING_PAYMENT',
-    PROCESSING: 'PROCESSING',
     ACTIVE: 'ACTIVE',
-    COMPLETED: 'COMPLETED',
     FAILED: 'FAILED'
+  },
+  DOCUMENT_TYPES: {
+    TITLE_DEED: 'title_deed',
+    SURVEY_PLAN: 'survey_plan',
+    TAX_DECLARATION: 'tax_declaration',
+    OWNERSHIP_CERTIFICATE: 'ownership_certificate'
   }
 };

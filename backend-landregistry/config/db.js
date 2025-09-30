@@ -13,11 +13,12 @@ const pool = new Pool({
 const initializeDatabase = async (retries = 5) => {
   for (let i = 0; i < retries; i++) {
     try {
-      // TEST CONNECTION FIRST
+
+// TEST CONNECTION FIRST
       const client = await pool.connect();
       client.release();
       
-      // CREATE LAND_TITLES TABLE
+// CREATE LAND_TITLES TABLE
       const { TABLES, STATUS } = require('./constants');
       await pool.query(`
         CREATE TABLE IF NOT EXISTS ${TABLES.LAND_TITLES} (
@@ -35,12 +36,15 @@ const initializeDatabase = async (retries = 5) => {
           registrar_office VARCHAR(100),
           previous_title_number VARCHAR(100),
           encumbrances TEXT,
+          transaction_id UUID,
           status VARCHAR(50) DEFAULT '${STATUS.PENDING}',
-          created_at TIMESTAMP DEFAULT NOW()
+          created_by INT,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
         )
       `);
       
-      console.log('✅ Database initialized successfully');
+
       return;
 
     } catch (error) {
@@ -48,7 +52,7 @@ const initializeDatabase = async (retries = 5) => {
         console.error('❌ Database initialization failed after all retries:', error.message);
         return;
       }
-      // WAIT 5 SECONDS BEFORE RETRY
+  // WAIT 5 SECONDS BEFORE RETRY
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
@@ -58,7 +62,7 @@ const initializeDatabase = async (retries = 5) => {
 const testConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('🔗 Database connected');
+    console.log('✅ Database connected');
     client.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
