@@ -16,19 +16,19 @@ const initializeDatabase = async () => {
   try {
 
     
-    // First create database if it doesn't exist
+// FIRST CREATE DATABASE IF IT DOESN'T EXIST
     const { Client } = require('pg');
     const adminClient = new Client({
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 5432,
-      database: 'postgres', // Connect to default postgres database
+      database: 'postgres', // Connect to default postgres database first
       user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'your_actual_postgres_password',
+      password: process.env.DB_PASSWORD || 'password',
     });
     
     await adminClient.connect();
     
-    // Check if database exists, create if not
+// CHECK IF DATABASE EXISTS, CREATE IF NOT
     const dbName = process.env.DB_NAME || 'terraflow_documents';
     const result = await adminClient.query(
       'SELECT 1 FROM pg_database WHERE datname = $1',
@@ -41,11 +41,11 @@ const initializeDatabase = async () => {
     
     await adminClient.end();
     
-    // Now connect to the actual database
+// NOW CONNECT TO THE ACTUAL DATABASE
     const client = await pool.connect();
-
+    console.log('✅ Database connected');
     
-    // Create documents table
+// CREATE DOCUMENTS TABLE
     await client.query(`
       CREATE TABLE IF NOT EXISTS ${TABLES.DOCUMENTS} (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,13 +57,11 @@ const initializeDatabase = async () => {
         file_size BIGINT NOT NULL,
         mime_type VARCHAR(100) NOT NULL,
         uploaded_by INT,
-        status VARCHAR(20) DEFAULT '${STATUS.ACTIVE}',
+        status VARCHAR(20) DEFAULT '${STATUS.PENDING}',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    
-
     
     client.release();
     

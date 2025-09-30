@@ -27,7 +27,8 @@ const processLandTitleCreation = async (messageData) => {
     console.log(`✅ Land title created: ${result.id} (status: PENDING_DOCUMENTS)`);
     
     // Publish document processing event (separate from land title creation)
-    await publishDocumentProcessingEvent({
+    const EventPublisher = require('../utils/eventPublisher');
+    await EventPublisher.publishDocumentUpload({
       transaction_id: transaction_id,
       land_title_id: result.id,
       attachments: attachments,
@@ -42,20 +43,6 @@ const processLandTitleCreation = async (messageData) => {
     console.error(`❌ Land title processing failed: ${transaction_id}`, error.message);
     throw error;
   }
-};
-
-// Helper function to publish document processing event
-const publishDocumentProcessingEvent = async (data) => {
-  const rabbitmqService = require('../services/rabbitmqService');
-  const { QUEUES, EVENT_TYPES } = require('../config/constants');
-  
-  const eventPayload = {
-    event_type: EVENT_TYPES.DOCUMENT_UPLOAD,
-    ...data
-  };
-  
-  // Use existing documents queue
-  await rabbitmqService.publishToQueue(QUEUES.DOCUMENTS, eventPayload);
 };
 
 module.exports = {

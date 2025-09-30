@@ -1,6 +1,6 @@
 const amqp = require('amqplib');
 const { processLandTitleCreation } = require('../processors/landTitleProcessor');
-const { processDocumentCompleted, processDocumentFailed } = require('../processors/documentCompletionProcessor');
+const { processDocumentUploaded, processDocumentFailed } = require('../processors/documentCompletionProcessor');
 const { processDocumentPublishing } = require('../processors/documentPublisher');
 const { QUEUES } = require('../config/constants');
 
@@ -89,9 +89,9 @@ class RabbitMQConsumer {
                 console.log('✅ Document publishing processed successfully');
                 break;
                 
-              case EVENT_TYPES.DOCUMENT_COMPLETED:
-                await processDocumentCompleted(messageData);
-                console.log('✅ Document completion processed successfully');
+              case EVENT_TYPES.DOCUMENT_UPLOADED:
+                await processDocumentUploaded(messageData);
+                console.log('✅ Document uploaded processed successfully');
                 break;
                 
               case EVENT_TYPES.DOCUMENT_FAILED:

@@ -4,29 +4,30 @@ const documentService = require('../services/documentService');
 const rabbitmqService = require('../services/rabbitmqService');
 const { EVENT_TYPES, QUEUES } = require('../config/constants');
 
+// UPLOAD DOCUMENTS
 const processDocumentUpload = async (messageData) => {
   const { transaction_id, land_title_id, attachments, user_id } = messageData;
   
   try {
-    console.log(`📎 [DOCUMENT] Processing ${attachments.length} documents for: ${land_title_id}`);
+    console.log(`📎Processing ${attachments.length} documents for: ${land_title_id}`);
     
     const uploadedDocuments = [];
     
-    // Process all documents
+// PROCESS ALL DOCUMENTS
     for (const [index, attachment] of attachments.entries()) {
       console.log(`📄 Processing document ${index + 1}/${attachments.length}: ${attachment.original_name}`);
       
-      // Convert base64 back to buffer
+// CONVERT BASE64 BACK TO BUFFER
       const fileBuffer = Buffer.from(attachment.buffer, 'base64');
       
-      // Generate unique filename
+// GENERATE UNIQUE FILENAME
       const fileName = `${land_title_id}_${attachment.document_type}_${Date.now()}_${index}.${getFileExtension(attachment.original_name)}`;
       const filePath = path.join('./uploads', fileName);
       
-      // Save file to disk
+// SAVE FILE TO DISK
       await fs.writeFile(filePath, fileBuffer);
       
-      // Save document record
+// SAVE DOCUMENT RECORD
       const document = await documentService.createDocument({
         land_title_id: land_title_id,
         transaction_id: transaction_id,
@@ -36,18 +37,18 @@ const processDocumentUpload = async (messageData) => {
         file_size: attachment.size,
         mime_type: attachment.mime_type,
         uploaded_by: user_id,
-        status: 'ACTIVE'
+        status: 'PENDING'
       });
       
       uploadedDocuments.push(document);
       console.log(`✅ Document ${index + 1} uploaded: ${document.id}`);
     }
     
-    console.log(`🎉 [DOCUMENT] All ${uploadedDocuments.length} documents processed successfully`);
+    console.log(`🎉 All ${uploadedDocuments.length} documents processed successfully`);
     
-    // Publish completion event
-    await rabbitmqService.publishToQueue(QUEUES.DOCUMENTS, {
-      event_type: EVENT_TYPES.DOCUMENT_COMPLETED,
+// PUBLISH DOCUMENTS UPLOADED EVENT TO BACKEND-LANDREGISTRY
+    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: EVENT_TYPES.DOCUMENT_UPLOADED,
       transaction_id,
       land_title_id,
       uploaded_documents: uploadedDocuments,
@@ -58,10 +59,10 @@ const processDocumentUpload = async (messageData) => {
     console.error(`❌ [DOCUMENT] Upload failed: ${transaction_id}`, error);
     
     // Cleanup uploaded files on failure
-    await cleanupUploadedFiles(uploadedDocuments);
+    await cleanupFiles(uploadedDocuments);
     
-    // Publish failure event
-    await rabbitmqService.publishToQueue(QUEUES.DOCUMENTS, {
+    // Publish failure event to backend-landregistry
+    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: EVENT_TYPES.DOCUMENT_FAILED,
       transaction_id,
       land_title_id,
@@ -74,17 +75,55 @@ const getFileExtension = (filename) => {
   return filename.split('.').pop();
 };
 
-const cleanupUploadedFiles = async (uploadedDocuments) => {
-  for (const doc of uploadedDocuments) {
+// REUSABLE FILE CLEANUP UTILITY
+const cleanupFiles = async (documents) => {
+  for (const doc of documents) {
     try {
       await fs.unlink(doc.file_path);
-      console.log(`🗑️ Cleaned up file: ${doc.file_path}`);
+      console.log(`🗑️ File deleted: ${doc.file_path}`);
     } catch (error) {
-      console.error(`Failed to cleanup file: ${doc.file_path}`, error);
+      console.error(`Failed to delete file: ${doc.file_path}`, error);
     }
   }
 };
 
+const processLandTitlePaid = async (messageData) => {
+  const { land_title_id, transaction_id } = messageData;
+  
+  try {
+    console.log(`💰 [PAYMENT] Activating documents for land title: ${land_title_id}`);
+    
+    // Update all documents for this land title to ACTIVE
+    const result = await documentService.updateDocumentStatusByLandTitle(land_title_id, 'ACTIVE');
+    
+    console.log(`✅ [PAYMENT] ${result.rowCount} documents activated for land title: ${land_title_id}`);
+    
+  } catch (error) {
+    console.error(`❌ [PAYMENT] Failed to activate documents for land title: ${land_title_id}`, error);
+  }
+};
+
+const processRollbackTransaction = async (messageData) => {
+  const { transaction_id, land_title_id, reason } = messageData;
+  
+  try {
+    console.log(`🔄 [ROLLBACK] Rolling back documents for transaction: ${transaction_id}`);
+    
+    // DELETE ALL DOCUMENTS FOR THIS TRANSACTION
+    const deletedDocuments = await documentService.deleteDocumentsByTransactionId(transaction_id);
+    
+    // CLEANUP FILES FROM DISK
+    await cleanupFiles(deletedDocuments);
+    
+    console.log(`✅ [ROLLBACK] ${deletedDocuments.length} documents rolled back for transaction: ${transaction_id}`);
+    
+  } catch (error) {
+    console.error(`❌ [ROLLBACK] Failed to rollback documents: ${transaction_id}`, error);
+  }
+};
+
 module.exports = {
-  processDocumentUpload
+  processDocumentUpload,
+  processLandTitlePaid,
+  processRollbackTransaction
 };

@@ -71,98 +71,59 @@ const createLandTitle = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Create land title error:', error.message);
-    
-// HANDLE ZOD VALIDATION ERRORS
-    if (error.name === 'ZodError') {
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
-      });
-    }
-    
-    if (error.message.includes('RabbitMQ')) {
-      res.status(500).json({ error: 'Message queue unavailable' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    const ErrorHandler = require('../utils/errorHandler');
+    ErrorHandler.handleError(error, res, 'Create land title');
   }
 };
 
 // GET ALL LAND TITLES
 const getAllLandTitles = async (req, res) => {
+  const CacheHelper = require('../utils/cacheHelper');
+  const ErrorHandler = require('../utils/errorHandler');
+  
   try {
     console.log('🔍 Getting all land titles');
     
-// CHECK REDIS CACHE FIRST Check Redis cache first
-    const cached = await redisService.getLandTitles();
-    if (cached) {
-      console.log('⚡ Returning cached land titles from Redis');
-      return res.json({
-        message: 'Land titles retrieved from cache',
-        data: cached,
-        source: 'redis',
-        user: req.user.id
-      });
-    }
-
-// CACHE MISS - CALL BACKEND
-    console.log('📡 Cache miss, calling backend');
-    const response = await backendService.getLandTitles();
+    const result = await CacheHelper.getCachedOrFetch(
+      'land_titles:all',
+      () => backendService.getLandTitles().then(response => response.data)
+    );
     
-// CACHE THE RESULT
-    await redisService.cacheLandTitles(response.data, CACHE.TTL_SECONDS);
+    const message = result.source === 'redis' 
+      ? 'Land titles retrieved from cache'
+      : 'Land titles retrieved from database';
     
-    console.log('✅ Land titles retrieved and cached');
-    res.json({
-      message: 'Land titles retrieved from database',
-      data: response.data,
-      source: 'database',
-      user: req.user.id
-    });
+    console.log(`✅ Land titles retrieved from ${result.source}`);
+    res.json(CacheHelper.formatResponse(message, result.data, result.source, req.user.id));
 
   } catch (error) {
-    console.error('❌ Get all land titles error:', error.message);
-    res.status(500).json({ error: 'Failed to retrieve land titles' });
+    ErrorHandler.handleError(error, res, 'Get all land titles');
   }
 };
 
 // GET SINGLE LAND TITLE
 const getLandTitle = async (req, res) => {
+  const CacheHelper = require('../utils/cacheHelper');
+  const ErrorHandler = require('../utils/errorHandler');
+  
   try {
     const { id } = req.params;
     console.log(`🔍 Getting land title ID: ${id}`);
     
-// CHECK REDIS CACHE FIRST
-    const cached = await redisService.getLandTitle(id);
-    if (cached) {
-      console.log(`⚡Returning cached land title ${id} from Redis`);
-      return res.json({
-        message: 'Land title retrieved from cache',
-        data: cached,
-        source: 'redis',
-        user: req.user.id
-      });
-    }
-
-// CACHE MISS - CALL BACKEND 
-    console.log(`📡 Cache miss, calling backend for ID: ${id}`);
-    const response = await backendService.getLandTitle(id);
+    const result = await CacheHelper.getCachedOrFetch(
+      `land_title:${id}`,
+      () => backendService.getLandTitle(id).then(response => response.data)
+    );
     
-    // CACHE THE RESULT
-    await redisService.cacheLandTitle(id, response.data, CACHE.TTL_SECONDS);
+    const message = result.source === 'redis'
+      ? 'Land title retrieved from cache'
+      : 'Land title retrieved from database';
     
-    console.log(`✅ Land title ${id} retrieved and cached`);
-    res.json({
-      message: 'Land title retrieved from database',
-      data: response.data,
-      source: 'database',
-      user: req.user.id
-    });
+    console.log(`✅ Land title ${id} retrieved from ${result.source}`);
+    res.json(CacheHelper.formatResponse(message, result.data, result.source, req.user.id));
 
   } catch (error) {
-    console.error(`❌ Get land title ${req.params.id} error:`, error.message);
-    res.status(500).json({ error: 'Failed to retrieve land title' });
+    ErrorHandler.handleError(error, res, `Get land title ${req.params.id}`);
   }
 };
 

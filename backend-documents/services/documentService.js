@@ -48,6 +48,17 @@ class DocumentService {
 
     return result.rows;
   }
+
+  async updateDocumentStatusByLandTitle(landTitleId, status) {
+    const result = await pool.query(`
+      UPDATE ${TABLES.DOCUMENTS}
+      SET status = $1, updated_at = NOW()
+      WHERE land_title_id = $2
+      RETURNING *
+    `, [status, landTitleId]);
+
+    return result;
+  }
 }
 
 const documentService = new DocumentService();

@@ -27,7 +27,7 @@ const startServer = async () => {
   try {
     // Initialize database
     await initializeDatabase();
-    console.log('✅ Database initialized');
+
     
     // Start RabbitMQ consumer
     await rabbitmqConsumer.startConsumer();

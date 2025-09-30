@@ -1,5 +1,5 @@
 const rabbitmqService = require('./rabbitmqService');
-const { processDocumentUpload } = require('../processors/documentProcessor');
+const { processDocumentUpload, processLandTitlePaid, processRollbackTransaction } = require('../processors/documentProcessor');
 const { QUEUES, EVENT_TYPES } = require('../config/constants');
 
 class RabbitMQConsumer {
@@ -20,12 +20,22 @@ class RabbitMQConsumer {
             console.log('✅ Document upload processed successfully');
             break;
             
+          case EVENT_TYPES.LAND_TITLE_PAID:
+            await processLandTitlePaid(messageData);
+            console.log('✅ Land title payment processed successfully');
+            break;
+            
+          case EVENT_TYPES.ROLLBACK_TRANSACTION:
+            await processRollbackTransaction(messageData);
+            console.log('✅ Transaction rollback processed successfully');
+            break;
+            
           default:
             console.log(`⚠️ Unknown event type: ${event_type}`);
         }
       });
       
-
+      console.log('✅ Consumer connected successfully');
       
     } catch (error) {
       console.error('❌ Failed to start Backend Documents consumers:', error);
