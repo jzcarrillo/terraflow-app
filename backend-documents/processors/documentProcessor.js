@@ -9,13 +9,18 @@ const processDocumentUpload = async (messageData) => {
   const { transaction_id, land_title_id, attachments, user_id } = messageData;
   
   try {
-    console.log(`📎Processing ${attachments.length} documents for: ${land_title_id}`);
+    console.log(`📨 Received document upload request:`);
+    console.log(`  Transaction ID: ${transaction_id}`);
+    console.log(`  Land Title ID: ${land_title_id}`);
+    console.log(`  Documents: ${attachments.length}`);
+    attachments.forEach((attachment, index) => {
+      console.log(`    ${index + 1}. ${attachment.original_name} (${attachment.mime_type}, ${attachment.size} bytes)`);
+    });
     
     const uploadedDocuments = [];
     
 // PROCESS ALL DOCUMENTS
     for (const [index, attachment] of attachments.entries()) {
-      console.log(`📄 Processing document ${index + 1}/${attachments.length}: ${attachment.original_name}`);
       
 // CONVERT BASE64 BACK TO BUFFER
       const fileBuffer = Buffer.from(attachment.buffer, 'base64');
@@ -41,10 +46,9 @@ const processDocumentUpload = async (messageData) => {
       });
       
       uploadedDocuments.push(document);
-      console.log(`✅ Document ${index + 1} uploaded: ${document.id}`);
     }
     
-    console.log(`🎉 All ${uploadedDocuments.length} documents processed successfully`);
+    console.log(`✅ ${uploadedDocuments.length} documents processed successfully`);
     
 // PUBLISH DOCUMENTS UPLOADED EVENT TO BACKEND-LANDREGISTRY
     await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, {
@@ -54,6 +58,7 @@ const processDocumentUpload = async (messageData) => {
       uploaded_documents: uploadedDocuments,
       total_documents: uploadedDocuments.length
     });
+    console.log(`📤 Message published to queue_landregistry`);
     
   } catch (error) {
     console.error(`❌ [DOCUMENT] Upload failed: ${transaction_id}`, error);

@@ -4,7 +4,6 @@ const processLandTitleCreation = async (messageData) => {
   const { transaction_id, land_title_data, attachments, user_id } = messageData;
   
   try {
-    console.log(`📋 Processing land title: ${transaction_id}`);
     
 // VALIDATE REQUIRED FIELDS
     landTitleService.validateRequiredFields(land_title_data);
@@ -15,27 +14,22 @@ const processLandTitleCreation = async (messageData) => {
       throw new Error(`Title number ${land_title_data.title_number} already exists in database`);
     }
 
-// CREATE LAND TITLE WITH PENDING_DOCUMENTS STATUS
+// CREATE LAND TITLE WITH PENDING STATUS
     const result = await landTitleService.createLandTitle({
       ...land_title_data,
       transaction_id: transaction_id,
-      status: 'PENDING_DOCUMENTS',
+      status: 'PENDING',
       created_by: user_id
     });
     
-    console.log('💾 Land title data inserted to database successfully');
-    console.log(`✅ Land title created: ${result.id} (status: PENDING_DOCUMENTS)`);
-    
-    // Publish document processing event (separate from land title creation)
+// PUBLISH DOCUMENT PROCESSING EVENT 
     const EventPublisher = require('../utils/eventPublisher');
     await EventPublisher.publishDocumentUpload({
       transaction_id: transaction_id,
       land_title_id: result.id,
       attachments: attachments,
       user_id: user_id
-    });
-    
-    console.log(`📤 Document processing event published for: ${result.id}`);
+    });  
     
     return result;
 

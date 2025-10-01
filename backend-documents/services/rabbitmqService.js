@@ -30,7 +30,7 @@ class RabbitMQService {
       const message = Buffer.from(JSON.stringify(data));
       this.channel.sendToQueue(queueName, message, { persistent: true });
       
-      console.log(`📤 Message published to ${queueName}`);
+
     } catch (error) {
       console.error(`❌ Failed to publish to ${queueName}:`, error);
       throw error;
@@ -58,7 +58,7 @@ class RabbitMQService {
         }
       });
       
-      console.log(`✅ Consumer started for ${queueName}`);
+
     } catch (error) {
       console.error(`❌ Failed to start consumer for ${queueName}:`, error);
       throw error;

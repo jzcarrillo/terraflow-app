@@ -12,8 +12,8 @@ const processDocumentPublishing = async (messageData) => {
       throw new Error(`Land title not found: ${land_title_id}`);
     }
     
-    if (landTitle.status !== 'PENDING_DOCUMENTS') {
-      throw new Error(`Invalid land title status: ${landTitle.status}. Expected: PENDING_DOCUMENTS`);
+    if (landTitle.status !== 'PENDING') {
+      throw new Error(`Invalid land title status: ${landTitle.status}. Expected: PENDING`);
     }
     
 // PUBLISH DOCUMENT UPLOAD EVENT
@@ -29,9 +29,8 @@ const processDocumentPublishing = async (messageData) => {
       console.log(`✅ Document upload event published for: ${land_title_id} (${attachments.length} documents)`);
     } else {
 
-// NO DOCUMENTS, SET TO PENDING_PAYMENT DIRECTLY
-      await landTitleService.updateStatusToPendingPayment(land_title_id);
-      console.log(`💰 Land title set to PENDING_PAYMENT (no documents): ${land_title_id}`);
+// NO DOCUMENTS, KEEP AS PENDING
+      console.log(`💰 Land title remains PENDING (no documents): ${land_title_id}`);
     }
     
   } catch (error) {

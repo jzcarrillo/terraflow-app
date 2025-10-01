@@ -35,10 +35,10 @@ class LandTitleService {
     return result.rows[0];
   }
 
-  async updateStatusToPendingPayment(landTitleId) {
+  async updateStatusToPending(landTitleId) {
     const result = await pool.query(`
       UPDATE ${TABLES.LAND_TITLES} 
-      SET status = 'PENDING_PAYMENT', updated_at = NOW()
+      SET status = 'PENDING', updated_at = NOW()
       WHERE id = $1
       RETURNING *
     `, [landTitleId]);

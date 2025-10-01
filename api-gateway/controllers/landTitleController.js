@@ -17,14 +17,29 @@ const createLandTitle = async (req, res) => {
     console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
     console.log('📎 Files:', req.files ? req.files.length : 0);
     
+    // LOG DOCUMENT DETAILS
+    if (req.files && req.files.length > 0) {
+      console.log('📄 Document details:');
+      req.files.forEach((file, index) => {
+        console.log(`  ${index + 1}. ${file.originalname} (${file.mimetype}, ${file.size} bytes)`);
+      });
+    }
+    
+// PREPROCESS MULTIPART FORM DATA (convert string numbers to numbers)
+    const processedBody = { ...req.body };
+    if (processedBody.lot_number && typeof processedBody.lot_number === 'string') {
+      processedBody.lot_number = parseInt(processedBody.lot_number, 10);
+    }
+    if (processedBody.area_size && typeof processedBody.area_size === 'string') {
+      processedBody.area_size = parseFloat(processedBody.area_size);
+    }
+    
 // VALIDATE REQUEST USING ZOD
-    const validatedData = landTitleSchema.parse(req.body);
+    const validatedData = landTitleSchema.parse(processedBody);
     console.log('✅ Validation successful for title:', validatedData.title_number);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
-    console.log(`🔎 Checking duplicate for title: ${validatedData.title_number}`);
     const isDuplicate = await backendService.validateTitleNumber(validatedData.title_number);
-    console.log(`🔵 Duplicate check result: ${isDuplicate}`);
     
     if (isDuplicate) {
       console.log(`❌ Rejecting duplicate title: ${validatedData.title_number}`);

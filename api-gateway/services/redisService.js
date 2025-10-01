@@ -20,12 +20,12 @@ class RedisService {
       }
       return true;
     } catch (error) {
-      console.error('Redis connection failed:', error.message);
+      console.error('❌ Redis connection failed:', error.message);
       return false;
     }
   }
 
-  // Get cached land titles
+  // GET CACHE LAND TITLES
   async getLandTitles() {
     try {
       const connected = await this.connect();
@@ -34,12 +34,12 @@ class RedisService {
       const cached = await this.client.get('land_titles:all');
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
-      console.error('Redis get land titles error:', error.message);
+      console.error('❌ Redis get land titles error:', error.message);
       return null;
     }
   }
 
-  // Get single cached land title
+  // GET SINGLE CACHED LAND TITLE
   async getLandTitle(id) {
     try {
       const connected = await this.connect();
@@ -48,37 +48,37 @@ class RedisService {
       const cached = await this.client.get(`land_title:${id}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
-      console.error('Redis get land title error:', error.message);
+      console.error('❌ Redis get land title error:', error.message);
       return null;
     }
   }
 
-  // Cache land titles
-  async cacheLandTitles(data, ttl = 30) {
+  // CACHE LAND TITLES
+  async cacheLandTitles(data, ttl = 20) {
     try {
       const connected = await this.connect();
       if (!connected) return false;
 
       await this.client.setEx('land_titles:all', ttl, JSON.stringify(data));
-      console.log('Land titles cached in Redis');
+      console.log('✅ Land titles cached in Redis');
       return true;
     } catch (error) {
-      console.error('Redis cache error:', error.message);
+      console.error('❌ Redis cache error:', error.message);
       return false;
     }
   }
 
-  // Cache single land title
-  async cacheLandTitle(id, data, ttl = 30) {
+  // CACHE SINGLE LAND TITLE
+  async cacheLandTitle(id, data, ttl = 20) {
     try {
       const connected = await this.connect();
       if (!connected) return false;
 
       await this.client.setEx(`land_title:${id}`, ttl, JSON.stringify(data));
-      console.log(`Land title ${id} cached in Redis`);
+      console.log(`✅ Land title ${id} cached in Redis`);
       return true;
     } catch (error) {
-      console.error('Redis cache error:', error.message);
+      console.error('❌ Redis cache error:', error.message);
       return false;
     }
   }
@@ -89,10 +89,9 @@ class RedisService {
       if (!connected) return false;
 
       await this.client.del('land_titles:all');
-      console.log('Redis cache cleared for land titles');
       return true;
     } catch (error) {
-      console.error('Redis clear cache error:', error.message);
+      console.error('❌ Redis clear cache error:', error.message);
       return false;
     }
   }
@@ -104,7 +103,7 @@ class RedisService {
         this.client = null;
       }
     } catch (error) {
-      console.error('Error closing Redis connection:', error.message);
+      console.error('❌ Error closing Redis connection:', error.message);
     }
   }
 }

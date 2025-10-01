@@ -4,17 +4,11 @@ const processDocumentUploaded = async (messageData) => {
   const { transaction_id, land_title_id, uploaded_documents, total_documents } = messageData;
   
   try {
-    console.log(`📎 Documents uploaded for land title: ${land_title_id}`);
-    console.log(`📊 Total documents uploaded: ${total_documents}`);
-    
-    // UPDATE LAND TITLE STATUS TO DOCUMENT_UPLOADED
-    const { STATUS } = require('../config/constants');
-    await landTitleService.updateLandTitleStatus(land_title_id, STATUS.DOCUMENT_UPLOADED);
-    
-    console.log(`✅ Land title status updated to DOCUMENT_UPLOADED: ${land_title_id}`);
+    // DOCUMENTS UPLOADED, KEEP STATUS AS PENDING (waiting for payment)
+    // Just acknowledge completion, no status change needed
     
   } catch (error) {
-    console.error(`❌ Failed to update land title status: ${transaction_id}`, error);
+    console.error(`❌ Failed to process document completion: ${transaction_id}`, error);
   }
 };
 
