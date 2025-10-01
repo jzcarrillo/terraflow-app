@@ -144,6 +144,10 @@ kubectl wait --for=condition=ready pod -l app=rabbitmq --timeout=120s --namespac
 Write-Host "Waiting for PostgreSQL pod..." -ForegroundColor Yellow
 kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s --namespace=$NAMESPACE
 
+# Wait for PostgreSQL Documents to be ready
+Write-Host "Waiting for PostgreSQL Documents pod..." -ForegroundColor Yellow
+kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=$NAMESPACE
+
 # Then wait for backend services
 Write-Host "Waiting for backend-landregistry pod..." -ForegroundColor Yellow
 kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=$NAMESPACE
@@ -156,3 +160,26 @@ Write-Host "Waiting for API Gateway pod..." -ForegroundColor Yellow
 kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=$NAMESPACE
 
 Write-Host "Build and deployment completed!" -ForegroundColor Green
+
+# === Automatic Database Port Forwarding ===
+Write-Host "Starting database port forwarding..." -ForegroundColor Green
+
+# Kill existing port forwards first
+Get-Process -Name "kubectl" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*port-forward*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+
+Write-Host "Port forwarding postgres-landregistry: localhost:15432" -ForegroundColor Green
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-landregistry-service", "15432:5432", "--namespace=$NAMESPACE" -WindowStyle Normal
+
+Write-Host "Port forwarding postgres-documents: localhost:15433" -ForegroundColor Green
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-documents-service", "15433:5433", "--namespace=$NAMESPACE" -WindowStyle Normal
+
+Write-Host "Database port forwarding started in separate windows!" -ForegroundColor Green
+
+Write-Host "" -ForegroundColor White
+Write-Host "=== DATABASE ACCESS ==="  -ForegroundColor Cyan
+Write-Host "Land Registry DB: localhost:15432 (terraflow_landregistry)" -ForegroundColor White
+Write-Host "  - Forwarding: 127.0.0.1:15432 -> postgres-service:5432" -ForegroundColor Gray
+Write-Host "Documents DB: localhost:15433 (terraflow_documents)" -ForegroundColor White
+Write-Host "  - Forwarding: 127.0.0.1:15433 -> postgres-documents-service:5433 -> 5432" -ForegroundColor Gray
+Write-Host "Username: postgres | Password: password" -ForegroundColor White
+Write-Host "" -ForegroundColor White

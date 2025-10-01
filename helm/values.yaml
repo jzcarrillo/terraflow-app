@@ -35,8 +35,12 @@ backendDocuments:
   service:
     type: ClusterIP
     port: 3002
-  database:
-    name: terraflow_documents
+  env:
+    DB_HOST: postgres-documents-service
+    DB_PORT: 5433
+    DB_NAME: terraflow_documents
+    DB_USER: postgres
+    DB_PASSWORD: password
   resources:
     requests:
       memory: "256Mi"
@@ -63,7 +67,7 @@ postgresDocuments:
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 5432
+    port: 5433
     name: postgres-documents-service
   auth:
     username: postgres

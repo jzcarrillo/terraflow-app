@@ -29,7 +29,7 @@ spec:
         - name: PORT
           value: "{{ .Values.backendDocuments.service.port }}"
         - name: DB_HOST
-          value: "postgres-landregistry-service"
+          value: "postgres-documents-service"
         - name: DB_PORT
           value: "{{ .Values.postgresDocuments.service.port }}"
         - name: DB_NAME

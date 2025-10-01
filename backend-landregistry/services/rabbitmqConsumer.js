@@ -37,7 +37,7 @@ class RabbitMQConsumer {
       return;
     }
 
-    console.log('✅ Consumer connected successfully. queue: queue_documents');
+    console.log('✅ Consumer connected successfully - queue: queue_documents');
     
     this.channel.consume(QUEUE_NAME, async (message) => {
       if (message) {
