@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-users-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: backend-users
+spec:
+  type: {{ index .Values "backend-users" "service" "type" }}
+  ports:
+  - port: {{ index .Values "backend-users" "service" "port" }}
+    targetPort: {{ index .Values "backend-users" "service" "port" }}
+    protocol: TCP
+  selector:
+    app: backend-users

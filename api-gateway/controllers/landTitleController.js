@@ -1,9 +1,25 @@
 const config = require('../config/services');
-const { landTitleSchema } = require('../schemas/landTitleSchema');
-const rabbitmqService = require('../services/rabbitmqService');
-const backendService = require('../services/backendService');
-const redisService = require('../services/redisService');
+const { landTitleSchema } = require('../schemas/landtitle');
+const rabbitmq = require('../services/rabbitmq');
+const landtitle = require('../services/landtitle');
+const redis = require('../services/redis');
 const { QUEUES, STATUS, CACHE } = require('../config/constants');
+
+// VALIDATE TITLE NUMBER - CHECK DUPLICATES
+const validateTitleNumber = async (req, res) => {
+  try {
+    const { titleNumber } = req.params;
+    console.log(`🔍 Validating title: ${titleNumber}`);
+    
+    const response = await landtitle.validateTitleNumber(titleNumber);
+    
+    console.log(`✅ Title validation result: ${response.exists}`);
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Title validation failed:', error.message);
+    res.status(500).json({ exists: false, message: 'Title validation service unavailable' });
+  }
+};
 
 // CREATE LAND TITLE WITH DOCUMENTS
 const createLandTitle = async (req, res) => {
@@ -39,7 +55,8 @@ const createLandTitle = async (req, res) => {
     console.log('✅ Validation successful for title:', validatedData.title_number);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
-    const isDuplicate = await backendService.validateTitleNumber(validatedData.title_number);
+    const validateResponse = await landtitle.validateTitleNumber(validatedData.title_number);
+    const isDuplicate = validateResponse.exists;
     
     if (isDuplicate) {
       console.log(`❌ Rejecting duplicate title: ${validatedData.title_number}`);
@@ -68,21 +85,21 @@ const createLandTitle = async (req, res) => {
 
 // CLEAR CACHE SINCE NEW DATA WILL BE ADDED 
     try {
-      await redisService.clearLandTitlesCache();
+      await redis.clearLandTitlesCache();
       console.log('🗑️ Cache cleared after new land title submission');
     } catch (error) {
       console.log('⚠️  Cache clear failed (non-critical):', error.message);
     }
 
 // PUBLISH TO LAND REGISTRY QUEUE
-    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, payload);
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, payload);
 
     res.status(202).json({
       success: true,
       message: '✅ Land title submission received and is being processed',
       transaction_id: transactionId,
       title_number: validatedData.title_number,
-      status: STATUS.PROCESSING
+      status: STATUS.PENDING
     });
 
   } catch (error) {
@@ -101,7 +118,7 @@ const getAllLandTitles = async (req, res) => {
     
     const result = await CacheHelper.getCachedOrFetch(
       'land_titles:all',
-      () => backendService.getLandTitles().then(response => response.data)
+      () => landtitle.getLandTitles().then(response => response.data)
     );
     
     const message = result.source === 'redis' 
@@ -127,7 +144,7 @@ const getLandTitle = async (req, res) => {
     
     const result = await CacheHelper.getCachedOrFetch(
       `land_title:${id}`,
-      () => backendService.getLandTitle(id).then(response => response.data)
+      () => landtitle.getLandTitle(id).then(response => response.data)
     );
     
     const message = result.source === 'redis'
@@ -142,8 +159,11 @@ const getLandTitle = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   createLandTitle,
   getAllLandTitles,
-  getLandTitle
+  getLandTitle,
+  validateTitleNumber
 };

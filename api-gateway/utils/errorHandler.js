@@ -35,7 +35,7 @@ class ErrorHandler {
       return;
     }
     
-    // Then service errors
+    // SERVICE ERRORS
     this.handleServiceError(error, res);
   }
 }

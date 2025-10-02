@@ -8,5 +8,6 @@ const { uploadSingle, uploadMultiple, handleUploadError } = require('../middlewa
 router.post('/land-titles', authenticateToken, uploadMultiple, handleUploadError, landTitleController.createLandTitle);
 router.get('/land-titles', authenticateToken, landTitleController.getAllLandTitles);
 router.get('/land-titles/:id', authenticateToken, landTitleController.getLandTitle);
+router.get('/validate/:titleNumber', landTitleController.validateTitleNumber);
 
 module.exports = router;

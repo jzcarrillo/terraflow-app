@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-users
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: backend-users
+spec:
+  replicas: {{ index .Values "backend-users" "replicaCount" }}
+  selector:
+    matchLabels:
+      app: backend-users
+  template:
+    metadata:
+      labels:
+        app: backend-users
+    spec:
+      containers:
+      - name: backend-users
+        image: "{{ index .Values "backend-users" "image" "repository" }}:{{ index .Values "backend-users" "image" "tag" }}"
+        imagePullPolicy: {{ index .Values "backend-users" "image" "pullPolicy" }}
+        ports:
+        - containerPort: {{ index .Values "backend-users" "service" "port" }}
+        env:
+        - name: PORT
+          value: "{{ index .Values "backend-users" "service" "port" }}"
+        - name: DB_HOST
+          value: "{{ index .Values "backend-users" "env" "DB_HOST" }}"
+        - name: DB_PORT
+          value: "{{ index .Values "backend-users" "env" "DB_PORT" }}"
+        - name: DB_NAME
+          value: "{{ index .Values "backend-users" "env" "DB_NAME" }}"
+        - name: DB_USER
+          value: "{{ index .Values "backend-users" "env" "DB_USER" }}"
+        - name: DB_PASSWORD
+          value: "{{ index .Values "backend-users" "env" "DB_PASSWORD" }}"
+        - name: RABBITMQ_URL
+          value: "amqp://admin:password@{{ .Values.rabbitmq.service.name }}:{{ .Values.rabbitmq.service.port }}"
+        resources:
+          {{- toYaml (index .Values "backend-users" "resources") | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ index .Values "backend-users" "service" "port" }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ index .Values "backend-users" "service" "port" }}
+          initialDelaySeconds: 5
+          periodSeconds: 5

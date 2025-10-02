@@ -25,7 +25,7 @@ class RedisService {
     }
   }
 
-  // GET CACHE LAND TITLES
+// GET CACHE LAND TITLES
   async getLandTitles() {
     try {
       const connected = await this.connect();

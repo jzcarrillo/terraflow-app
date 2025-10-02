@@ -3,8 +3,9 @@ const helmet = require('helmet');
 const config = require('./config/services');
 const corsMiddleware = require('./middleware/cors');
 const landTitleRoutes = require('./routes/landTitles');
-const rabbitmqService = require('./services/rabbitmqService');
-const redisService = require('./services/redisService');
+const userRoutes = require('./routes/users');
+const rabbitmq = require('./services/rabbitmq');
+const redis = require('./services/redis');
 
 const app = express();
 
@@ -25,16 +26,17 @@ app.get('/health', (req, res) => {
 
 // ROUTES
 app.use('/api', landTitleRoutes);
+app.use('/api', userRoutes);
 
 // INITIALIZE SERVICES
-rabbitmqService.initialize();
-redisService.connect();
+rabbitmq.initialize();
+redis.connect();
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
-  await rabbitmqService.close();
-  await redisService.close();
+  await rabbitmq.close();
+  await redis.close();
   process.exit(0);
 });
 

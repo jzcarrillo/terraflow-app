@@ -1,7 +1,8 @@
 module.exports = {
   QUEUES: {
     LAND_REGISTRY: 'queue_landregistry',
-    DOCUMENTS: 'queue_documents'
+    DOCUMENTS: 'queue_documents',
+    USERS: 'queue_users'
   },
   EVENT_TYPES: {
     DOCUMENT_UPLOAD: 'DOCUMENT_UPLOAD',
@@ -10,6 +11,7 @@ module.exports = {
   },
   STATUS: {
     PENDING: 'PENDING',
+
     ACTIVE: 'ACTIVE',
     FAILED: 'FAILED'
   },
@@ -23,7 +25,9 @@ module.exports = {
     TTL_SECONDS: 30,
     KEYS: {
       LAND_TITLES_ALL: 'land_titles:all',
-      LAND_TITLE_BY_ID: 'land_title:id:'
+      LAND_TITLE_BY_ID: 'land_title:id:',
+      USERS_ALL: 'users:all',
+      USER_BY_ID: 'user:id:'
     }
   }
 };

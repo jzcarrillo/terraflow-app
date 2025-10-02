@@ -1,0 +1,58 @@
+{{- if .Values.postgresUsers.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-users
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: postgres-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-users
+  template:
+    metadata:
+      labels:
+        app: postgres-users
+    spec:
+      containers:
+      - name: postgres-users
+        image: "{{ .Values.postgresUsers.image.repository }}:{{ .Values.postgresUsers.image.tag }}"
+        imagePullPolicy: {{ .Values.postgresUsers.image.pullPolicy }}
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "{{ .Values.postgresUsers.auth.database }}"
+        - name: POSTGRES_USER
+          value: "{{ .Values.postgresUsers.auth.username }}"
+        - name: POSTGRES_PASSWORD
+          value: "{{ .Values.postgresUsers.auth.password }}"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          {{- toYaml .Values.postgresUsers.resources | nindent 10 }}
+        volumeMounts:
+        - name: postgres-users-storage
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - "{{ .Values.postgresUsers.auth.username }}"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - "{{ .Values.postgresUsers.auth.username }}"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-users-storage
+        emptyDir: {}
+{{- end }}

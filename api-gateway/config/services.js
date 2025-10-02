@@ -5,10 +5,15 @@ const config = {
     port: process.env.PORT || 8081,
     env: process.env.NODE_ENV || 'development'
   },
+  services: {
+    landRegistry: process.env.LANDREGISTRY_SERVICE_URL || 'http://backend-landregistry-service:3000',
+    users: process.env.USERS_SERVICE_URL || 'http://backend-users-service:3001'
+  },
   rabbitmq: {
     url: process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq-service:5672',
     queues: {
-      landRegistry: process.env.QUEUE_LANDREGISTRY || 'queue_landregistry'
+      landRegistry: process.env.QUEUE_LANDREGISTRY || 'queue_landregistry',
+      users: process.env.QUEUE_USERS || 'queue_users'
     }
   },
   redis: {
@@ -20,7 +25,13 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
   cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8081', 'http://localhost:30081']
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
+      'http://localhost:3000', 
+      'http://localhost:8081', 
+      'http://localhost:30081',
+      'http://backend-landregistry-service:3000',
+      'http://backend-users-service:3001'
+    ]
   }
 };
 
