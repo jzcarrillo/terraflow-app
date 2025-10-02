@@ -168,18 +168,10 @@ Write-Host "Starting database port forwarding..." -ForegroundColor Green
 Get-Process -Name "kubectl" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*port-forward*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 
 Write-Host "Port forwarding postgres-landregistry: localhost:15432" -ForegroundColor Green
-Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-landregistry-service", "15432:5432", "--namespace=$NAMESPACE" -WindowStyle Normal
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-landregistry-service", "15432:5432", "--namespace=$NAMESPACE" -NoNewWindow
 
 Write-Host "Port forwarding postgres-documents: localhost:15433" -ForegroundColor Green
-Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-documents-service", "15433:5433", "--namespace=$NAMESPACE" -WindowStyle Normal
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-documents-service", "15433:5433", "--namespace=$NAMESPACE" -NoNewWindow
 
-Write-Host "Database port forwarding started in separate windows!" -ForegroundColor Green
+Write-Host "Database port forwarding active in console!" -ForegroundColor Green
 
-Write-Host "" -ForegroundColor White
-Write-Host "=== DATABASE ACCESS ==="  -ForegroundColor Cyan
-Write-Host "Land Registry DB: localhost:15432 (terraflow_landregistry)" -ForegroundColor White
-Write-Host "  - Forwarding: 127.0.0.1:15432 -> postgres-service:5432" -ForegroundColor Gray
-Write-Host "Documents DB: localhost:15433 (terraflow_documents)" -ForegroundColor White
-Write-Host "  - Forwarding: 127.0.0.1:15433 -> postgres-documents-service:5433 -> 5432" -ForegroundColor Gray
-Write-Host "Username: postgres | Password: password" -ForegroundColor White
-Write-Host "" -ForegroundColor White
