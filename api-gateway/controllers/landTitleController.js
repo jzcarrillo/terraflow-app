@@ -52,7 +52,7 @@ const createLandTitle = async (req, res) => {
     
 // VALIDATE REQUEST USING ZOD
     const validatedData = landTitleSchema.parse(processedBody);
-    console.log('✅ Validation successful for title:', validatedData.title_number);
+    console.log('✅ Zod validation successful for title:', validatedData.title_number);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
     const validateResponse = await landtitle.validateTitleNumber(validatedData.title_number);

@@ -12,10 +12,10 @@ const validateUser = async (req, res) => {
     
     const response = await users.validateUser(username, email_address);
     
-    console.log(`✅ User validation result: ${response.valid}`);
+    console.log(`✅ User validation: ${response.valid ? 'No duplicates found' : 'Duplicates detected'}`);
     res.json(response);
   } catch (error) {
-    console.error('❌ User validation failed:', error.message);
+    console.error('❌ User validation service error:', error.message);
     res.status(500).json({ valid: false, message: 'User validation service unavailable' });
   }
 };
@@ -27,18 +27,32 @@ const createUser = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
-// LOG REQUEST PAYLOAD
-    console.log('👤 === CREATE USER ===');
-    console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
-    
 // VALIDATE REQUEST USING ZOD
     const validatedData = userSchema.parse(req.body);
     console.log('✅ Zod validation successful for user:', validatedData.username);
 
-// PREPARE COMPLETE PAYLOAD
+// HASH PASSWORDS FOR SECURITY
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const hashedConfirmPassword = await bcrypt.hash(validatedData.confirm_password, 10);
+
+// LOG REQUEST PAYLOAD WITH HASHED PASSWORDS
+    const logPayload = {
+      ...validatedData,
+      password: hashedPassword,
+      confirm_password: hashedConfirmPassword
+    };
+    console.log('👤 === CREATE USER ===');
+    console.log('📦 Request payload:', JSON.stringify(logPayload, null, 2));
+
+// PREPARE COMPLETE PAYLOAD WITH HASHED PASSWORDS
     const payload = {
       transaction_id: transactionId,
-      user_data: validatedData,
+      user_data: {
+        ...validatedData,
+        password: hashedPassword,
+        confirm_password: hashedConfirmPassword
+      },
       user_id: req.user.id,
       timestamp: new Date().toISOString()
     };

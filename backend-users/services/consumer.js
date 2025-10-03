@@ -18,7 +18,7 @@ class RabbitMQConsumer {
       
       await this.channel.assertQueue(QUEUE_NAME, { durable: true });
       
-      console.log(`✅ Connected to RabbitMQ - queue: ${QUEUE_NAME}`);
+      console.log(`✅ Connected to RabbitMQ: ${QUEUE_NAME}`);
       return true;
     } catch (error) {
       console.error('❌ RabbitMQ connection failed:', error.message);
@@ -34,8 +34,6 @@ class RabbitMQConsumer {
       setTimeout(() => this.startConsumer(), 10000);
       return;
     }
-
-    console.log('✅ Consumer connected successfully - queue: queue_users');
     
     this.channel.consume(QUEUE_NAME, async (message) => {
       if (message) {
@@ -48,8 +46,6 @@ class RabbitMQConsumer {
             
             console.log('⚙️ Processing user creation');
             await processUserCreation(messageData);
-            
-            console.log('✅ User processed / acknowledged successfully.');
           } else {
             console.log('⚠️ Unknown message type:', messageData);
           }

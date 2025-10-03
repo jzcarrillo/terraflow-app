@@ -1,11 +1,11 @@
 const express = require('express');
-const userService = require('../services/userService');
+const userService = require('../services/users');
 const router = express.Router();
 
 router.get('/validate', async (req, res) => {
   try {
     const { username, email_address } = req.query;
-    console.log(`🔍 Checking user: ${username}, ${email_address}`);
+
     
     // Check username exists
     const usernameExists = await userService.checkUsernameExists(username);

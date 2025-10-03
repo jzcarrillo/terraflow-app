@@ -36,7 +36,6 @@ const initializeDatabase = async (retries = 5) => {
         )
       `);
       
-
       return;
 
     } catch (error) {

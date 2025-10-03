@@ -33,10 +33,13 @@ Thumbs.db
 
 # Scripts (test files with tokens)
 scripts/clear-redis-cache.ps1
-scripts/create-50-landtitles.ps1
+scripts/landtitle-create.ps1
 scripts/generate-test-token.ps1
 scripts/generate-valid-jwt.ps1
-scripts/get-all-landtitles.ps1
-scripts/get-landtitle-by-id.ps1
+scripts/landtitle-getall.ps1
+scripts/landtitle-getbyID.ps1
 scripts/test-get-landtitles-fixed.ps1
-scripts/create-landtitle.ps1
+scripts/users-create.ps1
+
+# Deployment scripts
+deploy-build.ps1

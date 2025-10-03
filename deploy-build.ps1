@@ -17,46 +17,78 @@ $HELM_CHART = "./helm"
 
 Write-Host "Building $SERVICE_NAME..." -ForegroundColor Green
 
-# === Check Docker Desktop Status ===
+# === Check and Fix Docker Desktop Status ===
 Write-Host "Checking Docker Desktop status..." -ForegroundColor Yellow
-
-# Kill any stuck Docker processes first
-Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Get-Process -Name "com.docker.proxy" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-
-# Wait a moment
-Start-Sleep -Seconds 3
-
-# Start Docker Desktop
-Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
-Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe" -ErrorAction SilentlyContinue
-
-# Wait for Docker to be ready
-Write-Host "Waiting for Docker Desktop to be ready..." -ForegroundColor Yellow
-$maxRetries = 12
+$maxRetries = 5
 $retryCount = 0
 
-do {
-    Start-Sleep -Seconds 10
-    $retryCount++
-    Write-Host "Attempt $retryCount of $maxRetries..." -ForegroundColor Gray
-    
+while ($retryCount -lt $maxRetries) {
     try {
-        docker version 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Docker Desktop is ready!" -ForegroundColor Green
-            break
-        }
+        docker version | Out-Null
+        Write-Host "Docker Desktop is running" -ForegroundColor Green
+        break
     } catch {
-        # Continue trying
+        $retryCount++
+        Write-Host "Docker Desktop pipe connection issue, attempting fix... ($retryCount/$maxRetries)" -ForegroundColor Yellow
+        
+        # Aggressive Docker Desktop restart with WSL reset
+        try {
+            Write-Host "Performing aggressive Docker Desktop restart..." -ForegroundColor Gray
+            
+            # Kill all Docker processes
+            Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Get-Process -Name "com.docker.backend" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Get-Process -Name "dockerd" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Get-Process -Name "wslhost" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            
+            Start-Sleep -Seconds 3
+            
+            # Reset WSL if available
+            Write-Host "Resetting WSL..." -ForegroundColor Gray
+            wsl --shutdown 2>$null
+            
+            Start-Sleep -Seconds 5
+            
+            # Restart Docker Desktop
+            Write-Host "Starting Docker Desktop..." -ForegroundColor Gray
+            Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe" -WindowStyle Hidden -ErrorAction SilentlyContinue
+            
+            Start-Sleep -Seconds 20
+            
+            # Wait for Docker to be ready
+            Write-Host "Waiting for Docker to initialize..." -ForegroundColor Gray
+            $waitCount = 0
+            while ($waitCount -lt 30) {
+                try {
+                    docker version | Out-Null
+                    break
+                } catch {
+                    Start-Sleep -Seconds 2
+                    $waitCount++
+                }
+            }
+        } catch {
+            Write-Host "Failed to restart Docker Desktop automatically" -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
+        }
+        
+        if ($retryCount -eq $maxRetries) {
+            Write-Host "Docker Desktop connection failed after $maxRetries attempts." -ForegroundColor Red
+            Write-Host "" 
+            Write-Host "=== MANUAL FIX REQUIRED ===" -ForegroundColor Yellow
+            Write-Host "1. Right-click Docker Desktop icon in system tray" -ForegroundColor White
+            Write-Host "2. Select 'Quit Docker Desktop'" -ForegroundColor White
+            Write-Host "3. Run as Administrator: wsl --shutdown" -ForegroundColor White
+            Write-Host "4. Start Docker Desktop again" -ForegroundColor White
+            Write-Host "5. Wait for green whale icon in system tray" -ForegroundColor White
+            Write-Host "6. Run this script again" -ForegroundColor White
+            Write-Host "" 
+            Write-Host "Press any key to exit..." -ForegroundColor Yellow
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            exit 1
+        }
     }
-    
-    if ($retryCount -eq $maxRetries) {
-        Write-Host "❌ Docker Desktop failed to start after 2 minutes." -ForegroundColor Red
-        Write-Host "Please start Docker Desktop manually and run the script again." -ForegroundColor Yellow
-        exit 1
-    }
-} while ($true)
+}
 
 # === Change to backend-landregistry directory ===
 Set-Location -Path "backend-landregistry"
@@ -66,7 +98,7 @@ if (-not (Test-Path "Dockerfile")) {
 }
 
 # === Kill existing port-forward / processes on ALL service ports ===
-$ALL_PORTS = @($PORT, $API_PORT, $DOCUMENTS_PORT, $USERS_PORT, 15432, 15433, 15434, 30081)
+$ALL_PORTS = @($PORT, $API_PORT, $DOCUMENTS_PORT, $USERS_PORT, 15432, 15433, 15434, 15672, 30081)
 Write-Host "Killing existing processes on all service ports..." -ForegroundColor Yellow
 
 foreach ($portToKill in $ALL_PORTS) {
@@ -96,10 +128,33 @@ kubectl delete pod -l app=$SERVICE_NAME --namespace=$NAMESPACE --force --grace-p
 
 # === Build Docker image ===
 Write-Host "Building Docker image..." -ForegroundColor Yellow
-docker build -t $DOCKER_IMAGE .
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "Docker build failed!" -ForegroundColor Red
-    exit 1 
+$buildRetries = 3
+$buildAttempt = 0
+
+while ($buildAttempt -lt $buildRetries) {
+    $buildAttempt++
+    Write-Host "Build attempt $buildAttempt/$buildRetries..." -ForegroundColor Gray
+    
+    docker build -t $DOCKER_IMAGE .
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Docker build successful" -ForegroundColor Green
+        break
+    } else {
+        Write-Host "Docker build failed, attempt $buildAttempt/$buildRetries" -ForegroundColor Yellow
+        if ($buildAttempt -eq $buildRetries) {
+            Write-Host "Docker build failed after $buildRetries attempts!" -ForegroundColor Red
+            Write-Host "" 
+            Write-Host "=== DOCKER DESKTOP RESTART NEEDED ===" -ForegroundColor Yellow
+            Write-Host "1. Quit Docker Desktop completely" -ForegroundColor White
+            Write-Host "2. Run: wsl --shutdown (as Administrator)" -ForegroundColor White
+            Write-Host "3. Restart Docker Desktop" -ForegroundColor White
+            Write-Host "4. Wait for full initialization" -ForegroundColor White
+            Write-Host "5. Run deploy script again" -ForegroundColor White
+            Write-Host "" 
+            exit 1
+        }
+        Start-Sleep -Seconds 10
+    }
 }
 
 # === Go back to root directory ===
@@ -112,10 +167,25 @@ Write-Host "Building $API_SERVICE_NAME..." -ForegroundColor Green
 
 # Build API Gateway Docker image
 Write-Host "Building API Gateway Docker image..." -ForegroundColor Yellow
-docker build -t $API_DOCKER_IMAGE ./api-gateway
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "API Gateway Docker build failed!" -ForegroundColor Red
-    exit 1 
+$buildRetries = 3
+$buildAttempt = 0
+
+while ($buildAttempt -lt $buildRetries) {
+    $buildAttempt++
+    Write-Host "API Gateway build attempt $buildAttempt/$buildRetries..." -ForegroundColor Gray
+    
+    docker build -t $API_DOCKER_IMAGE ./api-gateway
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "API Gateway Docker build successful" -ForegroundColor Green
+        break
+    } else {
+        Write-Host "API Gateway build failed, attempt $buildAttempt/$buildRetries" -ForegroundColor Yellow
+        if ($buildAttempt -eq $buildRetries) {
+            Write-Host "API Gateway Docker build failed after $buildRetries attempts!" -ForegroundColor Red
+            exit 1
+        }
+        Start-Sleep -Seconds 10
+    }
 }
 
 # === Build Backend Documents ===
@@ -125,10 +195,25 @@ Write-Host "Building $DOCUMENTS_SERVICE_NAME..." -ForegroundColor Green
 
 # Build Backend Documents Docker image
 Write-Host "Building Backend Documents Docker image..." -ForegroundColor Yellow
-docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "Backend Documents Docker build failed!" -ForegroundColor Red
-    exit 1 
+$buildRetries = 3
+$buildAttempt = 0
+
+while ($buildAttempt -lt $buildRetries) {
+    $buildAttempt++
+    Write-Host "Backend Documents build attempt $buildAttempt/$buildRetries..." -ForegroundColor Gray
+    
+    docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Backend Documents Docker build successful" -ForegroundColor Green
+        break
+    } else {
+        Write-Host "Backend Documents build failed, attempt $buildAttempt/$buildRetries" -ForegroundColor Yellow
+        if ($buildAttempt -eq $buildRetries) {
+            Write-Host "Backend Documents Docker build failed after $buildRetries attempts!" -ForegroundColor Red
+            exit 1
+        }
+        Start-Sleep -Seconds 10
+    }
 }
 
 # === Build Backend Users ===
@@ -138,10 +223,25 @@ Write-Host "Building $USERS_SERVICE_NAME..." -ForegroundColor Green
 
 # Build Backend Users Docker image
 Write-Host "Building Backend Users Docker image..." -ForegroundColor Yellow
-docker build -t $USERS_DOCKER_IMAGE ./backend-users
-if ($LASTEXITCODE -ne 0) { 
-    Write-Host "Backend Users Docker build failed!" -ForegroundColor Red
-    exit 1 
+$buildRetries = 3
+$buildAttempt = 0
+
+while ($buildAttempt -lt $buildRetries) {
+    $buildAttempt++
+    Write-Host "Backend Users build attempt $buildAttempt/$buildRetries..." -ForegroundColor Gray
+    
+    docker build -t $USERS_DOCKER_IMAGE ./backend-users
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Backend Users Docker build successful" -ForegroundColor Green
+        break
+    } else {
+        Write-Host "Backend Users build failed, attempt $buildAttempt/$buildRetries" -ForegroundColor Yellow
+        if ($buildAttempt -eq $buildRetries) {
+            Write-Host "Backend Users Docker build failed after $buildRetries attempts!" -ForegroundColor Red
+            exit 1
+        }
+        Start-Sleep -Seconds 10
+    }
 }
 
 # === Clear any pending Helm operations ===
@@ -223,5 +323,9 @@ Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgre
 Write-Host "Port forwarding postgres-users: localhost:15434" -ForegroundColor Green
 Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgres-users-service", "15434:5434", "--namespace=$NAMESPACE" -NoNewWindow
 
-Write-Host "Database port forwarding active in console!" -ForegroundColor Green
+Write-Host "Port forwarding rabbitmq-management: localhost:15672" -ForegroundColor Green
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/rabbitmq-management", "15672:15672", "--namespace=$NAMESPACE" -NoNewWindow
+
+Write-Host "Database and RabbitMQ port forwarding active in console!" -ForegroundColor Green
+Write-Host "RabbitMQ Management UI: http://localhost:15672 (admin/password)" -ForegroundColor Cyan
 

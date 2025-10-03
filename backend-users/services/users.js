@@ -21,19 +21,23 @@ class UserService {
 
   async createUser(data) {
     const { 
-      first_name, last_name, email_address, phone_number, address,
-      transaction_id, status = STATUS.PENDING
+      email_address, username, password, first_name, last_name, location,
+      transaction_id, status = STATUS.ACTIVE
     } = data;
+
+    // Use already hashed password from API Gateway
+    const password_hash = password;
 
     const result = await pool.query(`
       INSERT INTO ${TABLES.USERS} (
-        first_name, last_name, email_address, phone_number, address, transaction_id, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        email_address, username, password_hash, first_name, last_name, location, transaction_id, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `, [
-      first_name, last_name, email_address, phone_number, address, transaction_id, status
+      email_address, username, password_hash, first_name, last_name, location, transaction_id, status
     ]);
 
+    console.log('✅ User creation successfully');
     return result.rows[0];
   }
 
@@ -60,15 +64,16 @@ class UserService {
 
   validateRequiredFields(data) {
     const { 
-      first_name, last_name, email_address, phone_number, address
+      email_address, username, password, first_name, last_name, location
     } = data;
     
     const requiredFields = {
+      email_address,
+      username,
+      password,
       first_name,
       last_name,
-      email_address,
-      phone_number,
-      address
+      location
     };
     
     const missingFields = [];

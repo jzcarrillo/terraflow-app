@@ -1,4 +1,4 @@
-const userService = require('../services/userService');
+const userService = require('../services/users');
 
 const processUserCreation = async (messageData) => {
   const { transaction_id, user_data } = messageData;
@@ -14,11 +14,11 @@ const processUserCreation = async (messageData) => {
       throw new Error(`Email address ${user_data.email_address} already exists in database`);
     }
 
-// CREATE USER WITH PENDING STATUS
+// CREATE USER WITH ACTIVE STATUS
     const result = await userService.createUser({
       ...user_data,
       transaction_id: transaction_id,
-      status: 'PENDING'
+      status: 'ACTIVE'
     });
     
     return result;
