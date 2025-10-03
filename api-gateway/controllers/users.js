@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const config = require('../config/services');
 const rabbitmq = require('../services/rabbitmq');
 const users = require('../services/users');
@@ -73,7 +75,90 @@ const createUser = async (req, res) => {
   }
 };
 
+// LOGIN USER
+const login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    console.log('🔐 === USER LOGIN REQUEST ===');
+    console.log('📦 Login payload:', JSON.stringify({ username, password: '[HIDDEN]' }, null, 2));
+    console.log(`👤 Login attempt for user: ${username}`);
+    
+// VALIDATE REQUIRED FIELDS
+    if (!username || !password) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({ 
+        error: 'Username and password are required' 
+      });
+    }
+    
+// GET USER FROM BACKEND-USER SERVICE
+    const userResponse = await users.getUserByUsername(username);
+    
+    if (!userResponse.success) {
+      console.log(`❌ User lookup failed: ${username}`);
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+    
+    const user = userResponse.user;
+    console.log(`✅ User found - ID: ${user.id}, Email: ${user.email_address}`);
+    
+// VERIFY PASSWORD
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      console.log(`❌ Password verification failed for user: ${username}`);
+      return res.status(401).json({ 
+        error: 'Invalid credentials' 
+      });
+    }
+    
+    console.log(`✅ Password verified successfully for user: ${username}`);
+    
+// GENERATE JWT TOKEN
+    const tokenPayload = {
+      user_id: user.id,
+      username: user.username,
+      email: user.email_address
+    };
+    
+    const token = jwt.sign(tokenPayload, config.jwt.secret, {
+      expiresIn: config.jwt.expiresIn
+    });
+    
+    const responsePayload = {
+      success: true,
+      message: 'Login successful',
+      token: token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email_address: user.email_address,
+        first_name: user.first_name,
+        last_name: user.last_name
+      }
+    };
+    
+    console.log('📤 Login response payload:', JSON.stringify({
+      ...responsePayload,
+      token: '[GENERATED_TOKEN]'
+    }, null, 2));
+    console.log(`✅ Login completed successfully for user: ${username}`);
+    
+    res.json(responsePayload);
+    
+  } catch (error) {
+    console.error('❌ Login error:', error.message);
+    res.status(500).json({ 
+      error: 'Login service unavailable' 
+    });
+  }
+};
+
 module.exports = {
   validateUser,
-  createUser
+  createUser,
+  login
 };

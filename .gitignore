@@ -40,6 +40,11 @@ scripts/landtitle-getall.ps1
 scripts/landtitle-getbyID.ps1
 scripts/test-get-landtitles-fixed.ps1
 scripts/users-create.ps1
+scripts/users-login.ps1
+scripts/generate-long-token.js
+scripts/package-lock.json
+scripts/package.json
+scripts/users-manualcreate.ps1
 
 # Deployment scripts
 deploy-build.ps1

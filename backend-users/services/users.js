@@ -25,7 +25,7 @@ class UserService {
       transaction_id, status = STATUS.ACTIVE
     } = data;
 
-    // Use already hashed password from API Gateway
+// USE ALREADT HASHED PASSWORD FROM API GATEWAY 
     const password_hash = password;
 
     const result = await pool.query(`

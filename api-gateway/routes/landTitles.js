@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const landTitleController = require('../controllers/landTitleController');
+const landTitleController = require('../controllers/landtitle');
 const { authenticateToken } = require('../middleware/auth');
 const { uploadSingle, uploadMultiple, handleUploadError } = require('../middleware/upload');
 

@@ -4,6 +4,7 @@ const config = require('./config/services');
 const corsMiddleware = require('./middleware/cors');
 const landTitleRoutes = require('./routes/landTitles');
 const userRoutes = require('./routes/users');
+const authRoutes = require('./routes/auth');
 const rabbitmq = require('./services/rabbitmq');
 const redis = require('./services/redis');
 
@@ -27,6 +28,7 @@ app.get('/health', (req, res) => {
 // ROUTES
 app.use('/api', landTitleRoutes);
 app.use('/api', userRoutes);
+app.use('/api', authRoutes);
 
 // INITIALIZE SERVICES
 rabbitmq.initialize();
