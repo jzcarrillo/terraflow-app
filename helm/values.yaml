@@ -72,6 +72,29 @@ backend-users:
       memory: "512Mi"
       cpu: "500m"
 
+backend-payments:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-payments
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3003
+  env:
+    DB_HOST: postgres-payments-service
+    DB_PORT: 5435
+    DB_NAME: terraflow_payments
+    DB_USER: postgres
+    DB_PASSWORD: password
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
 postgresql:
   enabled: true
   service:
@@ -118,6 +141,28 @@ postgresUsers:
     username: postgres
     password: password
     database: terraflow_users
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+postgresPayments:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5435
+    name: postgres-payments-service
+  auth:
+    username: postgres
+    password: password
+    database: terraflow_payments
   resources:
     requests:
       memory: "256Mi"

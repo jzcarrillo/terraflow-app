@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-payments
+  namespace: {{ .Values.namespace | default "terraflow-app" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-payments
+  template:
+    metadata:
+      labels:
+        app: postgres-payments
+    spec:
+      containers:
+      - name: postgres-payments
+        image: {{ .Values.postgresPayments.image.repository }}:{{ .Values.postgresPayments.image.tag }}
+        imagePullPolicy: {{ .Values.postgresPayments.image.pullPolicy }}
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresPayments.auth.database }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresPayments.auth.username }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresPayments.auth.password }}
+        - name: PGPORT
+          value: {{ .Values.postgresPayments.service.port | quote }}
+        volumeMounts:
+        - name: postgres-payments-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          {{- toYaml .Values.postgresPayments.resources | nindent 10 }}
+      volumes:
+      - name: postgres-payments-storage
+        emptyDir: {}
+      - name: init-script
+        configMap:
+          name: postgres-payments-init

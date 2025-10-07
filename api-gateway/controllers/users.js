@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const config = require('../config/services');
-const rabbitmq = require('../services/rabbitmq');
+const rabbitmq = require('../services/publisher');
 const users = require('../services/users');
 const { userSchema } = require('../schemas/users');
 const { QUEUES, STATUS } = require('../config/constants');
@@ -29,6 +29,14 @@ const createUser = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
+// LOG INCOMING REQUEST FIRST
+    console.log('👤 === CREATE USER REQUEST ===');
+    console.log('📦 Raw request payload:', JSON.stringify({
+      ...req.body,
+      password: '[HIDDEN]',
+      confirm_password: '[HIDDEN]'
+    }, null, 2));
+
 // VALIDATE REQUEST USING ZOD
     const validatedData = userSchema.parse(req.body);
     console.log('✅ Zod validation successful for user:', validatedData.username);

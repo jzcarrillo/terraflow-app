@@ -2,9 +2,10 @@ const express = require('express');
 const { pool } = require('../config/db');
 const { TABLES } = require('../config/constants');
 const userService = require('../services/users');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
-// GET USER BY USERNAME FOR LOGIN
+// GET USER BY USERNAME FOR LOGIN (PUBLIC - NEEDED FOR LOGIN)
 router.get('/user/:username', async (req, res) => {
   try {
     const { username } = req.params;

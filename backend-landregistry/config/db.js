@@ -52,7 +52,7 @@ const initializeDatabase = async (retries = 5) => {
         console.error('❌ Database initialization failed after all retries:', error.message);
         return;
       }
-  // WAIT 5 SECONDS BEFORE RETRY
+// WAIT 5 SECONDS BEFORE RETRY
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }

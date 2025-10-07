@@ -20,12 +20,17 @@ class UserService {
   }
 
   async createUser(data) {
+    // VALIDATE WITH ZOD FIRST
+    const { userSchema } = require('../schemas/users');
+    const validatedData = userSchema.parse(data);
+    console.log(`✅ Zod validation successful for user: ${validatedData.username}`);
+    
     const { 
       email_address, username, password, first_name, last_name, location,
       transaction_id, status = STATUS.ACTIVE
-    } = data;
+    } = validatedData;
 
-// USE ALREADT HASHED PASSWORD FROM API GATEWAY 
+// USE ALREADY HASHED PASSWORD FROM API GATEWAY 
     const password_hash = password;
 
     const result = await pool.query(`

@@ -1,7 +1,7 @@
 const config = require('../config/services');
-const { landTitleSchema } = require('../schemas/landtitle');
-const rabbitmq = require('../services/rabbitmq');
-const landtitle = require('../services/landtitle');
+const { landTitleSchema } = require('../schemas/landtitles');
+const rabbitmq = require('../services/publisher');
+const landtitles = require('../services/landtitles');
 const redis = require('../services/redis');
 const { QUEUES, STATUS, CACHE } = require('../config/constants');
 
@@ -11,7 +11,7 @@ const validateTitleNumber = async (req, res) => {
     const { titleNumber } = req.params;
     console.log(`🔍 Validating title: ${titleNumber}`);
     
-    const response = await landtitle.validateTitleNumber(titleNumber);
+    const response = await landtitles.validateTitleNumber(titleNumber);
     
     console.log(`✅ Title validation result: ${response.exists}`);
     res.json(response);
@@ -28,19 +28,6 @@ const createLandTitle = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
-// LOG REQUEST PAYLOAD
-    console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
-    console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
-    console.log('📎 Files:', req.files ? req.files.length : 0);
-    
-    // LOG DOCUMENT DETAILS
-    if (req.files && req.files.length > 0) {
-      console.log('📄 Document details:');
-      req.files.forEach((file, index) => {
-        console.log(`  ${index + 1}. ${file.originalname} (${file.mimetype}, ${file.size} bytes)`);
-      });
-    }
-    
 // PREPROCESS MULTIPART FORM DATA (convert string numbers to numbers)
     const processedBody = { ...req.body };
     if (processedBody.lot_number && typeof processedBody.lot_number === 'string') {
@@ -50,12 +37,12 @@ const createLandTitle = async (req, res) => {
       processedBody.area_size = parseFloat(processedBody.area_size);
     }
     
-// VALIDATE REQUEST USING ZOD
+// VALIDATE REQUEST USING ZOD FIRST
     const validatedData = landTitleSchema.parse(processedBody);
     console.log('✅ Zod validation successful for title:', validatedData.title_number);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
-    const validateResponse = await landtitle.validateTitleNumber(validatedData.title_number);
+    const validateResponse = await landtitles.validateTitleNumber(validatedData.title_number);
     const isDuplicate = validateResponse.exists;
     
     if (isDuplicate) {
@@ -66,7 +53,20 @@ const createLandTitle = async (req, res) => {
       });
     }
     
-    console.log(`➡️ Title ${validatedData.title_number} is valid, preparing event payload`);
+// LOG VALIDATED PAYLOAD (AFTER ALL VALIDATIONS PASS)
+    console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
+    console.log('📦 Validated payload:', JSON.stringify(validatedData, null, 2));
+    console.log('📎 Files:', req.files ? req.files.length : 0);
+    
+// LOG DOCUMENT DETAILS
+    if (req.files && req.files.length > 0) {
+      console.log('📄 Document details:');
+      req.files.forEach((file, index) => {
+        console.log(`  ${index + 1}. ${file.originalname} (${file.mimetype}, ${file.size} bytes)`);
+      });
+    }
+    
+
 
 // PREPARE COMPLETE PAYLOAD WITH ATTACHMENTS
     const payload = {
@@ -86,7 +86,7 @@ const createLandTitle = async (req, res) => {
 // CLEAR CACHE SINCE NEW DATA WILL BE ADDED 
     try {
       await redis.clearLandTitlesCache();
-      console.log('🗑️ Cache cleared after new land title submission');
+
     } catch (error) {
       console.log('⚠️  Cache clear failed (non-critical):', error.message);
     }
@@ -118,7 +118,7 @@ const getAllLandTitles = async (req, res) => {
     
     const result = await CacheHelper.getCachedOrFetch(
       'land_titles:all',
-      () => landtitle.getLandTitles().then(response => response.data)
+      () => landtitles.getLandTitles().then(response => response.data)
     );
     
     const message = result.source === 'redis' 
@@ -144,7 +144,7 @@ const getLandTitle = async (req, res) => {
     
     const result = await CacheHelper.getCachedOrFetch(
       `land_title:${id}`,
-      () => landtitle.getLandTitle(id).then(response => response.data)
+      () => landtitles.getLandTitle(id).then(response => response.data)
     );
     
     const message = result.source === 'redis'
@@ -158,8 +158,6 @@ const getLandTitle = async (req, res) => {
     ErrorHandler.handleError(error, res, `Get land title ${req.params.id}`);
   }
 };
-
-
 
 module.exports = {
   createLandTitle,

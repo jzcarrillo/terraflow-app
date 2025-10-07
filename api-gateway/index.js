@@ -2,10 +2,11 @@ const express = require('express');
 const helmet = require('helmet');
 const config = require('./config/services');
 const corsMiddleware = require('./middleware/cors');
-const landTitleRoutes = require('./routes/landTitles');
+const landTitleRoutes = require('./routes/landtitles');
 const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
-const rabbitmq = require('./services/rabbitmq');
+const paymentRoutes = require('./routes/payments');
+const rabbitmq = require('./services/publisher');
 const redis = require('./services/redis');
 
 const app = express();
@@ -29,6 +30,7 @@ app.get('/health', (req, res) => {
 app.use('/api', landTitleRoutes);
 app.use('/api', userRoutes);
 app.use('/api', authRoutes);
+app.use('/api', paymentRoutes);
 
 // INITIALIZE SERVICES
 rabbitmq.initialize();

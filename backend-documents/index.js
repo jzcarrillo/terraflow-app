@@ -3,7 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const { initializeDatabase } = require('./config/db');
-const rabbitmqConsumer = require('./services/rabbitmqConsumer');
+const consumer = require('./services/consumer');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -30,7 +30,7 @@ const startServer = async () => {
 
     
     // Start RabbitMQ consumer
-    await rabbitmqConsumer.startConsumer();
+    await consumer.startConsumer();
     
     // Start HTTP server
     app.listen(PORT, () => {

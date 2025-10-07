@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-payments
+  namespace: {{ .Values.namespace | default "terraflow-app" }}
+spec:
+  replicas: {{ index .Values "backend-payments" "replicaCount" | default 1 }}
+  selector:
+    matchLabels:
+      app: backend-payments
+  template:
+    metadata:
+      labels:
+        app: backend-payments
+    spec:
+      containers:
+      - name: backend-payments
+        image: {{ index .Values "backend-payments" "image" "repository" }}:{{ index .Values "backend-payments" "image" "tag" }}
+        imagePullPolicy: {{ index .Values "backend-payments" "image" "pullPolicy" }}
+        ports:
+        - containerPort: 3003
+        env:
+        - name: PORT
+          value: "3003"
+        - name: DB_HOST
+          value: {{ index .Values "backend-payments" "env" "DB_HOST" }}
+        - name: DB_PORT
+          value: {{ index .Values "backend-payments" "env" "DB_PORT" | quote }}
+        - name: DB_NAME
+          value: {{ index .Values "backend-payments" "env" "DB_NAME" }}
+        - name: DB_USER
+          value: {{ index .Values "backend-payments" "env" "DB_USER" }}
+        - name: DB_PASSWORD
+          value: {{ index .Values "backend-payments" "env" "DB_PASSWORD" }}
+        - name: RABBITMQ_URL
+          value: "amqp://admin:password@rabbitmq-service:5672"
+        resources:
+          {{- toYaml (index .Values "backend-payments" "resources") | nindent 10 }}

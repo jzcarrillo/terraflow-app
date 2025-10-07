@@ -12,6 +12,7 @@ class RabbitMQService {
     try {
       this.connection = await amqp.connect(RABBITMQ_URL);
       this.channel = await this.connection.createChannel();
+
     } catch (error) {
       console.error('❌ RabbitMQ connection failed:', error);
       throw error;
@@ -29,12 +30,14 @@ class RabbitMQService {
       const message = Buffer.from(JSON.stringify(data));
       this.channel.sendToQueue(queueName, message, { persistent: true });
       
-      console.log(`📤 Message published to ${queueName}`);
+
     } catch (error) {
       console.error(`❌ Failed to publish to ${queueName}:`, error);
       throw error;
     }
   }
+
+
 }
 
 const rabbitmqService = new RabbitMQService();

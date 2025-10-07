@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
-const documentService = require('../services/documentService');
-const rabbitmqService = require('../services/rabbitmqService');
+const documentService = require('../services/document');
+const publisher = require('../services/publisher');
 const { EVENT_TYPES, QUEUES } = require('../config/constants');
 
 // UPLOAD DOCUMENTS
@@ -48,10 +48,10 @@ const processDocumentUpload = async (messageData) => {
       uploadedDocuments.push(document);
     }
     
-    console.log(`✅ ${uploadedDocuments.length} documents processed successfully`);
+
     
 // PUBLISH DOCUMENTS UPLOADED EVENT TO BACKEND-LANDREGISTRY
-    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, {
+    await publisher.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: EVENT_TYPES.DOCUMENT_UPLOADED,
       transaction_id,
       land_title_id,
@@ -63,11 +63,11 @@ const processDocumentUpload = async (messageData) => {
   } catch (error) {
     console.error(`❌ [DOCUMENT] Upload failed: ${transaction_id}`, error);
     
-    // Cleanup uploaded files on failure
+// CLEANUP UPLOADED FILES ON FAILURE
     await cleanupFiles(uploadedDocuments);
     
-    // Publish failure event to backend-landregistry
-    await rabbitmqService.publishToQueue(QUEUES.LAND_REGISTRY, {
+// PUBLISH FAILURE EVENT TO BACKEND-LANDREGISTRY
+    await publisher.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: EVENT_TYPES.DOCUMENT_FAILED,
       transaction_id,
       land_title_id,
@@ -98,7 +98,7 @@ const processLandTitlePaid = async (messageData) => {
   try {
     console.log(`💰 [PAYMENT] Activating documents for land title: ${land_title_id}`);
     
-    // Update all documents for this land title to ACTIVE
+// UPDATE ALL DOCUMENTS FOR THIS LAND TITLE TO ACTIVE
     const result = await documentService.updateDocumentStatusByLandTitle(land_title_id, 'ACTIVE');
     
     console.log(`✅ [PAYMENT] ${result.rowCount} documents activated for land title: ${land_title_id}`);

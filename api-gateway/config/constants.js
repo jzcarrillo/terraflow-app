@@ -2,16 +2,17 @@ module.exports = {
   QUEUES: {
     LAND_REGISTRY: 'queue_landregistry',
     DOCUMENTS: 'queue_documents',
-    USERS: 'queue_users'
+    USERS: 'queue_users',
+    PAYMENTS: 'queue_payments'
   },
   EVENT_TYPES: {
     DOCUMENT_UPLOAD: 'DOCUMENT_UPLOAD',
-    DOCUMENT_COMPLETED: 'DOCUMENT_COMPLETED',
-    DOCUMENT_FAILED: 'DOCUMENT_FAILED'
+    DOCUMENT_FAILED: 'DOCUMENT_FAILED',
+    PAYMENT_CREATE: 'PAYMENT_CREATE',
+    PAYMENT_UPDATE: 'PAYMENT_UPDATE'
   },
   STATUS: {
     PENDING: 'PENDING',
-
     ACTIVE: 'ACTIVE',
     FAILED: 'FAILED'
   },
