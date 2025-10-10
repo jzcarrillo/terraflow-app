@@ -42,6 +42,36 @@ class RabbitMQService {
     }
   }
 
+// PUBLISH LAND REGISTRY STATUS UPDATE (PAID -> ACTIVE)
+  async publishLandRegistryStatusUpdate(paymentData) {
+    const { QUEUES, EVENT_TYPES } = require('../config/constants');
+    const message = {
+      event_type: EVENT_TYPES.PAYMENT_STATUS_UPDATE,
+      payment_id: paymentData.payment_id,
+      reference_id: paymentData.reference_id,
+      status: 'ACTIVE',
+      payment_status: 'PAID',
+      timestamp: new Date().toISOString()
+    };
+
+    return await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+  }
+
+// PUBLISH LAND REGISTRY REVERT UPDATE (CANCELLED -> PENDING)
+  async publishLandRegistryRevertUpdate(paymentData) {
+    const { QUEUES, EVENT_TYPES } = require('../config/constants');
+    const message = {
+      event_type: EVENT_TYPES.PAYMENT_STATUS_UPDATE,
+      payment_id: paymentData.payment_id,
+      reference_id: paymentData.reference_id,
+      status: 'PENDING',
+      payment_status: 'CANCELLED',
+      timestamp: new Date().toISOString()
+    };
+
+    return await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+  }
+
   async initialize() {
     await this.connect();
   }

@@ -39,19 +39,21 @@ const createPayment = async (req, res) => {
     const validatedData = paymentSchema.parse(req.body);
     console.log('✅ Zod validation successful for payment');
 
-// VALIDATE PAYMENT SA BACKEND
-    const tempPaymentId = `PAY-${new Date().getFullYear()}-${Date.now()}`;
-    const validation = await payments.validatePaymentId(tempPaymentId);
+// VALIDATE LAND TITLE PAYMENT
+    const validation = await payments.validateLandTitlePayment(validatedData.land_title_id);
     
-    console.log(`Validating payment id: ${tempPaymentId}`);
-    console.log(`Validation results: ${validation.exists}`);
+    console.log(`🔍 Validating land title: ${validatedData.land_title_id}`);
     
     if (validation.exists) {
+      console.log('❌ Payment already exists for this land title');
       return res.status(409).json({ 
-        error: 'Duplicate payment ID',
-        message: `Payment ID ${tempPaymentId} already exists`
+        error: 'Payment already exists for this land title',
+        message: `A pending payment already exists for land title ${validatedData.land_title_id}`
       });
     }
+
+// GENERATE PAYMENT ID
+    const paymentId = `PAY-${new Date().getFullYear()}-${Date.now()}`;
 
     console.log('💳 === CREATE PAYMENT ===');
     console.log('📋 Validated Payload:');
@@ -73,6 +75,7 @@ const createPayment = async (req, res) => {
       success: true,
       message: 'Payment creation request received and is being processed',
       transaction_id: transactionId,
+      payment_id: paymentId,
       status: STATUS.PENDING
     });
 
@@ -131,7 +134,18 @@ const cancelPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === CANCEL PAYMENT: ${id} ===`);
     
-    console.log('✅ Zod validation successful for cancel payment');
+// VALIDATE PAYMENT STATUS
+    const statusCheck = await payments.getPaymentStatus(id, req.headers.authorization);
+    
+    if (statusCheck.status === 'CANCELLED') {
+      console.log('❌ Payment already cancelled');
+      return res.status(400).json({ 
+        error: 'Payment already cancelled',
+        message: `Payment ${id} is already cancelled`
+      });
+    }
+    
+    console.log('✅ Payment can be cancelled');
     
     const payload = {
       transaction_id: transactionId,
@@ -147,6 +161,17 @@ const cancelPayment = async (req, res) => {
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
+    
+    // PUBLISH LAND REGISTRY REVERT EVENT
+    const landRegistryPayload = {
+      payment_id: id,
+      reference_id: statusCheck.reference_id || `LT-${new Date().getFullYear()}-${id}`,
+      status: 'PENDING',
+      payment_status: 'CANCELLED'
+    };
+    
+    await rabbitmq.publishLandRegistryRevertUpdate(landRegistryPayload);
+    console.log('📤 Land registry revert event published');
     
     res.status(202).json({
       success: true,
@@ -168,7 +193,26 @@ const confirmPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === CONFIRM PAYMENT: ${id} ===`);
     
-    console.log('✅ Zod validation successful for confirm payment');
+// VALIDATE PAYMENT STATUS
+    const statusCheck = await payments.getPaymentStatus(id, req.headers.authorization);
+    
+    if (statusCheck.status === 'PAID') {
+      console.log('❌ Payment already paid');
+      return res.status(400).json({ 
+        error: 'Payment already paid',
+        message: `Payment ${id} is already paid`
+      });
+    }
+    
+    if (statusCheck.status === 'CANCELLED') {
+      console.log('❌ Cannot confirm cancelled payment');
+      return res.status(400).json({ 
+        error: 'Cannot confirm cancelled payment',
+        message: `Payment ${id} is cancelled and cannot be confirmed`
+      });
+    }
+    
+    console.log('✅ Payment can be confirmed');
     
     const payload = {
       transaction_id: transactionId,
@@ -184,6 +228,17 @@ const confirmPayment = async (req, res) => {
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
+    
+    // PUBLISH LAND REGISTRY STATUS UPDATE EVENT
+    const landRegistryPayload = {
+      payment_id: id,
+      reference_id: statusCheck.reference_id || `LT-${new Date().getFullYear()}-${id}`,
+      status: 'ACTIVE',
+      payment_status: 'PAID'
+    };
+    
+    await rabbitmq.publishLandRegistryStatusUpdate(landRegistryPayload);
+    console.log('📤 Land registry status update event published');
     
     res.status(202).json({
       success: true,

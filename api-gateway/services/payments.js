@@ -15,6 +15,20 @@ class PaymentService {
     }
   }
 
+  async validateLandTitlePayment(landTitleId) {
+    try {
+      console.log ('💳 === VALIDATE PAYMENT ===');
+      console.log(`🔍 Validating land title payment: ${landTitleId}`);
+      const response = await axios.get(`${BACKEND_PAYMENTS_URL}/api/validate/land-title-payment?land_title_id=${landTitleId}`);
+      console.log(`✅ Validation result: ${response.data.exists}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Land title payment validation service error:', error.message);
+      // Return exists: true on error to be safe and prevent duplicates
+      return { exists: true, message: 'Validation service error - blocking creation for safety' };
+    }
+  }
+
   async getAllPayments(authHeader) {
     try {
       console.log('🚀 Calling backend-payments: GET /api/payments');

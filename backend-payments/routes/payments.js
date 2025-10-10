@@ -75,4 +75,23 @@ router.get('/validate/payment-id', authenticateToken, async (req, res) => {
   }
 });
 
+// VALIDATE LAND TITLE PAYMENT
+router.get('/validate/land-title-payment', async (req, res) => {
+  try {
+    const { land_title_id } = req.query;
+    
+    if (!land_title_id) {
+      return res.status(400).json({ error: 'Land title ID is required' });
+    }
+    
+    console.log(`🔍 === VALIDATE LAND TITLE PAYMENT: ${land_title_id} ===`);
+    const exists = await paymentService.checkLandTitlePaymentExists(land_title_id);
+    console.log(`📤 Returning validation result: { exists: ${exists} }`);
+    res.json({ exists });
+  } catch (error) {
+    console.error('Validate land title payment error:', error.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 module.exports = router;

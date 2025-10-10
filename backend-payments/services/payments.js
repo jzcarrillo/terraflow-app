@@ -84,6 +84,18 @@ class PaymentService {
   }
 
   async updatePaymentStatus(id, status, userId = null) {
+    // Get current payment status first
+    const currentPayment = await this.getPaymentById(id);
+    if (!currentPayment) {
+      throw new Error(`Payment with ID ${id} not found`);
+    }
+    
+    // Check if status is already the same (idempotency check)
+    if (currentPayment.status === status) {
+      console.log(`⚠️ Payment ${id} is already ${status} - No event will be published`);
+      return currentPayment;
+    }
+    
     let query, params;
     
     if (status === STATUS.PAID) {
@@ -115,27 +127,25 @@ class PaymentService {
     const result = await pool.query(query, params);
     const updatedPayment = result.rows[0];
     
-// PUBLISH EVENT TO LAND REGISTRY WHEN PAYMENT STATUS CHANGES
-    if (updatedPayment) {
-      if (status === STATUS.PAID) {
-        console.log(`💳 Payment PAID - Publishing event to land registry for reference: ${updatedPayment.reference_id}`);
-        await publisher.publishLandRegistryStatusUpdate(updatedPayment);
-      } else if (status === 'CANCELLED') {
-        console.log(`💳 Payment CANCELLED - Publishing revert event to land registry for reference: ${updatedPayment.reference_id}`);
-        await publisher.publishLandRegistryRevertUpdate(updatedPayment);
-      }
-    }
+// NO LONGER PUBLISHING EVENTS - API GATEWAY HANDLES THIS
     
     return updatedPayment;
   }
 
   async getPaymentStatus(id) {
-    const result = await pool.query(`SELECT id, status, updated_at FROM ${TABLES.PAYMENTS} WHERE id = $1`, [id]);
+    const result = await pool.query(`SELECT id, status, reference_id, updated_at FROM ${TABLES.PAYMENTS} WHERE id = $1`, [id]);
     return result.rows[0];
   }
 
   async checkPaymentExists(paymentId) {
     const result = await pool.query(`SELECT id FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
+    return result.rows.length > 0;
+  }
+
+  async checkLandTitlePaymentExists(landTitleId) {
+    console.log(`🔍 Checking payments table for reference_id: ${landTitleId}`);
+    const result = await pool.query(`SELECT id, payment_id, reference_id, status FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
+    console.log(`📋 Found ${result.rows.length} pending payments for ${landTitleId}:`, result.rows);
     return result.rows.length > 0;
   }
 }

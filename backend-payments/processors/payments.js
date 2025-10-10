@@ -88,12 +88,21 @@ const paymentStatusUpdate = async (messageData) => {
     
     const result = await paymentService.updatePaymentStatus(payment_id, status);
     
-    console.log('💾 Database updated successfully');
-    
-    if (status === 'CANCELLED') {
-      console.log('✅ Cancel payment successfully.');
-    } else {
-      console.log(`✅ Update payment status successfully.`);
+    // Only log success if there was an actual update
+    if (result && result.updated_at) {
+      const currentTime = new Date().toISOString();
+      const updatedTime = new Date(result.updated_at).toISOString();
+      
+      // Check if update happened recently (within last 5 seconds)
+      if (Math.abs(new Date(currentTime) - new Date(updatedTime)) < 5000) {
+        console.log('💾 Database updated successfully');
+        
+        if (status === 'CANCELLED') {
+          console.log('✅ Cancel payment successfully.');
+        } else {
+          console.log(`✅ Update payment status successfully.`);
+        }
+      }
     }
     
     return result;
