@@ -1,7 +1,8 @@
 module.exports = {
   QUEUES: {
     LAND_REGISTRY: 'queue_landregistry',
-    DOCUMENTS: 'queue_documents'
+    DOCUMENTS: 'queue_documents',
+    PAYMENTS: 'queue_payments'
   },
   EVENT_TYPES: {
     DOCUMENT_UPLOAD: 'DOCUMENT_UPLOAD',

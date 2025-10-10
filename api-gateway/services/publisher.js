@@ -33,7 +33,7 @@ class RabbitMQService {
       const messageBuffer = Buffer.from(JSON.stringify(message));
       await this.channel.sendToQueue(queueName, messageBuffer, { persistent: true });
       
-      console.log(`📤 Message published to queue: ${queueName}`);
+
       return true;
       
     } catch (error) {

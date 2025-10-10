@@ -3,9 +3,7 @@ const processDocumentUploaded = async (messageData) => {
   
   try {
 
-
-    
-    // Land title remains PENDING status (waiting for payment)
+// LAND TITLE REMAINS PENDING STATUS (WAITING FOR PAYMENT)
     console.log(`⏳ Land title ${land_title_id} remains PENDING - waiting for payment`);
     
   } catch (error) {

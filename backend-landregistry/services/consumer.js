@@ -61,7 +61,7 @@ class RabbitMQConsumer {
               break;
               
             case EVENT_TYPES.PAYMENT_STATUS_UPDATE:
-              console.log(`💳 Payment status update for transaction: ${messageData.transaction_id}`);
+              console.log(`💳 Payment status update for reference: ${messageData.reference_id}`);
               await payments.paymentStatusUpdate(messageData);
               break;
               

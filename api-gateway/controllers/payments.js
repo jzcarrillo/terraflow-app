@@ -7,7 +7,7 @@ const { QUEUES, STATUS } = require('../config/constants');
 const getAllPayments = async (req, res) => {
   try {
     console.log('💳 === GET ALL PAYMENTS ===');
-    const response = await payments.getAllPayments();
+    const response = await payments.getAllPayments(req.headers.authorization);
     res.json(response);
   } catch (error) {
     console.error('❌ Get all payments error:', error.message);
@@ -21,7 +21,7 @@ const getPaymentById = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === GET PAYMENT BY ID: ${id} ===`);
     
-    const response = await payments.getPaymentById(id);
+    const response = await payments.getPaymentById(id, req.headers.authorization);
     res.json(response);
   } catch (error) {
     console.error('❌ Get payment error:', error.message);
@@ -34,28 +34,40 @@ const createPayment = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
-    console.log('💳 === CREATE PAYMENT ===');
-    console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
+// VALIDATE REQUEST USING ZOD
+    const { paymentSchema } = require('../schemas/payments');
+    const validatedData = paymentSchema.parse(req.body);
+    console.log('✅ Zod validation successful for payment');
+
+// VALIDATE PAYMENT SA BACKEND
+    const tempPaymentId = `PAY-${new Date().getFullYear()}-${Date.now()}`;
+    const validation = await payments.validatePaymentId(tempPaymentId);
     
-    // Validate payment ID if provided
-    if (req.body.id) {
-      const validation = await payments.validatePaymentId(req.body.id);
-      if (validation.exists) {
-        return res.status(400).json({ 
-          error: 'Duplicate payment exists',
-          message: `Payment with ID ${req.body.id} already exists`
-        });
-      }
+    console.log(`Validating payment id: ${tempPaymentId}`);
+    console.log(`Validation results: ${validation.exists}`);
+    
+    if (validation.exists) {
+      return res.status(409).json({ 
+        error: 'Duplicate payment ID',
+        message: `Payment ID ${tempPaymentId} already exists`
+      });
     }
+
+    console.log('💳 === CREATE PAYMENT ===');
+    console.log('📋 Validated Payload:');
+    console.log(JSON.stringify(validatedData, null, 2));
     
     const payload = {
       transaction_id: transactionId,
-      payment_data: req.body,
+      payment_data: validatedData,
       user_id: req.user.id,
+      username: req.user.username || 'CASHIER 1',
       timestamp: new Date().toISOString()
     };
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
+    console.log('📤 Message published to message queue: queue_payments');
+    console.log('✅ Create payment successfully.');
     
     res.status(202).json({
       success: true,
@@ -65,8 +77,8 @@ const createPayment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Create payment error:', error.message);
-    res.status(500).json({ error: 'Payment service unavailable' });
+    const ErrorHandler = require('../utils/errorHandler');
+    ErrorHandler.handleError(error, res, 'Create payment');
   }
 };
 
@@ -78,16 +90,26 @@ const editPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === EDIT PAYMENT: ${id} ===`);
     
+    // VALIDATE REQUEST USING ZOD
+    const { paymentEditSchema } = require('../schemas/payments');
+    const validatedData = paymentEditSchema.parse(req.body);
+    console.log('✅ Zod validation successful for payment edit');
+    
+    console.log('📋 Validated Payload:');
+    console.log(JSON.stringify(validatedData, null, 2));
+    
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_PAYMENT',
       payment_id: id,
-      payment_data: req.body,
+      payment_data: validatedData,
       user_id: req.user.id,
+      username: req.user.username || 'CASHIER 1',
       timestamp: new Date().toISOString()
     };
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
+    console.log('📤 Message published to message queue: queue_payments');
     
     res.status(202).json({
       success: true,
@@ -96,8 +118,8 @@ const editPayment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Edit payment error:', error.message);
-    res.status(500).json({ error: 'Payment service unavailable' });
+    const ErrorHandler = require('../utils/errorHandler');
+    ErrorHandler.handleError(error, res, 'Edit payment');
   }
 };
 
@@ -109,16 +131,22 @@ const cancelPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === CANCEL PAYMENT: ${id} ===`);
     
+    console.log('✅ Zod validation successful for cancel payment');
+    
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_STATUS',
       payment_id: id,
       status: 'CANCELLED',
       user_id: req.user.id,
-      timestamp: new Date().toISOString()
+      username: req.user.username || 'CASHIER 1'
     };
 
+    console.log('📋 Validated Payload:');
+    console.log(JSON.stringify(payload, null, 2));
+
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
+    console.log('📤 Message published to message queue: queue_payments');
     
     res.status(202).json({
       success: true,
@@ -140,16 +168,22 @@ const confirmPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === CONFIRM PAYMENT: ${id} ===`);
     
+    console.log('✅ Zod validation successful for confirm payment');
+    
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_STATUS',
       payment_id: id,
       status: 'PAID',
       user_id: req.user.id,
-      timestamp: new Date().toISOString()
+      username: req.user.username || 'CASHIER 1'
     };
 
+    console.log('📋 Validated Payload:');
+    console.log(JSON.stringify(payload, null, 2));
+
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
+    console.log('📤 Message published to message queue: queue_payments');
     
     res.status(202).json({
       success: true,
@@ -171,7 +205,7 @@ const getPaymentStatus = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === GET PAYMENT STATUS: ${id} ===`);
     
-    const response = await payments.getPaymentStatus(id);
+    const response = await payments.getPaymentStatus(id, req.headers.authorization);
     res.json(response);
   } catch (error) {
     console.error('❌ Get payment status error:', error.message);
@@ -188,13 +222,15 @@ const validatePaymentId = async (req, res) => {
       return res.status(400).json({ error: 'Payment ID is required' });
     }
     
-    console.log(`💳 === VALIDATE PAYMENT ID: ${payment_id} ===`);
+    console.log(`🔍 Validating payment: ${payment_id}`);
     
     const validation = await payments.validatePaymentId(payment_id);
+    
+    console.log(`✅ Payment validation result: ${validation.exists}`);
     res.json(validation);
   } catch (error) {
-    console.error('❌ Validate payment ID error:', error.message);
-    res.status(500).json({ error: 'Payment service unavailable' });
+    console.error('❌ Payment validation failed:', error.message);
+    res.status(500).json({ exists: false, message: 'Payment validation service unavailable' });
   }
 };
 

@@ -6,7 +6,7 @@ const landTitleCreation = async (messageData) => {
   const { transaction_id, land_title_data, attachments, user_id } = messageData;
   
   try {
-    // VALIDATE WITH ZOD FIRST
+// VALIDATE WITH ZOD FIRST
     const { landTitleSchema } = require('../schemas/landtitles');
     const validatedData = landTitleSchema.parse(land_title_data);
     console.log(`✅ Zod validation successful for title: ${validatedData.title_number}`);
@@ -14,7 +14,7 @@ const landTitleCreation = async (messageData) => {
     console.log(`📋 Processing land title creation`);
     console.log('📦 Request logs:', JSON.stringify(messageData, null, 2));
     
-    // CHECK IF TITLE EXISTS
+// CHECK IF TITLE EXISTS
     const existsQuery = 'SELECT id FROM land_titles WHERE title_number = $1';
     const existsResult = await pool.query(existsQuery, [validatedData.title_number]);
     
@@ -22,7 +22,7 @@ const landTitleCreation = async (messageData) => {
       throw new Error(`Title number ${validatedData.title_number} already exists in database`);
     }
 
-    // CREATE LAND TITLE WITH PENDING STATUS
+// CREATE LAND TITLE WITH PENDING STATUS
     const insertQuery = `
       INSERT INTO land_titles (
         title_number, owner_name, address, property_location, 
@@ -48,7 +48,7 @@ const landTitleCreation = async (messageData) => {
     const landTitle = result.rows[0];
     console.log(`✅ Land title created: ${landTitle.title_number} (ID: ${landTitle.id})`);
     
-    // PUBLISH DOCUMENT PROCESSING EVENT 
+// PUBLISH DOCUMENT PROCESSING EVENT 
     await publisher.publishToQueue(QUEUES.DOCUMENTS, {
       event_type: EVENT_TYPES.DOCUMENT_UPLOAD,
       transaction_id: transaction_id,
@@ -56,8 +56,6 @@ const landTitleCreation = async (messageData) => {
       attachments: attachments,
       user_id: user_id
     });
-    
-
     
     return landTitle;
     

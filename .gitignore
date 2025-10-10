@@ -45,6 +45,19 @@ scripts/generate-long-token.js
 scripts/package-lock.json
 scripts/package.json
 scripts/users-manualcreate.ps1
+scripts/landtitle-create.ps1
+scripts/payments-cancel.ps1
+scripts/payments-confirm.ps1
+scripts/payments-create.ps1
+scripts/payments-edit.ps1
+scripts/payments-get-all.ps1
+scripts/payments-get-by-id.ps1
+scripts/payments-status.ps1
+scripts/payments-validate-id.ps1
+scripts/payments-get-status.ps1
+
+
+
 
 # Deployment scripts
 deploy-build.ps1
