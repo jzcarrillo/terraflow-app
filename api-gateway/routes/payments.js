@@ -4,7 +4,6 @@ const paymentController = require('../controllers/payments');
 const { authenticateToken } = require('../middleware/auth');
 
 // PAYMENT ENDPOINTS
-router.get('/payments/validate/id', authenticateToken, paymentController.validatePaymentId);
 router.get('/payments', authenticateToken, paymentController.getAllPayments);
 router.get('/payments/:id', authenticateToken, paymentController.getPaymentById);
 router.post('/payments', authenticateToken, paymentController.createPayment);

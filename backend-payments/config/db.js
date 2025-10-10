@@ -9,7 +9,7 @@ const pool = new Pool({
   password: config.database.password,
 });
 
-// Create tables if they don't exist
+// CREATE TABLES IF THEY DON'T EXIST
 const createTables = async () => {
   try {
     await pool.query(`
@@ -38,7 +38,7 @@ const createTables = async () => {
   }
 };
 
-// Test connection and create tables
+// TEST CONNECTION AND CREATE TABLES
 pool.connect(async (err, client, release) => {
   if (err) {
     console.error('❌ Error acquiring client', err.stack);

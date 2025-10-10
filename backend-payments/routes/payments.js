@@ -1,6 +1,4 @@
 const express = require('express');
-const { pool } = require('../config/db');
-const { TABLES } = require('../config/constants');
 const paymentService = require('../services/payments');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
@@ -58,22 +56,7 @@ router.get('/payments/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-// VALIDATE PAYMENT ID
-router.get('/validate/payment-id', authenticateToken, async (req, res) => {
-  try {
-    const { payment_id } = req.query;
-    
-    if (!payment_id) {
-      return res.status(400).json({ error: 'Payment ID is required' });
-    }
-    
-    const exists = await paymentService.checkPaymentExists(payment_id);
-    res.json({ exists });
-  } catch (error) {
-    console.error('Validate payment ID error:', error.message);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
+
 
 // VALIDATE LAND TITLE PAYMENT
 router.get('/validate/land-title-payment', async (req, res) => {

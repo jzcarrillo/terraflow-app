@@ -162,16 +162,7 @@ const cancelPayment = async (req, res) => {
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
     
-    // PUBLISH LAND REGISTRY REVERT EVENT
-    const landRegistryPayload = {
-      payment_id: id,
-      reference_id: statusCheck.reference_id || `LT-${new Date().getFullYear()}-${id}`,
-      status: 'PENDING',
-      payment_status: 'CANCELLED'
-    };
-    
-    await rabbitmq.publishLandRegistryRevertUpdate(landRegistryPayload);
-    console.log('📤 Land registry revert event published');
+
     
     res.status(202).json({
       success: true,
@@ -229,16 +220,7 @@ const confirmPayment = async (req, res) => {
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
     
-    // PUBLISH LAND REGISTRY STATUS UPDATE EVENT
-    const landRegistryPayload = {
-      payment_id: id,
-      reference_id: statusCheck.reference_id || `LT-${new Date().getFullYear()}-${id}`,
-      status: 'ACTIVE',
-      payment_status: 'PAID'
-    };
-    
-    await rabbitmq.publishLandRegistryStatusUpdate(landRegistryPayload);
-    console.log('📤 Land registry status update event published');
+
     
     res.status(202).json({
       success: true,
@@ -268,26 +250,7 @@ const getPaymentStatus = async (req, res) => {
   }
 };
 
-// VALIDATE PAYMENT ID
-const validatePaymentId = async (req, res) => {
-  try {
-    const { payment_id } = req.query;
-    
-    if (!payment_id) {
-      return res.status(400).json({ error: 'Payment ID is required' });
-    }
-    
-    console.log(`🔍 Validating payment: ${payment_id}`);
-    
-    const validation = await payments.validatePaymentId(payment_id);
-    
-    console.log(`✅ Payment validation result: ${validation.exists}`);
-    res.json(validation);
-  } catch (error) {
-    console.error('❌ Payment validation failed:', error.message);
-    res.status(500).json({ exists: false, message: 'Payment validation service unavailable' });
-  }
-};
+
 
 module.exports = {
   getAllPayments,
@@ -296,6 +259,5 @@ module.exports = {
   editPayment,
   cancelPayment,
   confirmPayment,
-  getPaymentStatus,
-  validatePaymentId
+  getPaymentStatus
 };

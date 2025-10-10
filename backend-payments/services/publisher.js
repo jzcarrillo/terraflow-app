@@ -43,6 +43,8 @@ class RabbitMQPublisher {
     }
   }
 
+
+
   async publishLandRegistryStatusUpdate(paymentData) {
     const message = {
       event_type: 'PAYMENT_STATUS_UPDATE',

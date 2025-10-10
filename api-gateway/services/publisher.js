@@ -54,7 +54,11 @@ class RabbitMQService {
       timestamp: new Date().toISOString()
     };
 
-    return await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+    const result = await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+    if (result) {
+      console.log('📤 Message published to message queue: queue_landregistry');
+    }
+    return result;
   }
 
 // PUBLISH LAND REGISTRY REVERT UPDATE (CANCELLED -> PENDING)
@@ -69,7 +73,11 @@ class RabbitMQService {
       timestamp: new Date().toISOString()
     };
 
-    return await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+    const result = await this.publishToQueue(QUEUES.LAND_REGISTRY, message);
+    if (result) {
+      console.log('📤 Message published to message queue: queue_landregistry');
+    }
+    return result;
   }
 
   async initialize() {

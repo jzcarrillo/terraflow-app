@@ -127,7 +127,16 @@ class PaymentService {
     const result = await pool.query(query, params);
     const updatedPayment = result.rows[0];
     
-// NO LONGER PUBLISHING EVENTS - API GATEWAY HANDLES THIS
+// PUBLISH EVENT TO LAND REGISTRY WHEN PAYMENT STATUS CHANGES
+    if (updatedPayment) {
+      if (status === STATUS.PAID) {
+        console.log(`💳 Payment PAID - Publishing event to land registry for reference: ${updatedPayment.reference_id}`);
+        await publisher.publishLandRegistryStatusUpdate(updatedPayment);
+      } else if (status === 'CANCELLED') {
+        console.log(`💳 Payment CANCELLED - Publishing revert event to land registry for reference: ${updatedPayment.reference_id}`);
+        await publisher.publishLandRegistryRevertUpdate(updatedPayment);
+      }
+    }
     
     return updatedPayment;
   }
