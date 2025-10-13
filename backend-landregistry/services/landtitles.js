@@ -76,6 +76,27 @@ const checkTitleExists = async (titleNumber) => {
   }
 };
 
+const checkLandTitleExists = async (titleNumber) => {
+  try {
+    console.log(`🔍 Checking land title exists: ${titleNumber}`);
+    
+    // First, let's see all titles in the database
+    const allTitlesQuery = 'SELECT id, title_number FROM land_titles LIMIT 5';
+    const allTitlesResult = await pool.query(allTitlesQuery);
+    console.log(`📋 All titles in database (first 5):`, allTitlesResult.rows);
+    
+    // Now check for specific title
+    const query = 'SELECT id, title_number FROM land_titles WHERE title_number = $1';
+    const result = await pool.query(query, [titleNumber]);
+    console.log(`📋 Found ${result.rows.length} land titles for ${titleNumber}:`, result.rows);
+    
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error(`❌ Check land title exists failed:`, error.message);
+    throw error;
+  }
+};
+
 const getAllLandTitles = async () => {
   try {
     const query = 'SELECT * FROM land_titles ORDER BY created_at DESC';
@@ -101,6 +122,7 @@ const getLandTitleById = async (id) => {
 module.exports = {
   landTitleCreation,
   checkTitleExists,
+  checkLandTitleExists,
   getAllLandTitles,
   getLandTitleById
 };

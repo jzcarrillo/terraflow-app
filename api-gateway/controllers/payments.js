@@ -1,6 +1,7 @@
 const config = require('../config/services');
 const rabbitmq = require('../services/publisher');
 const payments = require('../services/payments');
+const landregistry = require('../services/landregistry');
 const { QUEUES, STATUS } = require('../config/constants');
 
 // GET ALL PAYMENTS
@@ -38,6 +39,17 @@ const createPayment = async (req, res) => {
     const { paymentSchema } = require('../schemas/payments');
     const validatedData = paymentSchema.parse(req.body);
     console.log('✅ Zod validation successful for payment');
+
+// VALIDATE LAND TITLE EXISTS
+    const landTitleValidation = await landregistry.validateLandTitleExists(validatedData.land_title_id);
+    
+    if (!landTitleValidation.exists) {
+      console.log('❌ Land title does not exist');
+      return res.status(404).json({ 
+        error: 'Reference ID does not exist',
+        message: `Land title ${validatedData.land_title_id} does not exist`
+      });
+    }
 
 // VALIDATE LAND TITLE PAYMENT
     const validation = await payments.validateLandTitlePayment(validatedData.land_title_id);

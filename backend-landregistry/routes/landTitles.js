@@ -22,7 +22,26 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// VALIDATE TITLE NUMBER
+// VALIDATE LAND TITLE EXISTS (SPECIFIC ROUTE FIRST)
+router.get('/validate/land-title-exists', async (req, res) => {
+  try {
+    const { land_title_id } = req.query;
+    
+    if (!land_title_id) {
+      return res.status(400).json({ error: 'Land title ID is required' });
+    }
+    
+    console.log(`🔍 === VALIDATE LAND TITLE EXISTS: ${land_title_id} ===`);
+    const exists = await landTitleService.checkLandTitleExists(land_title_id);
+    console.log(`📤 Returning validation result: { exists: ${exists} }`);
+    res.json({ exists });
+  } catch (error) {
+    console.error('Validate land title exists error:', error.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// VALIDATE TITLE NUMBER (GENERAL ROUTE AFTER)
 router.get('/validate/:titleNumber', async (req, res) => {
   try {
     const { titleNumber } = req.params;
