@@ -24,8 +24,25 @@ import {
 } from '@mui/material'
 import { Add as AddIcon } from '@mui/icons-material'
 import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { landTitlesAPI } from '@/services/api'
 import Layout from '@/components/Layout'
+
+const landTitleSchema = z.object({
+  owner_name: z.string().min(1, "Owner name is required"),
+  contact_no: z.string().regex(/^[0-9]{11}$/, "Contact number must be exactly 11 digits"),
+  email_address: z.string().email("Valid email address is required"),
+  address: z.string().min(1, "Address is required"),
+  property_location: z.string().min(1, "Property location is required"),
+  lot_number: z.string().min(1, "Lot number is required").transform(val => parseInt(val, 10)),
+  area_size: z.string().min(1, "Area size is required").transform(val => parseFloat(val)),
+  classification: z.string().min(1, "Classification is required"),
+  registration_date: z.string().min(1, "Registration date is required"),
+  registrar_office: z.string().min(1, "Registrar office is required"),
+  previous_title_number: z.string().optional(),
+  encumbrances: z.string().optional()
+})
 
 export default function LandTitles() {
   const [landTitles, setLandTitles] = useState([])
@@ -36,7 +53,9 @@ export default function LandTitles() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedTitle, setSelectedTitle] = useState(null)
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(landTitleSchema)
+  })
 
   // Fetch land titles
   const fetchLandTitles = async () => {
@@ -323,55 +342,152 @@ export default function LandTitles() {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Owner Name:</Typography>
-                  <input 
-                    type="text" 
-                    {...register('owner_name', { required: 'Owner name is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="text" 
+                      {...register('owner_name')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.owner_name && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.owner_name.message}</Typography>}
+                  </Box>
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Contact No:</Typography>
-                  <input 
-                    type="text" 
-                    {...register('contact_no', { required: 'Contact number is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="text" 
+                      {...register('contact_no')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.contact_no && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.contact_no.message}</Typography>}
+                  </Box>
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Email Address:</Typography>
-                  <input 
-                    type="email" 
-                    {...register('email_address', { required: 'Email address is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="email" 
+                      {...register('email_address')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.email_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.email_address.message}</Typography>}
+                  </Box>
                 </Box>
                 
 
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Address:</Typography>
-                  <textarea 
-                    rows={3}
-                    {...register('address', { required: 'Address is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <textarea 
+                      rows={3}
+                      {...register('address')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.address.message}</Typography>}
+                  </Box>
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Property Location:</Typography>
-                  <select 
-                    {...register('property_location', { required: 'Property location is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  >
-                    <option value="">Select City</option>
+                  <Box sx={{ flex: 1 }}>
+                    <select 
+                      {...register('property_location')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    >
+                      <option value="">Select City</option>
+                      <option value="Caloocan">Caloocan</option>
+                      <option value="Las Piñas">Las Piñas</option>
+                      <option value="Makati">Makati</option>
+                      <option value="Malabon">Malabon</option>
+                      <option value="Mandaluyong">Mandaluyong</option>
+                      <option value="Manila">Manila</option>
+                      <option value="Marikina">Marikina</option>
+                      <option value="Muntinlupa">Muntinlupa</option>
+                      <option value="Navotas">Navotas</option>
+                      <option value="Parañaque">Parañaque</option>
+                      <option value="Pasay">Pasay</option>
+                      <option value="Pasig">Pasig</option>
+                      <option value="Pateros">Pateros</option>
+                      <option value="Quezon City">Quezon City</option>
+                      <option value="San Juan">San Juan</option>
+                      <option value="Taguig">Taguig</option>
+                      <option value="Valenzuela">Valenzuela</option>
+                    </select>
+                    {errors.property_location && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.property_location.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Lot Number:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="number" 
+                      {...register('lot_number')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.lot_number && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.lot_number.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Area Size (sqm):</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="number" 
+                      {...register('area_size')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.area_size && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.area_size.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Classification:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <select 
+                      {...register('classification')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    >
+                      <option value="">Select Classification</option>
+                      <option value="Residential">Residential</option>
+                      <option value="Commercial">Commercial</option>
+                      <option value="Industrial">Industrial</option>
+                      <option value="Agricultural">Agricultural</option>
+                      <option value="Institutional">Institutional</option>
+                    </select>
+                    {errors.classification && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.classification.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Registration Date:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="date" 
+                      {...register('registration_date')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.registration_date && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.registration_date.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Registrar Office:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <select 
+                      {...register('registrar_office')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    >
+                    <option value="">Select Registrar Office</option>
                     <option value="Caloocan">Caloocan</option>
                     <option value="Las Piñas">Las Piñas</option>
                     <option value="Makati">Makati</option>
                     <option value="Malabon">Malabon</option>
                     <option value="Mandaluyong">Mandaluyong</option>
                     <option value="Manila">Manila</option>
-                    <option value="Marikina">Marikina</option>
+                    <option value="Marikina">Marikina Registry</option>
                     <option value="Muntinlupa">Muntinlupa</option>
                     <option value="Navotas">Navotas</option>
                     <option value="Parañaque">Parañaque</option>
@@ -381,77 +497,10 @@ export default function LandTitles() {
                     <option value="Quezon City">Quezon City</option>
                     <option value="San Juan">San Juan</option>
                     <option value="Taguig">Taguig</option>
-                    <option value="Valenzuela">Valenzuela</option>
-                  </select>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Lot Number:</Typography>
-                  <input 
-                    type="number" 
-                    {...register('lot_number', { required: 'Lot number is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Area Size (sqm):</Typography>
-                  <input 
-                    type="number" 
-                    {...register('area_size', { required: 'Area size is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Classification:</Typography>
-                  <select 
-                    {...register('classification', { required: 'Classification is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  >
-                    <option value="">Select Classification</option>
-                    <option value="Residential">Residential</option>
-                    <option value="Commercial">Commercial</option>
-                    <option value="Industrial">Industrial</option>
-                    <option value="Agricultural">Agricultural</option>
-                    <option value="Institutional">Institutional</option>
-                  </select>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Registration Date:</Typography>
-                  <input 
-                    type="date" 
-                    {...register('registration_date', { required: 'Registration date is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Registrar Office:</Typography>
-                  <select 
-                    {...register('registrar_office', { required: 'Registrar office is required' })}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  >
-                    <option value="">Select Registrar Office</option>
-                    <option value="Caloocan Registry">Caloocan Registry</option>
-                    <option value="Las Piñas Registry">Las Piñas Registry</option>
-                    <option value="Makati Registry">Makati Registry</option>
-                    <option value="Malabon Registry">Malabon Registry</option>
-                    <option value="Mandaluyong Registry">Mandaluyong Registry</option>
-                    <option value="Manila Registry">Manila Registry</option>
-                    <option value="Marikina Registry">Marikina Registry</option>
-                    <option value="Muntinlupa Registry">Muntinlupa Registry</option>
-                    <option value="Navotas Registry">Navotas Registry</option>
-                    <option value="Parañaque Registry">Parañaque Registry</option>
-                    <option value="Pasay Registry">Pasay Registry</option>
-                    <option value="Pasig Registry">Pasig Registry</option>
-                    <option value="Pateros Registry">Pateros Registry</option>
-                    <option value="Quezon City Registry">Quezon City Registry</option>
-                    <option value="San Juan Registry">San Juan Registry</option>
-                    <option value="Taguig Registry">Taguig Registry</option>
-                    <option value="Valenzuela Registry">Valenzuela Registry</option>
-                  </select>
+                      <option value="Valenzuela">Valenzuela</option>
+                    </select>
+                    {errors.registrar_office && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.registrar_office.message}</Typography>}
+                  </Box>
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

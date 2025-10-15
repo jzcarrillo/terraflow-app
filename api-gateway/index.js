@@ -16,13 +16,7 @@ app.use(helmet());
 app.use(corsMiddleware);
 app.use(express.json());
 
-// REQUEST LOGGING MIDDLEWARE (exclude health checks)
-app.use((req, res, next) => {
-  if (req.url !== '/health') {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
-  }
-  next();
-});
+
 
 // HEALTH CHECK
 app.get('/health', (req, res) => {

@@ -55,11 +55,7 @@ const createLandTitle = async (req, res) => {
         message: `Title number ${validatedData.title_number} already exists`
       });
     }
-    
-
-    
-
-
+  
 // PREPARE COMPLETE PAYLOAD WITH ATTACHMENTS
     const payload = {
       transaction_id: transactionId,
@@ -207,7 +203,6 @@ const getLandTitle = async (req, res) => {
 const downloadAttachment = async (req, res) => {
   try {
     const { documentId } = req.params;
-    console.log(`📥 Downloading document: ${documentId}`);
     
     const axios = require('axios');
     const response = await axios.get(
@@ -250,7 +245,7 @@ const viewAttachment = async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
-    console.log(`👁️ Viewing document: ${documentId}`);
+
     
     const axios = require('axios');
     const response = await axios.get(
