@@ -129,12 +129,29 @@ const getAllLandTitles = async (req, res) => {
       () => landtitles.getLandTitles().then(response => response.data)
     );
     
-    // Ensure data is an array and add empty attachments array for frontend compatibility
+    // Ensure data is an array and fetch attachments for each land title
     const dataArray = Array.isArray(result.data) ? result.data : (result.data?.data || []);
-    const landTitlesWithAttachments = dataArray.map(title => ({
-      ...title,
-      attachments: [] // TODO: Fetch from documents service when available
-    }));
+    const axios = require('axios');
+    
+    const landTitlesWithAttachments = await Promise.all(
+      dataArray.map(async (title) => {
+        try {
+          const documentsResponse = await axios.get(
+            `${config.services.documents}/api/documents/land-title/${title.id}`
+          );
+          return {
+            ...title,
+            attachments: documentsResponse.data || []
+          };
+        } catch (error) {
+          console.log(`⚠️ Failed to fetch attachments for title ${title.id}:`, error.message);
+          return {
+            ...title,
+            attachments: []
+          };
+        }
+      })
+    );
     
     const message = result.source === 'redis' 
       ? 'Land titles retrieved from cache'
@@ -162,6 +179,18 @@ const getLandTitle = async (req, res) => {
       () => landtitles.getLandTitle(id).then(response => response.data)
     );
     
+    // Fetch attachments for this land title
+    const axios = require('axios');
+    try {
+      const documentsResponse = await axios.get(
+        `${config.services.documents}/api/documents/land-title/${id}`
+      );
+      result.data.attachments = documentsResponse.data || [];
+    } catch (error) {
+      console.log(`⚠️ Failed to fetch attachments for title ${id}:`, error.message);
+      result.data.attachments = [];
+    }
+    
     const message = result.source === 'redis'
       ? 'Land title retrieved from cache'
       : 'Land title retrieved from database';
@@ -174,9 +203,78 @@ const getLandTitle = async (req, res) => {
   }
 };
 
+// DOWNLOAD DOCUMENT ATTACHMENT
+const downloadAttachment = async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    console.log(`📥 Downloading document: ${documentId}`);
+    
+    const axios = require('axios');
+    const response = await axios.get(
+      `${config.services.documents}/api/documents/download/${documentId}`,
+      { responseType: 'stream' }
+    );
+    
+    res.setHeader('Content-Type', response.headers['content-type']);
+    res.setHeader('Content-Disposition', response.headers['content-disposition']);
+    res.setHeader('Content-Length', response.headers['content-length']);
+    
+    response.data.pipe(res);
+    
+  } catch (error) {
+    console.error('❌ Download proxy failed:', error.message);
+    res.status(500).json({ error: 'Failed to download attachment' });
+  }
+};
+
+// VIEW DOCUMENT ATTACHMENT
+const viewAttachment = async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    
+    // Check token from header or query parameter
+    let token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token && req.query.token) {
+      token = req.query.token;
+    }
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+    
+    // Verify token (simple check)
+    const jwt = require('jsonwebtoken');
+    try {
+      jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    console.log(`👁️ Viewing document: ${documentId}`);
+    
+    const axios = require('axios');
+    const response = await axios.get(
+      `${config.services.documents}/api/documents/view/${documentId}`,
+      { responseType: 'stream' }
+    );
+    
+    res.setHeader('Content-Type', response.headers['content-type']);
+    res.setHeader('Content-Disposition', response.headers['content-disposition']);
+    res.setHeader('Content-Length', response.headers['content-length']);
+    
+    response.data.pipe(res);
+    
+  } catch (error) {
+    console.error('❌ View proxy failed:', error.message);
+    res.status(500).json({ error: 'Failed to view attachment' });
+  }
+};
+
 module.exports = {
   createLandTitle,
   getAllLandTitles,
   getLandTitle,
-  validateTitleNumber
+  validateTitleNumber,
+  downloadAttachment,
+  viewAttachment
 };

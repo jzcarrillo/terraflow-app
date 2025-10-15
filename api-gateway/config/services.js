@@ -8,7 +8,8 @@ const config = {
   services: {
     landRegistry: process.env.LANDREGISTRY_SERVICE_URL || 'http://backend-landregistry-service:3000',
     users: process.env.USERS_SERVICE_URL || 'http://backend-users-service:3001',
-    payments: process.env.PAYMENTS_SERVICE_URL || 'http://backend-payments-service:3003'
+    payments: process.env.PAYMENTS_SERVICE_URL || 'http://backend-payments-service:3003',
+    documents: process.env.DOCUMENTS_SERVICE_URL || 'http://backend-documents-service:3002'
   },
   rabbitmq: {
     url: process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq-service:5672',

@@ -6,7 +6,7 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'terraflow_documents',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'your_actual_postgres_password',
+  password: process.env.DB_PASSWORD || 'password',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

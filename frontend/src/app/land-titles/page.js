@@ -189,6 +189,43 @@ export default function LandTitles() {
     setDetailsOpen(true)
   }
 
+  // View attachment function
+  const handleViewAttachment = (documentId, fileName) => {
+    const token = localStorage.getItem('token')
+    const url = `http://localhost:30081/api/attachments/view/${documentId}?token=${token}`
+    window.open(url, '_blank')
+  }
+
+  // Download attachment function
+  const handleDownloadAttachment = async (documentId, fileName) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://localhost:30081/api/attachments/download/${documentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Download failed')
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Download failed:', error)
+      setError('Failed to download attachment')
+    }
+  }
+
   return (
     <Layout>
       <Container maxWidth="lg">
@@ -566,13 +603,31 @@ export default function LandTitles() {
                   <Box sx={{ p: 2, flex: 1 }}>
                     {selectedTitle.attachments && selectedTitle.attachments.length > 0 ? (
                       selectedTitle.attachments.map((attachment, index) => (
-                        <Box key={index} sx={{ mb: 1 }}>
-                          <Typography variant="body2" sx={{ color: 'primary.main', cursor: 'pointer' }}>
+                        <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: '4px' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
                             📎 {attachment.original_name || `Document ${index + 1}`}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: 'gray', ml: 2 }}>
+                          <Typography variant="caption" sx={{ color: 'gray', display: 'block', mb: 1 }}>
                             {attachment.mime_type} • {attachment.size ? `${(attachment.size / 1024).toFixed(1)} KB` : 'Unknown size'}
                           </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              startIcon={<span></span>}
+                              onClick={() => handleViewAttachment(attachment.id, attachment.original_name)}
+                            >
+                              View
+                            </Button>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              startIcon={<span></span>}
+                              onClick={() => handleDownloadAttachment(attachment.id, attachment.original_name)}
+                            >
+                              Download
+                            </Button>
+                          </Box>
                         </Box>
                       ))
                     ) : (

@@ -9,5 +9,7 @@ router.post('/land-titles', authenticateToken, uploadAttachments, handleUploadEr
 router.get('/land-titles', authenticateToken, landTitleController.getAllLandTitles);
 router.get('/land-titles/validate/:titleNumber', landTitleController.validateTitleNumber);
 router.get('/land-titles/:id', authenticateToken, landTitleController.getLandTitle);
+router.get('/attachments/download/:documentId', authenticateToken, landTitleController.downloadAttachment);
+router.get('/attachments/view/:documentId', landTitleController.viewAttachment);
 
 module.exports = router;
