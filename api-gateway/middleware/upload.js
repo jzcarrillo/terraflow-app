@@ -20,6 +20,7 @@ const upload = multer({
 // DIFFERENT UPLOAD CONFIGURATIONS FOR DIFFERENT USE CASES
 const uploadSingle = upload.single('document');
 const uploadMultiple = upload.array('documents', FILE_UPLOAD.MAX_FILES);
+const uploadAttachments = upload.array('attachments', FILE_UPLOAD.MAX_FILES);
 
 // ERROR HANDLING MIDDLEWARE
 const handleUploadError = (error, req, res, next) => {
@@ -51,5 +52,6 @@ const handleUploadError = (error, req, res, next) => {
 module.exports = {
   uploadSingle,
   uploadMultiple,
+  uploadAttachments,
   handleUploadError
 };

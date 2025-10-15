@@ -16,6 +16,14 @@ app.use(helmet());
 app.use(corsMiddleware);
 app.use(express.json());
 
+// REQUEST LOGGING MIDDLEWARE (exclude health checks)
+app.use((req, res, next) => {
+  if (req.url !== '/health') {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  }
+  next();
+});
+
 // HEALTH CHECK
 app.get('/health', (req, res) => {
   res.json({ 
@@ -32,9 +40,18 @@ app.use('/api', userRoutes);
 app.use('/api', authRoutes);
 app.use('/api', paymentRoutes);
 
-// INITIALIZE SERVICES
+// INITIALIZE SERVICES 
 rabbitmq.initialize();
 redis.connect();
+
+// GLOBAL ERROR HANDLERS
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+});
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {

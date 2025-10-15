@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { initializeDatabase } = require('./config/db');
 const consumer = require('./services/consumer');
+const documentsRoutes = require('./routes/documents');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -21,6 +22,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// API Routes
+app.use('/api/documents', documentsRoutes);
 
 // Start server
 const startServer = async () => {

@@ -83,7 +83,7 @@ if (-not (Test-Path "Dockerfile")) {
 }
 
 # === Kill existing port-forward / processes on ALL service ports ===
-$ALL_PORTS = @($PORT, $API_PORT, $DOCUMENTS_PORT, $USERS_PORT, $PAYMENTS_PORT, 15432, 15433, 15434, 15435, 15672, 30081)
+$ALL_PORTS = @($PORT, $API_PORT, $DOCUMENTS_PORT, $USERS_PORT, $PAYMENTS_PORT, 15432, 15433, 15434, 15435, 15672, 30081, 4005)
 Write-Host "Killing existing processes on all service ports..." -ForegroundColor Yellow
 
 foreach ($portToKill in $ALL_PORTS) {
@@ -339,5 +339,30 @@ Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/postgre
 Write-Host "Port forwarding rabbitmq-management: localhost:15672" -ForegroundColor Green
 Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/rabbitmq-management", "15672:15672", "--namespace=$NAMESPACE" -NoNewWindow
 
-Write-Host "Database and RabbitMQ port forwarding active in console!" -ForegroundColor Green
+Write-Host "Port forwarding api-gateway: localhost:30081" -ForegroundColor Green
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward", "service/terraflow-api-gateway-service", "30081:8081", "--namespace=$NAMESPACE" -NoNewWindow
+
+Write-Host "Database, RabbitMQ and API Gateway port forwarding active in console!" -ForegroundColor Green
 Write-Host "RabbitMQ Management UI: http://localhost:15672 (admin/password)" -ForegroundColor Cyan
+Write-Host "API Gateway URL: http://localhost:30081" -ForegroundColor Cyan
+
+# === Start Frontend Application ===
+Write-Host "Starting Frontend Application..." -ForegroundColor Green
+
+# Change to frontend directory and start the application
+Set-Location -Path "frontend"
+if (Test-Path "package.json") {
+    Write-Host "Installing frontend dependencies..." -ForegroundColor Yellow
+    npm install
+    
+    Write-Host "Starting frontend on port 4005..." -ForegroundColor Green
+    Start-Process -FilePath "cmd" -ArgumentList "/c", "npm", "run", "dev" -NoNewWindow
+    
+    Write-Host "Frontend started successfully!" -ForegroundColor Green
+    Write-Host "Frontend URL: http://localhost:4005" -ForegroundColor Cyan
+} else {
+    Write-Host "Warning: Frontend package.json not found" -ForegroundColor Yellow
+}
+
+# Go back to root directory
+Set-Location -Path ".."

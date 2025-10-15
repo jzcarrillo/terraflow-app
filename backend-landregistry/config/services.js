@@ -22,6 +22,9 @@ const config = {
   },
   cors: {
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8081']
+  },
+  services: {
+    documents: process.env.DOCUMENTS_SERVICE_URL || 'http://localhost:3002'
   }
 };
 

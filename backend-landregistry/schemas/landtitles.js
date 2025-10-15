@@ -3,6 +3,7 @@ const { z } = require('zod');
 const landTitleSchema = z.object({
   owner_name: z.string().min(1, "Owner name is required"),
   contact_no: z.string().regex(/^[0-9]{11}$/, "Contact number must be exactly 11 digits"),
+  email_address: z.string().email("Valid email address is required"),
   title_number: z.string().min(1, "Title number is required"),
   address: z.string().min(1, "Address is required"),
   property_location: z.string().min(1, "Property location is required"),

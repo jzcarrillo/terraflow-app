@@ -8,19 +8,27 @@ class RedisService {
 
   async connect() {
     try {
-      if (!this.client) {
+      if (!this.client || !this.client.isOpen) {
         this.client = redis.createClient({
           socket: {
             host: config.redis.host,
             port: config.redis.port
           }
         });
+        
+        // Handle Redis errors
+        this.client.on('error', (err) => {
+          console.error('❌ Redis client error:', err.message);
+          this.client = null;
+        });
+        
         await this.client.connect();
         console.log('✅ Connected to Redis successfully');
       }
       return true;
     } catch (error) {
       console.error('❌ Redis connection failed:', error.message);
+      this.client = null;
       return false;
     }
   }

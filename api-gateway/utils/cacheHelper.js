@@ -1,4 +1,4 @@
-const redisService = require('../services/redisService');
+const redisService = require('../services/redis');
 const { CACHE } = require('../config/constants');
 
 class CacheHelper {
@@ -8,19 +8,22 @@ class CacheHelper {
     try {
       
 // CHECK CACHE FIRST
-      const cached = await redisService.client?.get(cacheKey);
-      if (cached) {
-        return {
-          data: JSON.parse(cached),
-          source: 'redis'
-        };
+      const connected = await redisService.connect();
+      if (connected && redisService.client) {
+        const cached = await redisService.client.get(cacheKey);
+        if (cached) {
+          return {
+            data: JSON.parse(cached),
+            source: 'redis'
+          };
+        }
       }
 
 // CACHE MISS - FETCH FROM SOURCE
       const freshData = await fetchFunction();
       
 // CACHE THE RESULT
-      if (redisService.client) {
+      if (connected && redisService.client) {
         await redisService.client.setEx(cacheKey, ttl, JSON.stringify(freshData));
       }
       

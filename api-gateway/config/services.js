@@ -29,6 +29,7 @@ const config = {
   cors: {
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:3000', 
+      'http://localhost:4005',
       'http://localhost:8081', 
       'http://localhost:30081',
       'http://backend-landregistry-service:3000',

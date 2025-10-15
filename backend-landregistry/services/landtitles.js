@@ -1,6 +1,8 @@
 const { pool } = require('../config/db');
 const publisher = require('./publisher');
 const { QUEUES, EVENT_TYPES, STATUS } = require('../config/constants');
+const axios = require('axios');
+const config = require('../config/services');
 
 const landTitleCreation = async (messageData) => {
   const { transaction_id, land_title_data, attachments, user_id } = messageData;
@@ -25,21 +27,30 @@ const landTitleCreation = async (messageData) => {
 // CREATE LAND TITLE WITH PENDING STATUS
     const insertQuery = `
       INSERT INTO land_titles (
-        title_number, owner_name, address, property_location, 
-        lot_number, survey_number, area_size, transaction_id, 
+        title_number, owner_name, contact_no, email_address, address, 
+        property_location, lot_number, survey_number, area_size, 
+        classification, registration_date, registrar_office, 
+        previous_title_number, encumbrances, transaction_id, 
         status, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *
     `;
     
     const result = await pool.query(insertQuery, [
       validatedData.title_number,
       validatedData.owner_name,
+      validatedData.contact_no,
+      validatedData.email_address,
       validatedData.address,
       validatedData.property_location,
       validatedData.lot_number,
       validatedData.survey_number,
       validatedData.area_size,
+      validatedData.classification,
+      validatedData.registration_date,
+      validatedData.registrar_office,
+      validatedData.previous_title_number,
+      validatedData.encumbrances,
       transaction_id,
       STATUS.PENDING,
       user_id

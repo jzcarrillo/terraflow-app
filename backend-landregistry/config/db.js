@@ -25,6 +25,7 @@ const initializeDatabase = async (retries = 5) => {
           id SERIAL PRIMARY KEY,
           owner_name VARCHAR(255),
           contact_no VARCHAR(20),
+          email_address VARCHAR(255),
           title_number VARCHAR(20) UNIQUE NOT NULL,
           address TEXT,
           property_location VARCHAR(100),
@@ -44,7 +45,13 @@ const initializeDatabase = async (retries = 5) => {
         )
       `);
       
-
+      // ADD EMAIL_ADDRESS COLUMN IF NOT EXISTS
+      await pool.query(`
+        ALTER TABLE ${TABLES.LAND_TITLES} 
+        ADD COLUMN IF NOT EXISTS email_address VARCHAR(255)
+      `);
+      
+      console.log('✅ Database tables initialized successfully');
       return;
 
     } catch (error) {

@@ -9,14 +9,24 @@ class RabbitMQService {
 
   async connect() {
     try {
-      if (!this.connection) {
+      if (!this.connection || this.connection.connection.destroyed) {
         this.connection = await amqp.connect(config.rabbitmq.url);
         this.channel = await this.connection.createChannel();
+        
+        // Handle connection errors
+        this.connection.on('error', (err) => {
+          console.error('❌ RabbitMQ connection error:', err.message);
+          this.connection = null;
+          this.channel = null;
+        });
+        
         console.log('✅ Connected to RabbitMQ successfully');
       }
       return true;
     } catch (error) {
       console.error('❌ RabbitMQ connection failed:', error.message);
+      this.connection = null;
+      this.channel = null;
       return false;
     }
   }

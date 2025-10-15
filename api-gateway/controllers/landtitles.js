@@ -27,6 +27,10 @@ const createLandTitle = async (req, res) => {
 // CORRELATION ID 
   const transactionId = require('crypto').randomUUID();
   
+  console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
+  console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
+  console.log('📎 Files:', req.files ? req.files.length : 0);
+  
   try {
 // PREPROCESS MULTIPART FORM DATA (convert string numbers to numbers)
     const processedBody = { ...req.body };
@@ -39,7 +43,6 @@ const createLandTitle = async (req, res) => {
     
 // VALIDATE REQUEST USING ZOD FIRST
     const validatedData = landTitleSchema.parse(processedBody);
-    console.log('✅ Zod validation successful for title:', validatedData.title_number);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
     const validateResponse = await landtitles.validateTitleNumber(validatedData.title_number);
@@ -53,18 +56,7 @@ const createLandTitle = async (req, res) => {
       });
     }
     
-// LOG VALIDATED PAYLOAD (AFTER ALL VALIDATIONS PASS)
-    console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
-    console.log('📦 Validated payload:', JSON.stringify(validatedData, null, 2));
-    console.log('📎 Files:', req.files ? req.files.length : 0);
-    
-// LOG DOCUMENT DETAILS
-    if (req.files && req.files.length > 0) {
-      console.log('📄 Document details:');
-      req.files.forEach((file, index) => {
-        console.log(`  ${index + 1}. ${file.originalname} (${file.mimetype}, ${file.size} bytes)`);
-      });
-    }
+
     
 
 
@@ -79,9 +71,16 @@ const createLandTitle = async (req, res) => {
         buffer: file.buffer.toString('base64'),
         document_type: file.fieldname
       })) : [],
-      user_id: req.user.id,
+      user_id: req.user.user_id || req.user.id,
       timestamp: new Date().toISOString()
     };
+    
+    // Clear file buffers from memory
+    if (req.files) {
+      req.files.forEach(file => {
+        file.buffer = null;
+      });
+    }
 
 // CLEAR CACHE SINCE NEW DATA WILL BE ADDED 
     try {
@@ -92,15 +91,24 @@ const createLandTitle = async (req, res) => {
     }
 
 // PUBLISH TO LAND REGISTRY QUEUE
-    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, payload);
-
-    res.status(202).json({
-      success: true,
-      message: '✅ Land title submission received and is being processed',
-      transaction_id: transactionId,
-      title_number: validatedData.title_number,
-      status: STATUS.PENDING
-    });
+    try {
+      await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, payload);
+      console.log(`📤 Land title published to queue: ${validatedData.title_number}`);
+      
+      res.status(202).json({
+        success: true,
+        message: '✅ Land title submission received and is being processed',
+        transaction_id: transactionId,
+        title_number: validatedData.title_number,
+        status: STATUS.PENDING
+      });
+    } catch (publishError) {
+      console.error('❌ Queue publish failed:', publishError.message);
+      res.status(500).json({
+        error: 'Failed to process land title submission',
+        message: 'Message queue unavailable'
+      });
+    }
 
   } catch (error) {
     const ErrorHandler = require('../utils/errorHandler');
@@ -121,12 +129,19 @@ const getAllLandTitles = async (req, res) => {
       () => landtitles.getLandTitles().then(response => response.data)
     );
     
+    // Ensure data is an array and add empty attachments array for frontend compatibility
+    const dataArray = Array.isArray(result.data) ? result.data : (result.data?.data || []);
+    const landTitlesWithAttachments = dataArray.map(title => ({
+      ...title,
+      attachments: [] // TODO: Fetch from documents service when available
+    }));
+    
     const message = result.source === 'redis' 
       ? 'Land titles retrieved from cache'
       : 'Land titles retrieved from database';
     
     console.log(`✅ Land titles retrieved from ${result.source}`);
-    res.json(CacheHelper.formatResponse(message, result.data, result.source, req.user.id));
+    res.json(CacheHelper.formatResponse(message, landTitlesWithAttachments, result.source, req.user.id));
 
   } catch (error) {
     ErrorHandler.handleError(error, res, 'Get all land titles');
