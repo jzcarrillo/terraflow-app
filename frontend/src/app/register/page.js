@@ -238,9 +238,9 @@ export default function Register() {
                 }}
               >
                 <option value="">Select Role</option>
-                <option value="ADMIN">Admin</option>
-                <option value="CASHIER">Cashier</option>
                 <option value="LAND_TITLE_PROCESSOR">Land Title Processor</option>
+                <option value="CASHIER">Cashier</option>
+                <option value="ADMIN">Admin</option>
               </select>
               {errors.role && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.role.message}</Typography>}
             </Box>
