@@ -29,6 +29,7 @@ const initializeDatabase = async (retries = 5) => {
           first_name VARCHAR(255),
           last_name VARCHAR(255),
           location TEXT,
+          role VARCHAR(50),
           transaction_id UUID,
           status VARCHAR(50) DEFAULT '${STATUS.ACTIVE}',
           created_at TIMESTAMP DEFAULT NOW(),

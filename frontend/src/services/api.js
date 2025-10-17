@@ -11,9 +11,9 @@ const api = axios.create({
   },
 })
 
-// Set fresh token
+// Set fresh token with role
 if (typeof window !== 'undefined') {
-  const newToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkNBU0hJRVIgMSIsImVtYWlsIjoiY2FzaGllcjFAZXhhbXBsZS5jb20iLCJleHAiOjIwNzU4NjY2NTMsImlhdCI6MTc2MDUwNjY1M30.5SxQjX8s4z3s8hibgxxARXfB6OUWsgidUu8AQRz-nNA'
+  const newToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDY3NTAwNiwiZXhwIjoxNzYwNzYxNDA2fQ.U_97iZC2tdG6tf0h_t7X_XtdSgos-aA5LD4iCbz64gU'
   localStorage.clear()
   sessionStorage.clear()
   localStorage.setItem('token', newToken)
@@ -23,7 +23,7 @@ if (typeof window !== 'undefined') {
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkNBU0hJRVIgMSIsImVtYWlsIjoiY2FzaGllcjFAZXhhbXBsZS5jb20iLCJleHAiOjIwNzU4NjY2NTMsImlhdCI6MTc2MDUwNjY1M30.5SxQjX8s4z3s8hibgxxARXfB6OUWsgidUu8AQRz-nNA'
+      const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDY3NTAwNiwiZXhwIjoxNzYwNzYxNDA2fQ.U_97iZC2tdG6tf0h_t7X_XtdSgos-aA5LD4iCbz64gU'
       config.headers.Authorization = `Bearer ${freshToken}`
     }
     return config
@@ -38,7 +38,7 @@ export const landTitlesAPI = {
   getAll: () => api.get('/land-titles'),
   getById: (id) => api.get(`/land-titles/${id}`),
   create: (data) => {
-    const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkNBU0hJRVIgMSIsImVtYWlsIjoiY2FzaGllcjFAZXhhbXBsZS5jb20iLCJleHAiOjIwNzU4NjY2NTMsImlhdCI6MTc2MDUwNjY1M30.5SxQjX8s4z3s8hibgxxARXfB6OUWsgidUu8AQRz-nNA'
+    const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDY3NTAwNiwiZXhwIjoxNzYwNzYxNDA2fQ.U_97iZC2tdG6tf0h_t7X_XtdSgos-aA5LD4iCbz64gU'
     
     const directAxios = axios.create({
       baseURL: API_BASE_URL,
@@ -63,10 +63,30 @@ export const paymentsAPI = {
   getStatus: (id) => api.get(`/payments/${id}/status`),
 }
 
+// Authentication API
+export const authAPI = {
+  login: (credentials) => {
+    return fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credentials)
+    })
+  },
+  register: (userData) => {
+    return fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    })
+  }
+}
+
 // Users API
 export const usersAPI = {
-  login: (credentials) => api.post('/users/login', credentials),
-  register: (userData) => api.post('/users', userData),
   getProfile: () => api.get('/users/profile'),
 }
 

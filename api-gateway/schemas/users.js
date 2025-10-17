@@ -7,7 +7,10 @@ const userSchema = z.object({
   confirm_password: z.string().min(6, "Confirm password must be at least 6 characters"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  location: z.string().min(1, "Location is required")
+  location: z.string().min(1, "Location is required"),
+  role: z.enum(["ADMIN", "CASHIER", "LAND_TITLE_PROCESSOR"], {
+    errorMap: () => ({ message: "Role must be ADMIN, CASHIER, or LAND_TITLE_PROCESSOR" })
+  })
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords do not match",
   path: ["confirm_password"]

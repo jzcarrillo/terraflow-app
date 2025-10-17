@@ -29,17 +29,24 @@ const createUser = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
-// LOG INCOMING REQUEST FIRST
-    console.log('👤 === CREATE USER REQUEST ===');
-    console.log('📦 Raw request payload:', JSON.stringify({
-      ...req.body,
-      password: '[HIDDEN]',
-      confirm_password: '[HIDDEN]'
-    }, null, 2));
+
 
 // VALIDATE REQUEST USING ZOD
     const validatedData = userSchema.parse(req.body);
     console.log('✅ Zod validation successful for user:', validatedData.username);
+
+// CHECK FOR DUPLICATE EMAIL/USERNAME
+    const duplicateCheck = await users.validateUser(validatedData.username, validatedData.email_address);
+    
+    if (!duplicateCheck.valid) {
+      console.log(`❌ Duplicate validation failed: ${duplicateCheck.message}`);
+      return res.status(409).json({
+        error: 'Duplicate user data',
+        message: duplicateCheck.message
+      });
+    }
+    
+    console.log('✅ No duplicates found, proceeding with user creation');
 
 // HASH PASSWORDS FOR SECURITY
     const bcrypt = require('bcryptjs');
@@ -63,12 +70,13 @@ const createUser = async (req, res) => {
         password: hashedPassword,
         confirm_password: hashedConfirmPassword
       },
-      user_id: req.user.id,
+      user_id: req.user?.id || null,
       timestamp: new Date().toISOString()
     };
 
 // PUBLISH TO USER QUEUE
     await rabbitmq.publishToQueue(QUEUES.USERS, payload);
+    console.log(`📤 User registration published to queue: ${QUEUES.USERS}`);
     
     res.status(202).json({
       success: true,
@@ -129,7 +137,8 @@ const login = async (req, res) => {
     const tokenPayload = {
       user_id: user.id,
       username: user.username,
-      email: user.email_address
+      email: user.email_address,
+      role: user.role
     };
     
     const token = jwt.sign(tokenPayload, config.jwt.secret, {
@@ -165,8 +174,47 @@ const login = async (req, res) => {
   }
 };
 
+// GET ALL USERS
+const getAllUsers = async (req, res) => {
+  try {
+    console.log('👥 === GET ALL USERS ===');
+    
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    console.log('Token being passed to users service:', token ? 'Found' : 'Not found');
+    
+    const response = await users.getAllUsers(token);
+    
+    console.log(`✅ Retrieved ${response.users.length} users`);
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Get all users error:', error.message);
+    res.status(500).json({ error: 'Users service unavailable' });
+  }
+};
+
+// UPDATE USER ROLE
+const updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    console.log(`🔄 === UPDATE USER ROLE ===`);
+    console.log(`👤 User ID: ${userId}, New Role: ${role}`);
+    
+    const response = await users.updateUserRole(userId, role);
+    
+    console.log(`✅ User role updated successfully`);
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Update user role error:', error.message);
+    res.status(500).json({ error: 'User role update failed' });
+  }
+};
+
 module.exports = {
   validateUser,
   createUser,
-  login
+  login,
+  getAllUsers,
+  updateUserRole
 };

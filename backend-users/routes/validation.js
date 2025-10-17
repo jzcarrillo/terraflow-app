@@ -14,7 +14,7 @@ router.get('/user/:username', async (req, res) => {
     console.log(`📦 Request params: username=${username}`);
     
     const result = await pool.query(
-      `SELECT id, username, email_address, password_hash, first_name, last_name, status 
+      `SELECT id, username, email_address, password_hash, first_name, last_name, role, status 
        FROM ${TABLES.USERS} WHERE username = $1`,
       [username]
     );
@@ -41,15 +41,66 @@ router.get('/user/:username', async (req, res) => {
   }
 });
 
+// GET ALL USERS (ADMIN ONLY)
+router.get('/users', authenticateToken, async (req, res) => {
+  try {
+    console.log('👥 === GET ALL USERS ===');
+    
+    const result = await pool.query(
+      `SELECT id, username, email_address, first_name, last_name, role, status, created_at 
+       FROM ${TABLES.USERS} ORDER BY created_at DESC`
+    );
+    
+    console.log(`📋 Retrieved ${result.rows.length} users from database`);
+    console.log('📤 Response payload:', JSON.stringify(result.rows, null, 2));
+    
+    res.json({ users: result.rows });
+    
+  } catch (error) {
+    console.error('❌ Get all users error:', error.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// UPDATE USER ROLE (ADMIN ONLY)
+router.put('/users/:userId/role', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    console.log(`🔄 === UPDATE USER ROLE ===`);
+    console.log(`👤 User ID: ${userId}, New Role: ${role}`);
+    
+    const result = await pool.query(
+      `UPDATE ${TABLES.USERS} SET role = $1 WHERE id = $2 RETURNING *`,
+      [role, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log(`❌ User not found: ${userId}`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    console.log(`✅ User role updated successfully`);
+    res.json(result.rows[0]);
+    
+  } catch (error) {
+    console.error('❌ Update user role error:', error.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // VALIDATE USERNAME / EMAIL ADDRESS IF DUPLICATE
 router.get('/validate', async (req, res) => {
   try {
     const { username, email_address } = req.query;
-
+    
+    console.log(`🔍 Validating username: ${username}, email: ${email_address}`);
     
 // CHECK USERNAME IF EXISTING
     const usernameExists = await userService.checkUsernameExists(username);
     if (usernameExists) {
+      console.log(`❌ Username already exists: ${username}`);
       return res.json({
         valid: false,
         message: 'Username already exists'
@@ -59,12 +110,14 @@ router.get('/validate', async (req, res) => {
 // CHECK EMAIL ADDRESS IF EXISTING
     const emailExists = await userService.checkEmailExists(email_address);
     if (emailExists) {
+      console.log(`❌ Email address already exists: ${email_address}`);
       return res.json({
         valid: false,
         message: 'Email address already exists'
       });
     }
     
+    console.log(`✅ No duplicates found for username: ${username}, email: ${email_address}`);
     res.json({
       valid: true,
       message: 'User data is valid. No duplicates found.'

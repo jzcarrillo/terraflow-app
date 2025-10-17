@@ -359,7 +359,7 @@ if (Test-Path "package.json") {
     Start-Process -FilePath "cmd" -ArgumentList "/c", "npm", "run", "dev" -NoNewWindow
     
     Write-Host "Frontend started successfully!" -ForegroundColor Green
-    Write-Host "Frontend URL: http://localhost:4005" -ForegroundColor Cyan
+    Write-Host "Frontend URL: http://localhost:4005/register" -ForegroundColor Cyan
 } else {
     Write-Host "Warning: Frontend package.json not found" -ForegroundColor Yellow
 }

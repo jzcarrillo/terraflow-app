@@ -1,23 +1,23 @@
 const axios = require('axios');
 const config = require('../config/services');
 
-// Create axios instance with timeout and auth
+// Create axios instance with timeout
 const httpClient = axios.create({
   timeout: 5000, // 5 second timeout
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkNBU0hJRVIgMSIsImVtYWlsIjoiY2FzaGllcjFAZXhhbXBsZS5jb20iLCJleHAiOjIwNzU4NjY2NTMsImlhdCI6MTc2MDUwNjY1M30.5SxQjX8s4z3s8hibgxxARXfB6OUWsgidUu8AQRz-nNA'
+    'Content-Type': 'application/json'
   }
 });
 
 class LandTitleService {
   
   // VALIDATE LAND TITLE
-  async validateTitleNumber(titleNumber) {
+  async validateTitleNumber(titleNumber, token = null) {
     try {
       console.log(`🔍 Validating title: ${titleNumber}`);
       
-      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles/validate/${titleNumber}`);
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles/validate/${titleNumber}`, { headers });
       
       console.log(`✅ Title validation result: ${response.data.exists}`);
       return response.data;
@@ -28,9 +28,10 @@ class LandTitleService {
   }
 
   // GET ALL LAND TITLES
-  async getLandTitles() {
+  async getLandTitles(token = null) {
     try {
-      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles`);
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles`, { headers });
       return response;
     } catch (error) {
       console.error('❌ Get land titles failed:', error.message);
@@ -39,9 +40,10 @@ class LandTitleService {
   }
 
   // GET LAND TITLE BY ID
-  async getLandTitle(id) {
+  async getLandTitle(id, token = null) {
     try {
-      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles/${id}`);
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await httpClient.get(`${config.services.landRegistry}/api/land-titles/${id}`, { headers });
       return response;
     } catch (error) {
       console.error('❌ Get land title failed:', error.message);

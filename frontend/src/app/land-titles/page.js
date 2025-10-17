@@ -108,10 +108,10 @@ export default function LandTitles() {
       setError('')
       setSuccess('')
       
-      // Set fresh authentication token
-      const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIiwiaWQiOjEsImV4cCI6MTc2MDQ0OTQ5MywiaWF0IjoxNzYwMzYzMDkzfQ.Wk6ifzF7imtCs7UE91IUxpQpWEPgzsje0QaeSQL0XtY"
+      // Set fresh authentication token with role
+      const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDY3NTAwNiwiZXhwIjoxNzYwNzYxNDA2fQ.U_97iZC2tdG6tf0h_t7X_XtdSgos-aA5LD4iCbz64gU"
       localStorage.setItem('token', validToken)
-      console.log('Fresh token set in localStorage')
+      console.log('Fresh token with role set in localStorage')
       
       // Collect all files from attachment inputs
       const allFiles = []

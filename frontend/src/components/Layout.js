@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Drawer,
@@ -14,6 +14,7 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Button,
   ThemeProvider,
   CssBaseline
 } from '@mui/material'
@@ -23,10 +24,11 @@ import {
   Description as LandTitleIcon,
   Payment as PaymentIcon,
   Folder as DocumentIcon,
-  People as UsersIcon
+  People as UsersIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import theme from '../app/theme'
 
 const drawerWidth = 240
@@ -35,36 +37,58 @@ const menuItems = [
   {
     text: 'Dashboard',
     icon: <HomeIcon />,
-    href: '/'
+    href: '/',
+    roles: ['ADMIN', 'CASHIER', 'LAND_TITLE_PROCESSOR']
   },
   {
     text: 'Land Titles',
     icon: <LandTitleIcon />,
-    href: '/land-titles'
+    href: '/land-titles',
+    roles: ['ADMIN','LAND_TITLE_PROCESSOR']
   },
   {
     text: 'Payments',
     icon: <PaymentIcon />,
-    href: '/payments'
+    href: '/payments',
+    roles: ['ADMIN', 'CASHIER']
   },
   {
     text: 'Documents',
     icon: <DocumentIcon />,
-    href: '/documents'
+    href: '/documents',
+    roles: ['ADMIN', 'CASHIER', 'LAND_TITLE_PROCESSOR']
   },
   {
     text: 'Users',
     icon: <UsersIcon />,
-    href: '/users'
+    href: '/users',
+    roles: ['ADMIN']
   }
 ]
 
 export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem('user')
+      if (user) {
+        setCurrentUser(JSON.parse(user))
+      }
+    }
+  }, [])
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    router.push('/login')
   }
 
   const drawer = (
@@ -113,9 +137,22 @@ export default function Layout({ children }) {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div">
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               Land Registration System
             </Typography>
+            {currentUser && (
+              <Typography variant="body1" sx={{ mr: 2 }}>
+                Welcome, {currentUser.first_name || currentUser.username}
+              </Typography>
+            )}
+            <Button
+              color="inherit"
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+              sx={{ ml: 2 }}
+            >
+              Logout
+            </Button>
           </Toolbar>
         </AppBar>
         

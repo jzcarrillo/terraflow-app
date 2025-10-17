@@ -45,7 +45,8 @@ const createLandTitle = async (req, res) => {
     const validatedData = landTitleSchema.parse(processedBody);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
-    const validateResponse = await landtitles.validateTitleNumber(validatedData.title_number);
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const validateResponse = await landtitles.validateTitleNumber(validatedData.title_number, token);
     const isDuplicate = validateResponse.exists;
     
     if (isDuplicate) {
@@ -120,9 +121,10 @@ const getAllLandTitles = async (req, res) => {
   try {
     console.log('🔍 Getting all land titles');
     
+    const token = req.headers.authorization?.replace('Bearer ', '');
     const result = await CacheHelper.getCachedOrFetch(
       'land_titles:all',
-      () => landtitles.getLandTitles().then(response => response.data)
+      () => landtitles.getLandTitles(token).then(response => response.data)
     );
     
     // Ensure data is an array and fetch attachments for each land title
@@ -170,9 +172,10 @@ const getLandTitle = async (req, res) => {
     const { id } = req.params;
     console.log(`🔍 Getting land title ID: ${id}`);
     
+    const token = req.headers.authorization?.replace('Bearer ', '');
     const result = await CacheHelper.getCachedOrFetch(
       `land_title:${id}`,
-      () => landtitles.getLandTitle(id).then(response => response.data)
+      () => landtitles.getLandTitle(id, token).then(response => response.data)
     );
     
     // Fetch attachments for this land title
