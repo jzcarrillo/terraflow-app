@@ -266,12 +266,12 @@ export default function LandTitles() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Title Number</TableCell>
-                <TableCell>Owner Name</TableCell>
-                <TableCell>Property Location</TableCell>
-                <TableCell>Area Size</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Created Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Title Number</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Owner Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Property Location</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Area Size</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Created Date</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

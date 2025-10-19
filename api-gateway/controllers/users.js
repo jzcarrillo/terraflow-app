@@ -133,7 +133,7 @@ const login = async (req, res) => {
     
     console.log(`✅ Password verified successfully for user: ${username}`);
     
-// GENERATE JWT TOKEN
+// GENERATE FRESH JWT TOKEN (24 HOURS)
     const tokenPayload = {
       user_id: user.id,
       username: user.username,
@@ -142,8 +142,10 @@ const login = async (req, res) => {
     };
     
     const token = jwt.sign(tokenPayload, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn
+      expiresIn: '24h' // Fresh 24-hour token on every login
     });
+    
+    console.log(`🔄 Fresh token generated for ${username} - expires in 24 hours`);
     
     const responsePayload = {
       success: true,
@@ -160,9 +162,9 @@ const login = async (req, res) => {
     
     console.log('📤 Login response payload:', JSON.stringify({
       ...responsePayload,
-      token: '[GENERATED_TOKEN]'
+      token: `${token.substring(0, 50)}...`
     }, null, 2));
-    console.log(`✅ Login completed successfully for user: ${username}`);
+    console.log(`✅ Login completed successfully for user: ${username} with fresh token`);
     
     res.json(responsePayload);
     

@@ -26,7 +26,7 @@ class UserService {
     console.log(`✅ Zod validation successful for user: ${validatedData.username}`);
     
     const { 
-      email_address, username, password, first_name, last_name, location,
+      email_address, username, password, first_name, last_name, location, role = 'ADMIN',
       transaction_id, status = STATUS.ACTIVE
     } = validatedData;
 
@@ -35,11 +35,11 @@ class UserService {
 
     const result = await pool.query(`
       INSERT INTO ${TABLES.USERS} (
-        email_address, username, password_hash, first_name, last_name, location, transaction_id, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        email_address, username, password_hash, first_name, last_name, location, role, transaction_id, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `, [
-      email_address, username, password_hash, first_name, last_name, location, transaction_id, status
+      email_address, username, password_hash, first_name, last_name, location, role, transaction_id, status
     ]);
 
     console.log('✅ User creation successfully');

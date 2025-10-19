@@ -127,8 +127,25 @@ const processRollbackTransaction = async (messageData) => {
   }
 };
 
+const processLandTitleActivated = async (messageData) => {
+  const { land_title_id, title_number, reference_id } = messageData;
+  
+  try {
+    console.log(`🏠 [ACTIVATION] Activating documents for land title: ${title_number} (ID: ${land_title_id})`);
+    
+    // UPDATE ALL DOCUMENTS FOR THIS LAND TITLE TO ACTIVE
+    const result = await documentService.updateDocumentStatusByLandTitle(land_title_id, 'ACTIVE');
+    
+    console.log(`✅ [ACTIVATION] ${result.rowCount} documents activated for land title: ${title_number}`);
+    
+  } catch (error) {
+    console.error(`❌ [ACTIVATION] Failed to activate documents for land title: ${title_number}`, error);
+  }
+};
+
 module.exports = {
   processDocumentUpload,
   processLandTitlePaid,
-  processRollbackTransaction
+  processRollbackTransaction,
+  processLandTitleActivated
 };

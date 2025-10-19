@@ -23,7 +23,6 @@ import {
   Home as HomeIcon,
   Description as LandTitleIcon,
   Payment as PaymentIcon,
-  Folder as DocumentIcon,
   People as UsersIcon,
   Logout as LogoutIcon
 } from '@mui/icons-material'
@@ -51,12 +50,6 @@ const menuItems = [
     icon: <PaymentIcon />,
     href: '/payments',
     roles: ['ADMIN', 'CASHIER']
-  },
-  {
-    text: 'Documents',
-    icon: <DocumentIcon />,
-    href: '/documents',
-    roles: ['ADMIN', 'CASHIER', 'LAND_TITLE_PROCESSOR']
   },
   {
     text: 'Users',

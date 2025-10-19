@@ -11,7 +11,8 @@ const validateTitleNumber = async (req, res) => {
     const { titleNumber } = req.params;
     console.log(`🔍 Validating title: ${titleNumber}`);
     
-    const response = await landtitles.validateTitleNumber(titleNumber);
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const response = await landtitles.validateTitleNumber(titleNumber, token);
     
     console.log(`✅ Title validation result: ${response.exists}`);
     res.json(response);
@@ -206,6 +207,7 @@ const getLandTitle = async (req, res) => {
 const downloadAttachment = async (req, res) => {
   try {
     const { documentId } = req.params;
+    console.log(`📥 Downloading document: ${documentId}`);
     
     const axios = require('axios');
     const response = await axios.get(
@@ -248,7 +250,7 @@ const viewAttachment = async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
-
+    console.log(`📄 Viewing document: ${documentId}`);
     
     const axios = require('axios');
     const response = await axios.get(
@@ -268,11 +270,71 @@ const viewAttachment = async (req, res) => {
   }
 };
 
+// PAYMENT CONFIRMATION EVENT HANDLERS - SEQUENTIAL APPROACH
+
+// Step 1: Handle Payment Confirmed Event
+const handlePaymentConfirmed = async (paymentData) => {
+  try {
+    const { EVENT_TYPES } = require('../config/constants');
+    
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: EVENT_TYPES.PAYMENT_CONFIRMED,
+      transaction_id: paymentData.transaction_id,
+      land_title_id: paymentData.land_title_id,
+      payment_reference: paymentData.payment_reference,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`📤 Payment confirmed, activating land title: ${paymentData.land_title_id}`);
+  } catch (error) {
+    console.error('❌ Payment confirmation failed:', error.message);
+  }
+};
+
+// Step 2: Handle Title Activated Event
+const handleTitleActivated = async (titleData) => {
+  try {
+    const { EVENT_TYPES } = require('../config/constants');
+    
+    await rabbitmq.publishToQueue(QUEUES.DOCUMENTS, {
+      event_type: EVENT_TYPES.TITLE_ACTIVATED,
+      transaction_id: titleData.transaction_id,
+      land_title_id: titleData.land_title_id,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`📤 Title activated, updating documents: ${titleData.land_title_id}`);
+  } catch (error) {
+    console.error('❌ Title activation failed:', error.message);
+  }
+};
+
+// Step 3: Handle Documents Activated Event
+const handleDocumentsActivated = async (docData) => {
+  try {
+    const { EVENT_TYPES } = require('../config/constants');
+    
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: EVENT_TYPES.DOCUMENTS_ACTIVATED,
+      transaction_id: docData.transaction_id,
+      land_title_id: docData.land_title_id,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`✅ Process completed for land title: ${docData.land_title_id}`);
+  } catch (error) {
+    console.error('❌ Process completion failed:', error.message);
+  }
+};
+
 module.exports = {
+  validateTitleNumber,
   createLandTitle,
   getAllLandTitles,
   getLandTitle,
-  validateTitleNumber,
   downloadAttachment,
-  viewAttachment
+  viewAttachment,
+  handlePaymentConfirmed,
+  handleTitleActivated,
+  handleDocumentsActivated
 };

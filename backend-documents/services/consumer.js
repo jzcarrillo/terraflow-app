@@ -1,5 +1,5 @@
 const amqp = require('amqplib');
-const { processDocumentUpload, processLandTitlePaid, processRollbackTransaction } = require('../processors/document');
+const { processDocumentUpload, processLandTitlePaid, processRollbackTransaction, processLandTitleActivated } = require('../processors/document');
 const { QUEUES, EVENT_TYPES } = require('../config/constants');
 
 const QUEUE_NAME = QUEUES.DOCUMENTS;
@@ -57,6 +57,11 @@ class RabbitMQConsumer {
             case EVENT_TYPES.ROLLBACK_TRANSACTION:
               await processRollbackTransaction(messageData);
               console.log('✅ Transaction rollback processed successfully');
+              break;
+              
+            case EVENT_TYPES.LAND_TITLE_ACTIVATED:
+              await processLandTitleActivated(messageData);
+              console.log('✅ Land title activation processed successfully');
               break;
               
             default:

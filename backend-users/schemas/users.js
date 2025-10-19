@@ -6,7 +6,8 @@ const userSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  location: z.string().min(1, "Location is required")
+  location: z.string().min(1, "Location is required"),
+  role: z.string().optional().default('ADMIN') // Default role is ADMIN
 });
 
 module.exports = {

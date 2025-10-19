@@ -9,62 +9,41 @@ import {
   Alert,
   Paper
 } from '@mui/material'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required")
-})
+import { authAPI } from '../../services/api'
 
 export default function Login() {
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(loginSchema)
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const onSubmit = async (data) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setLoading(true)
     setError('')
-    setSuccess('')
-    
+
     try {
-      const response = await fetch('http://localhost:30081/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: data.username,
-          password: data.password
-        })
-      })
+      const result = await authAPI.login(credentials)
       
-      const result = await response.json()
-      
-      if (response.ok) {
-        // Store token in localStorage
-        localStorage.setItem('token', result.token)
-        localStorage.setItem('user', JSON.stringify(result.user))
-        
-        setSuccess('Login successful! Redirecting...')
-        setTimeout(() => {
-          router.push('/land-titles')
-        }, 1500)
+      if (result.ok) {
+        console.log('✅ Login successful:', result.data.user)
+        window.location.href = '/land-titles'
       } else {
-        setError(result.message || 'Login failed')
+        setError(result.error?.error || 'Login failed')
       }
     } catch (error) {
-      setError('Network error. Please try again.')
+      setError('Login service unavailable')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleBypass = () => {
+    if (typeof window !== 'undefined' && window.bypassAuth) {
+      window.bypassAuth()
     }
   }
 
@@ -76,15 +55,16 @@ export default function Login() {
         </Typography>
         
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
         
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
               <Typography sx={{ mb: 1, fontWeight: 500 }}>Username:</Typography>
               <input
                 type="text"
-                {...register('username')}
+                required
+                value={credentials.username}
+                onChange={(e) => setCredentials({...credentials, username: e.target.value})}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -93,14 +73,15 @@ export default function Login() {
                   fontSize: '16px'
                 }}
               />
-              {errors.username && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.username.message}</Typography>}
             </Box>
 
             <Box>
               <Typography sx={{ mb: 1, fontWeight: 500 }}>Password:</Typography>
               <input
                 type="password"
-                {...register('password')}
+                required
+                value={credentials.password}
+                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -109,7 +90,6 @@ export default function Login() {
                   fontSize: '16px'
                 }}
               />
-              {errors.password && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.password.message}</Typography>}
             </Box>
 
             <Button
@@ -119,7 +99,7 @@ export default function Login() {
               disabled={loading}
               sx={{ mt: 2, py: 1.5 }}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'Signing in...' : 'Login'}
             </Button>
 
             <Typography align="center" sx={{ mt: 2 }}>
@@ -128,6 +108,21 @@ export default function Login() {
                 Register here
               </Link>
             </Typography>
+            
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Test Credentials: jzcarrillo / [your password]
+              </Typography>
+              
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleBypass}
+                sx={{ fontSize: '0.75rem' }}
+              >
+                DEV: Bypass Login
+              </Button>
+            </Box>
           </Box>
         </form>
       </Paper>
