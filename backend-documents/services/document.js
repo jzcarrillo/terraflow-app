@@ -11,19 +11,18 @@ class DocumentService {
       file_path,
       file_size,
       mime_type,
-      uploaded_by,
-      status = 'ACTIVE'
+      uploaded_by
     } = data;
 
     const result = await pool.query(`
       INSERT INTO ${TABLES.DOCUMENTS} (
         land_title_id, transaction_id, document_type, file_name,
-        file_path, file_size, mime_type, uploaded_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        file_path, file_size, mime_type, uploaded_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `, [
       land_title_id, transaction_id, document_type, file_name,
-      file_path, file_size, mime_type, uploaded_by, status
+      file_path, file_size, mime_type, uploaded_by
     ]);
 
     return result.rows[0];
@@ -32,7 +31,7 @@ class DocumentService {
   async getDocumentsByLandTitleId(landTitleId) {
     const result = await pool.query(`
       SELECT * FROM ${TABLES.DOCUMENTS}
-      WHERE land_title_id = $1 AND status = 'ACTIVE'
+      WHERE land_title_id = $1
       ORDER BY created_at DESC
     `, [landTitleId]);
 
@@ -49,16 +48,7 @@ class DocumentService {
     return result.rows;
   }
 
-  async updateDocumentStatusByLandTitle(landTitleId, status) {
-    const result = await pool.query(`
-      UPDATE ${TABLES.DOCUMENTS}
-      SET status = $1, updated_at = NOW()
-      WHERE land_title_id = $2
-      RETURNING *
-    `, [status, landTitleId]);
 
-    return result;
-  }
 }
 
 const documentService = new DocumentService();

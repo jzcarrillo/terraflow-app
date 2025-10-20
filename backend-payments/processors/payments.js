@@ -99,11 +99,16 @@ const paymentStatusUpdate = async (messageData) => {
         
         if (status === 'CANCELLED') {
           console.log('✅ Cancel payment successfully.');
+          
+          // Revert land title to PENDING when payment is cancelled
+          const rabbitmq = require('../services/publisher');
+          await rabbitmq.publishLandRegistryRevertUpdate({
+            payment_id: payment_id,
+            reference_id: result.reference_id
+          });
         } else {
           console.log(`✅ Update payment status successfully.`);
         }
-        
-
       }
     }
     

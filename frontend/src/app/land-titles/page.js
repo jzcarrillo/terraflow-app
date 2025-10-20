@@ -52,10 +52,50 @@ export default function LandTitles() {
   const [success, setSuccess] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedTitle, setSelectedTitle] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [titleNumber, setTitleNumber] = useState('')
+  const [surveyNumber, setSurveyNumber] = useState('')
+  const [attachments, setAttachments] = useState([{ id: 1 }])
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(landTitleSchema)
   })
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          setCurrentUser(payload)
+        } catch (error) {
+          console.error('Invalid token:', error)
+        }
+      }
+    }
+  }, [])
+
+  // Access denied for CASHIER - after all hooks
+  if (currentUser?.role === 'CASHIER') {
+    return (
+      <Layout>
+        <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
+          <Typography variant="h4" color="error" gutterBottom>
+            Access Denied
+          </Typography>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            You don't have permission to access this page.
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 4 }}>
+            Please see the administrator for access to Land Titles module.
+          </Typography>
+          <Button variant="contained" href="/payments">
+            Go to Payments
+          </Button>
+        </Container>
+      </Layout>
+    )
+  }
 
   // Fetch land titles
   const fetchLandTitles = async () => {
@@ -86,12 +126,6 @@ export default function LandTitles() {
     fetchLandTitles()
   }, [])
 
-  // Create new land title
-  // Auto-generated values
-  const [titleNumber, setTitleNumber] = useState('')
-  const [surveyNumber, setSurveyNumber] = useState('')
-  const [attachments, setAttachments] = useState([{ id: 1 }])
-  
   // Generate numbers when dialog opens
   const handleDialogOpen = () => {
     const timestamp = Date.now()

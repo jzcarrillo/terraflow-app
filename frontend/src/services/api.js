@@ -193,20 +193,28 @@ api.interceptors.request.use(
 
 // Function to generate fresh token automatically
 const generateFreshToken = async () => {
-  const response = await fetch('http://localhost:30081/api/auth/generate-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: 1,
-      username: 'jzcarrillo',
-      email: 'jzcarrillo@example.com',
-      role: 'ADMIN'
-    })
-  })
+  const currentToken = getToken()
+  if (!currentToken) throw new Error('No current token')
   
-  if (!response.ok) throw new Error('Token generation failed')
-  const data = await response.json()
-  return data.token
+  try {
+    const currentPayload = JSON.parse(atob(currentToken.split('.')[1]))
+    const response = await fetch('http://localhost:30081/api/auth/generate-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentPayload.user_id,
+        username: currentPayload.username,
+        email: currentPayload.email,
+        role: currentPayload.role
+      })
+    })
+    
+    if (!response.ok) throw new Error('Token generation failed')
+    const data = await response.json()
+    return data.token
+  } catch (error) {
+    throw new Error('Failed to preserve user role: ' + error.message)
+  }
 }
 
 // Enhanced response interceptor with automatic token refresh

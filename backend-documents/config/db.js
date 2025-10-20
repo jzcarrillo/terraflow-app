@@ -57,7 +57,6 @@ const initializeDatabase = async () => {
         file_size BIGINT NOT NULL,
         mime_type VARCHAR(100) NOT NULL,
         uploaded_by INT,
-        status VARCHAR(20) DEFAULT '${STATUS.PENDING}',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )

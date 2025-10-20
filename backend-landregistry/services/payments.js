@@ -35,19 +35,7 @@ const paymentStatusUpdate = async (messageData) => {
       await publisher.publishToQueue(QUEUES.PAYMENTS, successEvent);
       console.log('📤 Success event published to queue_payments');
       
-      // PUBLISH EVENT TO DOCUMENT SERVICE WHEN LAND TITLE BECOMES ACTIVE
-      if (status === STATUS.ACTIVE) {
-        const documentEvent = {
-          event_type: 'LAND_TITLE_ACTIVATED',
-          land_title_id: landTitle.id,
-          title_number: landTitle.title_number,
-          reference_id: reference_id,
-          timestamp: new Date().toISOString()
-        };
-        
-        await publisher.publishToQueue(QUEUES.DOCUMENTS, documentEvent);
-        console.log('📤 LAND_TITLE_ACTIVATED event published to queue_documents');
-      }
+      // Process completed - no additional logging needed
       
       return landTitle;
     } else {

@@ -36,7 +36,7 @@ const menuItems = [
   {
     text: 'Dashboard',
     icon: <HomeIcon />,
-    href: '/',
+    href: 'http://localhost:4005/',
     roles: ['ADMIN', 'CASHIER', 'LAND_TITLE_PROCESSOR']
   },
   {
@@ -67,9 +67,14 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const user = localStorage.getItem('user')
-      if (user) {
-        setCurrentUser(JSON.parse(user))
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          setCurrentUser(payload)
+        } catch (error) {
+          console.error('Invalid token:', error)
+        }
       }
     }
   }, [])
@@ -93,18 +98,20 @@ export default function Layout({ children }) {
       </Toolbar>
       <Divider />
       <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <Link href={item.href} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
-              <ListItemButton selected={pathname === item.href}>
-                <ListItemIcon>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </Link>
-          </ListItem>
-        ))}
+        {menuItems
+          .filter(item => !currentUser?.role || item.roles.includes(currentUser.role))
+          .map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <Link href={item.href} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+                <ListItemButton selected={pathname === item.href}>
+                  <ListItemIcon>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </Link>
+            </ListItem>
+          ))}
       </List>
     </div>
   )
@@ -135,7 +142,7 @@ export default function Layout({ children }) {
             </Typography>
             {currentUser && (
               <Typography variant="body1" sx={{ mr: 2 }}>
-                Welcome, {currentUser.first_name || currentUser.username}
+                Welcome, {currentUser.username} ({currentUser.role})
               </Typography>
             )}
             <Button

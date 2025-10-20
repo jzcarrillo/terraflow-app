@@ -30,7 +30,20 @@ export default function Login() {
       
       if (result.ok) {
         console.log('✅ Login successful:', result.data.user)
-        window.location.href = '/land-titles'
+        
+        // Get user role from token
+        const token = result.data.token
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const userRole = payload.role
+        
+        // Redirect based on role
+        if (userRole === 'CASHIER') {
+          window.location.href = '/payments'
+        } else if (userRole === 'LAND_TITLE_PROCESSOR') {
+          window.location.href = '/land-titles'
+        } else {
+          window.location.href = 'http://localhost:4005/'
+        }
       } else {
         setError(result.error?.error || 'Login failed')
       }

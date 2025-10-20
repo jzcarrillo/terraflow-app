@@ -15,7 +15,6 @@ router.get('/land-title/:landTitleId', async (req, res) => {
         file_name as original_name,
         file_size as size,
         mime_type,
-        status,
         created_at
       FROM ${TABLES.DOCUMENTS} 
       WHERE land_title_id = $1 
