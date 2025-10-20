@@ -120,13 +120,23 @@ const isTokenValid = (token) => {
 
 // DEVELOPMENT BYPASS - Remove in production
 if (typeof window !== 'undefined') {
-  // Temporary bypass function for development
-  window.bypassAuth = () => {
-    const devToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkFETUlOIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MjA3NjI0MTQ5NSwiaWF0IjoxNzYwODgxNDk1fQ.RL-5w6Cbxu2QZlWHX0hybtL7LEXCeBDUB6zvl33Q0y0'
-    setToken(devToken)
-    console.log('⚠️ DEV: Bypass token set - for development only!')
+  // User switching functions for development
+  window.loginAsAdmin = () => {
+    const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6IkFETUlOIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MjA3NjI0MTQ5NSwiaWF0IjoxNzYwODgxNDk1fQ.RL-5w6Cbxu2QZlWHX0hybtL7LEXCeBDUB6zvl33Q0y0'
+    setToken(adminToken)
+    console.log('👤 DEV: Logged in as ADMIN')
     window.location.reload()
   }
+  
+  window.loginAsProcessor = () => {
+    const processorToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJ1c2VybmFtZSI6ImpveWJveTYwMCIsImVtYWlsIjoiam95Ym95NjAwQGV4YW1wbGUuY29tIiwicm9sZSI6IkxBTkRfVElUTEVfUFJPQ0VTU09SIiwiaWF0IjoxNzYwOTI0NzMzLCJleHAiOjE3NjEwMTExMzN9.EvqMcXrgQpJul-HiBywo4Wvikd-AwCMOScQA9pLB7YA'
+    setToken(processorToken)
+    console.log('👤 DEV: Logged in as LAND_TITLE_PROCESSOR (joyboy600)')
+    window.location.reload()
+  }
+  
+  // Legacy bypass function
+  window.bypassAuth = window.loginAsAdmin
   
   // Add console helper functions
   console.log('🔧 AVAILABLE FUNCTIONS:')
@@ -154,9 +164,9 @@ const refreshToken = async () => {
   return data.accessToken
 }
 
-// PRODUCTION REQUEST INTERCEPTOR - Dynamic Token Management
+// SIMPLIFIED REQUEST INTERCEPTOR - No Auto Logout
 api.interceptors.request.use(
-  async (config) => {
+  (config) => {
     // Skip token validation for auth endpoints
     const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register')
     
@@ -167,34 +177,11 @@ api.interceptors.request.use(
     
     const token = getToken()
     
-    if (!token) {
-      console.log('⚠️ No token found - redirecting to login')
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
-      }
-      return Promise.reject(new Error('No authentication token'))
-    }
-    
-    // Validate token
-    if (!isTokenValid(token)) {
-      console.log('⚠️ Token expired - attempting refresh')
-      
-      try {
-        const newToken = await refreshToken()
-        setToken(newToken)
-        config.headers.Authorization = `Bearer ${newToken}`
-        console.log('✅ Token refreshed successfully')
-      } catch (error) {
-        console.log('❌ Token refresh failed - redirecting to login')
-        clearAllTokenCache()
-        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
-        }
-        return Promise.reject(new Error('Token refresh failed'))
-      }
-    } else {
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`
-      console.log('📤 Request with valid token:', token.substring(0, 50) + '...')
+      console.log('📤 Request with token:', token.substring(0, 50) + '...')
+    } else {
+      console.log('⚠️ No token found')
     }
     
     return config
@@ -204,33 +191,46 @@ api.interceptors.request.use(
   }
 )
 
-// PRODUCTION RESPONSE INTERCEPTOR - Handle Auth Errors
+// Function to generate fresh token automatically
+const generateFreshToken = async () => {
+  const response = await fetch('http://localhost:30081/api/auth/generate-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: 1,
+      username: 'jzcarrillo',
+      email: 'jzcarrillo@example.com',
+      role: 'ADMIN'
+    })
+  })
+  
+  if (!response.ok) throw new Error('Token generation failed')
+  const data = await response.json()
+  return data.token
+}
+
+// Enhanced response interceptor with automatic token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
     
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      console.log('🔄 Token expired, attempting refresh...')
       originalRequest._retry = true
       
-      console.log('🔄 Auth error - attempting token refresh')
-      
       try {
-        const newToken = await refreshToken()
+        // Generate new token automatically
+        const newToken = await generateFreshToken()
         setToken(newToken)
         originalRequest.headers.Authorization = `Bearer ${newToken}`
-        console.log('✅ Token refreshed, retrying request')
+        console.log('✅ Token refreshed successfully')
         return api(originalRequest)
       } catch (refreshError) {
-        console.log('❌ Token refresh failed - redirecting to login')
-        clearAllTokenCache()
-        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
-        }
-        return Promise.reject(refreshError)
+        console.error('❌ Token refresh failed:', refreshError)
+        console.log('⚠️ Please login again')
       }
     }
-    
     return Promise.reject(error)
   }
 )

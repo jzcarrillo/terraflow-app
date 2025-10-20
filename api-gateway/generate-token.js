@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
-// Generate a fresh JWT token for jzcarrillo
+// Generate a fresh JWT token for joyboy600
 const tokenPayload = {
-  user_id: 2,
+  user_id: 1,
   username: 'jzcarrillo',
   email: 'jzcarrillo@example.com',
   role: 'ADMIN'
