@@ -1,50 +1,52 @@
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
-const cors = require('cors');
+const corsMiddleware = require('./middleware/cors');
 const { initializeDatabase } = require('./config/db');
-const consumer = require('./services/consumer');
+const { startConsumer } = require('./services/consumer');
 const documentsRoutes = require('./routes/documents');
+const rabbitmq = require('./utils/rabbitmq');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Middleware
+// MIDDLEWARE 
 app.use(helmet());
-app.use(cors());
+app.use(corsMiddleware);
 app.use(express.json());
 
-// Health check endpoint
+// HEALTH CHECK ENDPOINT
 app.get('/health', (req, res) => {
   res.json({ 
-    service: 'Backend Documents',
+    service: 'backend-documents',
     status: 'healthy',
     timestamp: new Date().toISOString()
   });
 });
 
-// API Routes
+// API ROUTES
 app.use('/api/documents', documentsRoutes);
 
-// Start server
+// START SERVER
 const startServer = async () => {
   try {
-    // Initialize database
     await initializeDatabase();
-
+    startConsumer();
     
-    // Start RabbitMQ consumer
-    await consumer.startConsumer();
-    
-    // Start HTTP server
     app.listen(PORT, () => {
-      console.log(`🚀 Backend Documents running on port ${PORT}`);
+      console.log(`✅ Documents Service running on port ${PORT}`);
     });
-    
   } catch (error) {
-    console.error('❌ Failed to start Backend Documents:', error);
+    console.error('❌ Failed to start Documents Service:', error);
     process.exit(1);
   }
 };
+
+// GRACEFUL SHUTDOWN
+process.on('SIGINT', async () => {
+  console.log('Shutting down gracefully...');
+  await rabbitmq.close();
+  process.exit(0);
+});
 
 startServer();

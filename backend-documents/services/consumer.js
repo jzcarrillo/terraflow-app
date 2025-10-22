@@ -1,96 +1,105 @@
-const amqp = require('amqplib');
-const { processDocumentUpload, processLandTitlePaid, processRollbackTransaction, processLandTitleActivated } = require('../processors/document');
+const rabbitmq = require('../utils/rabbitmq');
+const documentService = require('../services/document');
+const { saveFile, deleteFile, getFileExtension } = require('../utils/fileHandler');
 const { QUEUES, EVENT_TYPES } = require('../config/constants');
 
-const QUEUE_NAME = QUEUES.DOCUMENTS;
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq-service:5672';
-
-class RabbitMQConsumer {
-  constructor() {
-    this.connection = null;
-    this.channel = null;
-  }
-
-  async connect() {
-    try {
-      this.connection = await amqp.connect(RABBITMQ_URL);
-      this.channel = await this.connection.createChannel();
+const messageHandler = async (messageData) => {
+  const { event_type } = messageData;
+  
+  switch (event_type) {
+    case EVENT_TYPES.DOCUMENT_UPLOAD:
+      await handleDocumentUpload(messageData);
+      break;
       
-      await this.channel.assertQueue(QUEUE_NAME, { durable: true });
+    case EVENT_TYPES.LAND_TITLE_PAID:
+    case EVENT_TYPES.LAND_TITLE_ACTIVATED:
+      await handleDocumentActivation(messageData);
+      break;
       
-      console.log(`✅ Connected to RabbitMQ - queue: ${QUEUE_NAME}`);
-      return true;
-    } catch (error) {
-      console.error('❌ RabbitMQ connection failed:', error.message);
-      return false;
-    }
+    case EVENT_TYPES.ROLLBACK_TRANSACTION:
+      await handleRollback(messageData);
+      break;
   }
+};
 
-  async startConsumer() {
-    const connected = await this.connect();
-    if (!connected) {
-      console.log('Retrying RabbitMQ connection in 10 seconds...');
-      setTimeout(() => this.startConsumer(), 10000);
-      return;
+const handleDocumentUpload = async (messageData) => {
+  const { transaction_id, land_title_id, attachments, user_id } = messageData;
+  const uploadedDocuments = [];
+  
+  console.log(`\n📄 ===== DOCUMENT UPLOAD =====`);
+  console.log(`🔑 Transaction: ${transaction_id}`);
+  console.log(`🏠 Land Title ID: ${land_title_id}`);
+  console.log(`📎 Processing ${attachments.length} files:`);
+  attachments.forEach((file, index) => {
+    console.log(`   ${index + 1}. ${file.original_name}`);
+  });
+  
+  try {
+    for (const [index, attachment] of attachments.entries()) {
+      const fileBuffer = Buffer.from(attachment.buffer, 'base64');
+      const fileName = `${land_title_id}_${attachment.document_type}_${Date.now()}_${index}.${getFileExtension(attachment.original_name)}`;
+      const filePath = await saveFile(fileBuffer, fileName);
+      
+      const document = await documentService.createDocument({
+        land_title_id, transaction_id,
+        document_type: attachment.document_type,
+        file_name: attachment.original_name,
+        file_path: filePath,
+        file_size: attachment.size,
+        mime_type: attachment.mime_type,
+        uploaded_by: user_id
+      });
+      
+      uploadedDocuments.push(document);
     }
-
-    this.channel.consume(QUEUE_NAME, async (message) => {
-      if (message) {
-        try {
-          const messageData = JSON.parse(message.content.toString());
-          const { event_type } = messageData;
-          
-          console.log(`📨 Document event received: ${event_type}`);
-          
-          // Route based on event type
-          switch (event_type) {
-            case EVENT_TYPES.DOCUMENT_UPLOAD:
-              await processDocumentUpload(messageData);
-              console.log('✅ Document upload processed successfully');
-              break;
-              
-            case EVENT_TYPES.LAND_TITLE_PAID:
-              await processLandTitlePaid(messageData);
-              console.log('✅ Land title payment processed successfully');
-              break;
-              
-            case EVENT_TYPES.ROLLBACK_TRANSACTION:
-              await processRollbackTransaction(messageData);
-              console.log('✅ Transaction rollback processed successfully');
-              break;
-              
-            case EVENT_TYPES.LAND_TITLE_ACTIVATED:
-              await processLandTitleActivated(messageData);
-              console.log('✅ Land title activation processed successfully');
-              break;
-              
-            default:
-              console.log(`⚠️ Unknown event type: ${event_type}`);
-          }
-          
-          this.channel.ack(message);
-          
-        } catch (error) {
-          console.error('❌ Message processing failed:', error.message);
-          this.channel.nack(message, false, true);
-        }
-      }
+    
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: EVENT_TYPES.DOCUMENT_UPLOADED,
+      transaction_id, land_title_id,
+      uploaded_documents: uploadedDocuments,
+      total_documents: uploadedDocuments.length
     });
-  }
-
-  async close() {
-    try {
-      if (this.channel) {
-        await this.channel.close();
-      }
-      if (this.connection) {
-        await this.connection.close();
-      }
-    } catch (error) {
-      console.error('Error closing RabbitMQ connection:', error.message);
+    
+    console.log(`✅ ${uploadedDocuments.length} documents uploaded successfully`);
+    console.log(`📤 Confirmation sent to land registry`);
+    console.log(`📄 ===== DOCUMENT UPLOAD COMPLETED =====\n`);
+  } catch (error) {
+    for (const doc of uploadedDocuments) {
+      await deleteFile(doc.file_path);
     }
+    
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: EVENT_TYPES.DOCUMENT_FAILED,
+      transaction_id, land_title_id,
+      error: error.message
+    });
+    
+    console.log(`❌ FAILED: Document upload failed - ${error.message}`);
+    console.log(`📄 ===== DOCUMENT UPLOAD FAILED =====\n`);
   }
-}
+};
 
-const consumer = new RabbitMQConsumer();
-module.exports = consumer;
+const handleDocumentActivation = async (messageData) => {
+  const { land_title_id } = messageData;
+  await documentService.updateDocumentStatusByLandTitle(land_title_id, 'ACTIVE');
+};
+
+const handleRollback = async (messageData) => {
+  const { transaction_id } = messageData;
+  const deletedDocuments = await documentService.deleteDocumentsByTransactionId(transaction_id);
+  
+  for (const doc of deletedDocuments) {
+    await deleteFile(doc.file_path);
+  }
+};
+
+const startConsumer = async () => {
+  try {
+    await rabbitmq.consume(QUEUES.DOCUMENTS, messageHandler);
+  } catch (error) {
+    console.error('❌ Consumer start failed:', error.message);
+    setTimeout(startConsumer, 10000);
+  }
+};
+
+module.exports = { startConsumer };
