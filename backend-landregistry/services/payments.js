@@ -1,6 +1,6 @@
 const { pool } = require('../config/db');
 const { STATUS, QUEUES } = require('../config/constants');
-const publisher = require('./publisher');
+const rabbitmq = require('../utils/rabbitmq');
 
 const paymentStatusUpdate = async (messageData) => {
   const { reference_id, status } = messageData;
@@ -32,8 +32,7 @@ const paymentStatusUpdate = async (messageData) => {
         timestamp: new Date().toISOString()
       };
       
-      await publisher.publishToQueue(QUEUES.PAYMENTS, successEvent);
-      console.log('📤 Success event published to queue_payments');
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
       
       // Process completed - no additional logging needed
       
@@ -49,8 +48,7 @@ const paymentStatusUpdate = async (messageData) => {
         timestamp: new Date().toISOString()
       };
       
-      await publisher.publishToQueue(QUEUES.PAYMENTS, failureEvent);
-      console.log('📤 Failure event published to payments queue');
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
       
       return null;
     }
@@ -67,8 +65,7 @@ const paymentStatusUpdate = async (messageData) => {
         timestamp: new Date().toISOString()
       };
       
-      await publisher.publishToQueue(QUEUES.PAYMENTS, failureEvent);
-      console.log('📤 Failure event published to payments queue');
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
     } catch (publishError) {
       console.error('❌ Failed to publish failure event:', publishError.message);
     }

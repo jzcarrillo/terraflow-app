@@ -1,26 +1,24 @@
 const { pool } = require('../config/db');
-const publisher = require('./publisher');
+const rabbitmq = require('../utils/rabbitmq');
+const { checkTitleExists, validateWithSchema } = require('../utils/validation');
+const { handleError } = require('../utils/errorHandler');
 const { QUEUES, EVENT_TYPES, STATUS } = require('../config/constants');
-const axios = require('axios');
-const config = require('../config/services');
 
 const landTitleCreation = async (messageData) => {
   const { transaction_id, land_title_data, attachments, user_id } = messageData;
   
+  console.log('\n🏠 ===== CREATE LAND TITLE =====');
+  console.log(`🔑 Transaction: ${transaction_id}`);
+  console.log(`🏷️ Title: ${land_title_data.title_number}`);
+  console.log('📦 Request Payload:', JSON.stringify(land_title_data, null, 2));
+  
   try {
-// VALIDATE WITH ZOD FIRST
     const { landTitleSchema } = require('../schemas/landtitles');
-    const validatedData = landTitleSchema.parse(land_title_data);
-    console.log(`✅ Zod validation successful for title: ${validatedData.title_number}`);
+    const validatedData = validateWithSchema(landTitleSchema, land_title_data);
     
-    console.log(`📋 Processing land title creation`);
-    console.log('📦 Request logs:', JSON.stringify(messageData, null, 2));
-    
-// CHECK IF TITLE EXISTS
-    const existsQuery = 'SELECT id FROM land_titles WHERE title_number = $1';
-    const existsResult = await pool.query(existsQuery, [validatedData.title_number]);
-    
-    if (existsResult.rows.length > 0) {
+    const exists = await checkTitleExists(validatedData.title_number);
+    if (exists) {
+      console.log(`❌ FAILED: Title ${validatedData.title_number} already exists`);
       throw new Error(`Title number ${validatedData.title_number} already exists in database`);
     }
 
@@ -57,10 +55,8 @@ const landTitleCreation = async (messageData) => {
     ]);
     
     const landTitle = result.rows[0];
-    console.log(`✅ Land title created: ${landTitle.title_number} (ID: ${landTitle.id})`);
     
-// PUBLISH DOCUMENT PROCESSING EVENT 
-    await publisher.publishToQueue(QUEUES.DOCUMENTS, {
+    await rabbitmq.publishToQueue(QUEUES.DOCUMENTS, {
       event_type: EVENT_TYPES.DOCUMENT_UPLOAD,
       transaction_id: transaction_id,
       land_title_id: landTitle.id,
@@ -68,42 +64,13 @@ const landTitleCreation = async (messageData) => {
       user_id: user_id
     });
     
+    console.log(`✅ Land title created successfully (ID: ${landTitle.id})`);
+    console.log(`⏳ STATUS: PENDING (Waiting for Payment)`);
+    console.log(`📤 Message published to queue_documents: ${attachments ? attachments.length : 0} files`);
+    
     return landTitle;
     
   } catch (error) {
-    console.error(`❌ Land title creation failed:`, error.message);
-    throw error;
-  }
-};
-
-const checkTitleExists = async (titleNumber) => {
-  try {
-    const query = 'SELECT id FROM land_titles WHERE title_number = $1';
-    const result = await pool.query(query, [titleNumber]);
-    return result.rows.length > 0;
-  } catch (error) {
-    console.error(`❌ Check title exists failed:`, error.message);
-    throw error;
-  }
-};
-
-const checkLandTitleExists = async (titleNumber) => {
-  try {
-    console.log(`🔍 Checking land title exists: ${titleNumber}`);
-    
-    // First, let's see all titles in the database
-    const allTitlesQuery = 'SELECT id, title_number FROM land_titles LIMIT 5';
-    const allTitlesResult = await pool.query(allTitlesQuery);
-    console.log(`📋 All titles in database (first 5):`, allTitlesResult.rows);
-    
-    // Now check for specific title
-    const query = 'SELECT id, title_number FROM land_titles WHERE title_number = $1';
-    const result = await pool.query(query, [titleNumber]);
-    console.log(`📋 Found ${result.rows.length} land titles for ${titleNumber}:`, result.rows);
-    
-    return result.rows.length > 0;
-  } catch (error) {
-    console.error(`❌ Check land title exists failed:`, error.message);
     throw error;
   }
 };
@@ -112,6 +79,7 @@ const getAllLandTitles = async () => {
   try {
     const query = 'SELECT * FROM land_titles ORDER BY created_at DESC';
     const result = await pool.query(query);
+    console.log(`📋 Retrieved ${result.rows.length} land titles`);
     return result.rows;
   } catch (error) {
     console.error(`❌ Get all land titles failed:`, error.message);
@@ -123,7 +91,9 @@ const getLandTitleById = async (id) => {
   try {
     const query = 'SELECT * FROM land_titles WHERE id = $1';
     const result = await pool.query(query, [id]);
-    return result.rows[0] || null;
+    const title = result.rows[0];
+    console.log(`🔍 Land title ${id}: ${title ? 'FOUND' : 'NOT FOUND'}`);
+    return title || null;
   } catch (error) {
     console.error(`❌ Get land title by ID failed:`, error.message);
     throw error;
@@ -132,8 +102,6 @@ const getLandTitleById = async (id) => {
 
 module.exports = {
   landTitleCreation,
-  checkTitleExists,
-  checkLandTitleExists,
   getAllLandTitles,
   getLandTitleById
 };
