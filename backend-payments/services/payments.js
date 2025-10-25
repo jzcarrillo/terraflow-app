@@ -1,17 +1,18 @@
-const { pool } = require('../config/db');
+const { executeQuery, findById, updateById } = require('../utils/database');
 const { TABLES, STATUS } = require('../config/constants');
-const publisher = require('./publisher');
+const rabbitmq = require('../utils/rabbitmq');
+const { QUEUES } = require('../config/constants');
 
 class PaymentService {
 
   async getAllPayments() {
-    const result = await pool.query(`SELECT * FROM ${TABLES.PAYMENTS} ORDER BY created_at DESC`);
+    const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} ORDER BY created_at DESC`);
+    console.log(`📋 Retrieved ${result.rows.length} payments`);
     return result.rows;
   }
 
   async getPaymentById(id) {
-    const result = await pool.query(`SELECT * FROM ${TABLES.PAYMENTS} WHERE id = $1`, [id]);
-    return result.rows[0];
+    return await findById(TABLES.PAYMENTS, id);
   }
 
   async createPayment(data) {
@@ -20,141 +21,113 @@ class PaymentService {
       payment_method = 'CASH', status = STATUS.PENDING, created_by
     } = data;
 
-    const result = await pool.query(`
+    const result = await executeQuery(`
       INSERT INTO ${TABLES.PAYMENTS} (
         payment_id, reference_type, reference_id, amount, payer_name, 
         payment_method, status, created_by, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       RETURNING *
-    `, [
-      payment_id, reference_type, reference_id, amount, payer_name, 
-      payment_method, status, created_by
-    ]);
+    `, [payment_id, reference_type, reference_id, amount, payer_name, payment_method, status, created_by]);
 
-
+    console.log(`✅ Payment created: ${payment_id} for ${reference_id}`);
+    console.log('💾 Data inserted to database successfully')
+    console.log(`⏳ STATUS: PENDING`);
     return result.rows[0];
   }
 
   async updatePayment(id, data) {
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-    
-    // Build dynamic query based on provided fields
-    if (data.amount !== undefined) {
-      updates.push(`amount = $${paramCount}`);
-      values.push(data.amount);
-      paramCount++;
-    }
-    
-    if (data.payer_name !== undefined) {
-      updates.push(`payer_name = $${paramCount}`);
-      values.push(data.payer_name);
-      paramCount++;
-    }
-    
-    if (data.payment_method !== undefined) {
-      updates.push(`payment_method = $${paramCount}`);
-      values.push(data.payment_method);
-      paramCount++;
-    }
-    
-    if (updates.length === 0) {
+    if (Object.keys(data).length === 0) {
       throw new Error('No fields to update');
     }
     
-    // Always update the updated_at timestamp
-    updates.push('updated_at = NOW()');
-    values.push(id);
+    const result = await updateById(TABLES.PAYMENTS, id, data);
     
-    const query = `
-      UPDATE ${TABLES.PAYMENTS} 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING *
-    `;
-    
-    const result = await pool.query(query, values);
-    
-    if (result.rows.length === 0) {
+    if (!result) {
       throw new Error(`Payment with ID ${id} not found`);
     }
     
-    return result.rows[0];
+    console.log('💾 Data updated to database successfully');
+    return result;
   }
 
-  async updatePaymentStatus(id, status, userId = null) {
-    // Get current payment status first
+  async updatePaymentStatus(id, status, userId = null, transactionId = null) {
     const currentPayment = await this.getPaymentById(id);
     if (!currentPayment) {
       throw new Error(`Payment with ID ${id} not found`);
     }
     
-    // Check if status is already the same (idempotency check)
     if (currentPayment.status === status) {
-      console.log(`⚠️ Payment ${id} is already ${status} - No event will be published`);
       return currentPayment;
     }
     
-    let query, params;
+    const updateData = { status };
     
     if (status === STATUS.PAID) {
-      query = `
-        UPDATE ${TABLES.PAYMENTS} 
-        SET status = $1, confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW()
-        WHERE id = $3
-        RETURNING *
-      `;
-      params = [status, userId, id];
+      updateData.confirmed_by = userId;
+      updateData.confirmed_at = 'NOW()';
     } else if (status === 'CANCELLED') {
-      query = `
-        UPDATE ${TABLES.PAYMENTS} 
-        SET status = $1, cancelled_by = $2, cancelled_at = NOW(), updated_at = NOW()
-        WHERE id = $3
-        RETURNING *
-      `;
-      params = [status, userId, id];
-    } else {
-      query = `
-        UPDATE ${TABLES.PAYMENTS} 
-        SET status = $1, updated_at = NOW()
-        WHERE id = $2
-        RETURNING *
-      `;
-      params = [status, id];
+      updateData.cancelled_by = userId;
+      updateData.cancelled_at = 'NOW()';
     }
     
-    const result = await pool.query(query, params);
+    const result = await executeQuery(`
+      UPDATE ${TABLES.PAYMENTS} 
+      SET status = $1, ${status === STATUS.PAID ? 'confirmed_by = $2, confirmed_at = NOW(),' : status === 'CANCELLED' ? 'cancelled_by = $2, cancelled_at = NOW(),' : ''} updated_at = NOW()
+      WHERE id = $${userId ? 3 : 2}
+      RETURNING *
+    `, userId ? [status, userId, id] : [status, id]);
+    
     const updatedPayment = result.rows[0];
     
-// PUBLISH EVENT TO LAND REGISTRY WHEN PAYMENT STATUS CHANGES
-    if (updatedPayment) {
-      if (status === STATUS.PAID) {
-        console.log(`💳 Payment PAID - Publishing event to land registry for reference: ${updatedPayment.reference_id}`);
-        await publisher.publishLandRegistryStatusUpdate(updatedPayment);
-      } else if (status === 'CANCELLED') {
-        console.log(`💳 Payment CANCELLED - Publishing revert event to land registry for reference: ${updatedPayment.reference_id}`);
-        await publisher.publishLandRegistryRevertUpdate(updatedPayment);
-      }
+    console.log('✅ Payment status updated successfully');
+    console.log('💾 Data updated to database successfully');
+    
+    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED')) {
+      await this.publishStatusUpdate(updatedPayment, status, transactionId);
     }
     
     return updatedPayment;
   }
 
+  async publishStatusUpdate(payment, status, transactionId = null) {
+    const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';
+    
+    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+      event_type: 'PAYMENT_STATUS_UPDATE',
+      transaction_id: transactionId,
+      payment_id: payment.id,
+      reference_id: payment.reference_id,
+      status: landTitleStatus,
+      payment_status: payment.status,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('📤 Message published to queue_landregistry');
+  }
+  
+  async handleLandTitleResponse(messageData) {
+    const { event_type, reference_id, new_status } = messageData;
+    
+    if (event_type === 'LAND_TITLE_STATUS_UPDATE_SUCCESS') {
+      console.log(`🎆 Land title ${reference_id} successfully updated to ${new_status}`);
+      console.log('✅ Payment processing completed successfully');
+    } else if (event_type === 'LAND_TITLE_STATUS_UPDATE_FAILED') {
+      console.log(`❌ Land title update failed for ${reference_id}: ${messageData.error}`);
+    }
+  }
+
   async getPaymentStatus(id) {
-    const result = await pool.query(`SELECT id, status, reference_id, updated_at FROM ${TABLES.PAYMENTS} WHERE id = $1`, [id]);
+    const result = await executeQuery(`SELECT id, status, reference_id, updated_at FROM ${TABLES.PAYMENTS} WHERE id = $1`, [id]);
     return result.rows[0];
   }
 
   async checkPaymentExists(paymentId) {
-    const result = await pool.query(`SELECT id FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
+    const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
     return result.rows.length > 0;
   }
 
   async checkLandTitlePaymentExists(landTitleId) {
-    console.log(`🔍 Checking payments table for reference_id: ${landTitleId}`);
-    const result = await pool.query(`SELECT id, payment_id, reference_id, status FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
-    console.log(`📋 Found ${result.rows.length} pending payments for ${landTitleId}:`, result.rows);
+    const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
     return result.rows.length > 0;
   }
 }

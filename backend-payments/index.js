@@ -4,7 +4,8 @@ const config = require('./config/services');
 const corsMiddleware = require('./middleware/cors');
 const paymentRoutes = require('./routes/payments');
 const validationRoutes = require('./routes/validation');
-const consumer = require('./services/consumer');
+const { startConsumer } = require('./services/consumer');
+const rabbitmq = require('./utils/rabbitmq');
 
 const app = express();
 
@@ -18,8 +19,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     service: 'backend-payments',
-    timestamp: new Date().toISOString(),
-    environment: config.server.env
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -28,15 +28,15 @@ app.use('/', validationRoutes);
 app.use('/api', paymentRoutes);
 
 // START RABBITMQ CONSUMER
-consumer.startConsumer();
+startConsumer();
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
-  await consumer.close();
+  await rabbitmq.close();
   process.exit(0);
 });
 
 app.listen(config.server.port, () => {
-  console.log(`🚀 Backend Payments running on port ${config.server.port}`);
+  console.log(`✅ Payments Service running on port ${config.server.port}`);
 });
