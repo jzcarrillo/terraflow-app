@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/services');
 
-// Role-based authorization middleware
+// ROLE-BASED AUTHORIZATION MIDDLEWARE
 const requireRole = (allowedRoles) => {
   return (req, res, next) => {
     try {
@@ -14,7 +14,7 @@ const requireRole = (allowedRoles) => {
       const decoded = jwt.verify(token, config.jwt.secret);
       req.user = decoded;
       
-      // Check if user role is allowed
+// CHECK IF USER ROLE IS ALLOWED
       if (!allowedRoles.includes(decoded.role)) {
         return res.status(403).json({ 
           error: 'Access denied', 

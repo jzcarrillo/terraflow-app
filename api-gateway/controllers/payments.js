@@ -1,7 +1,7 @@
 const config = require('../config/services');
 const rabbitmq = require('../services/publisher');
 const payments = require('../services/payments');
-const landregistry = require('../services/landregistry');
+const landtitles = require('../services/landtitles');
 const { QUEUES, STATUS } = require('../config/constants');
 
 // GET ALL PAYMENTS
@@ -38,10 +38,9 @@ const createPayment = async (req, res) => {
 // VALIDATE REQUEST USING ZOD
     const { paymentSchema } = require('../schemas/payments');
     const validatedData = paymentSchema.parse(req.body);
-    console.log('✅ Zod validation successful for payment');
 
 // VALIDATE LAND TITLE EXISTS
-    const landTitleValidation = await landregistry.validateLandTitleExists(validatedData.land_title_id);
+    const landTitleValidation = await landtitles.validateLandTitleExists(validatedData.land_title_id);
     
     if (!landTitleValidation.exists) {
       console.log('❌ Land title does not exist');
@@ -53,8 +52,6 @@ const createPayment = async (req, res) => {
 
 // VALIDATE LAND TITLE PAYMENT
     const validation = await payments.validateLandTitlePayment(validatedData.land_title_id);
-    
-    console.log(`🔍 Validating land title: ${validatedData.land_title_id}`);
     
     if (validation.exists) {
       console.log('❌ Payment already exists for this land title');
@@ -68,11 +65,15 @@ const createPayment = async (req, res) => {
     const paymentId = `PAY-${new Date().getFullYear()}-${Date.now()}`;
 
     console.log('💳 === CREATE PAYMENT ===');
-    console.log('📋 Validated Payload:');
+    console.log('📦 Request Payload:');
     console.log(JSON.stringify(validatedData, null, 2));
+    console.log('✅ Zod validation successful for payment');
     
     const payload = {
       transaction_id: transactionId,
+      payment_id: paymentId,
+      reference_id: validatedData.land_title_id,
+      reference_type: validatedData.reference_type,
       payment_data: validatedData,
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1',
@@ -80,8 +81,7 @@ const createPayment = async (req, res) => {
     };
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
-    console.log('📤 Message published to message queue: queue_payments');
-    console.log('✅ Create payment successfully.');
+    console.log('📤 Message published to queue_payments');
     
     res.status(202).json({
       success: true,
@@ -98,25 +98,27 @@ const createPayment = async (req, res) => {
 };
 
 // EDIT PAYMENT
-const editPayment = async (req, res) => {
-  const transactionId = require('crypto').randomUUID();
+    const editPayment = async (req, res) => {
+    const transactionId = require('crypto').randomUUID();
   
   try {
     const { id } = req.params;
     console.log(`💳 === EDIT PAYMENT: ${id} ===`);
     
-    // VALIDATE REQUEST USING ZOD
+// VALIDATE REQUEST USING ZOD
     const { paymentEditSchema } = require('../schemas/payments');
     const validatedData = paymentEditSchema.parse(req.body);
-    console.log('✅ Zod validation successful for payment edit');
+    console.log('✅ Zod validation successful for Update Payment details');
     
-    console.log('📋 Validated Payload:');
+    console.log('📋 Request Payload:');
     console.log(JSON.stringify(validatedData, null, 2));
     
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_PAYMENT',
       payment_id: id,
+      reference_id: validatedData.land_title_id,
+      reference_type: validatedData.reference_type,
       payment_data: validatedData,
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1',
@@ -139,7 +141,7 @@ const editPayment = async (req, res) => {
 };
 
 // CANCEL PAYMENT
-const cancelPayment = async (req, res) => {
+  const cancelPayment = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   try {
@@ -173,8 +175,7 @@ const cancelPayment = async (req, res) => {
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
-    
-
+  
     
     res.status(202).json({
       success: true,
@@ -232,8 +233,6 @@ const confirmPayment = async (req, res) => {
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
     console.log('📤 Message published to message queue: queue_payments');
     
-
-    
     res.status(202).json({
       success: true,
       message: 'Payment confirmation request received and is being processed',
@@ -245,8 +244,6 @@ const confirmPayment = async (req, res) => {
     res.status(500).json({ error: 'Payment service unavailable' });
   }
 };
-
-
 
 // GET PAYMENT STATUS
 const getPaymentStatus = async (req, res) => {
@@ -261,8 +258,6 @@ const getPaymentStatus = async (req, res) => {
     res.status(500).json({ error: 'Payment service unavailable' });
   }
 };
-
-
 
 module.exports = {
   getAllPayments,

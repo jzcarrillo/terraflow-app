@@ -1,37 +1,50 @@
-const jwt = require('jsonwebtoken');
-const config = require('../config/services');
+const { extractToken, verifyToken, generateToken } = require('../utils/tokenHelper');
 
 // AUTHENTICATE TOKEN
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, config.jwt.secret, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+  try {
+    const token = extractToken(req);
+    const user = verifyToken(token);
     req.user = user;
     next();
-  });
+  } catch (error) {
+    const status = error.message === 'Access token required' ? 401 : 403;
+    res.status(status).json({ error: error.message });
+  }
+};
+
+// REQUIRE SPECIFIC ROLES
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    try {
+      const token = extractToken(req);
+      const user = verifyToken(token);
+      req.user = user;
+      
+      if (!allowedRoles.includes(user.role)) {
+        return res.status(403).json({ 
+          error: 'Access denied', 
+          message: `This action requires one of these roles: ${allowedRoles.join(', ')}` 
+        });
+      }
+      
+      next();
+    } catch (error) {
+      const status = error.message === 'Access token required' ? 401 : 403;
+      res.status(status).json({ error: error.message });
+    }
+  };
 };
 
 // REFRESH TOKEN
 const refreshToken = (req, res) => {
   try {
-    const newToken = jwt.sign(
-      { 
-        user_id: req.user.user_id, 
-        username: req.user.username,
-        email: req.user.email,
-        role: req.user.role 
-      },
-      config.jwt.secret,
-      { expiresIn: '2h' }
-    );
+    const newToken = generateToken({
+      user_id: req.user.user_id, 
+      username: req.user.username,
+      email: req.user.email,
+      role: req.user.role 
+    }, '2h');
     
     console.log(`🔄 Token refreshed for user: ${req.user.username}`);
     res.json({ accessToken: newToken });
@@ -41,16 +54,11 @@ const refreshToken = (req, res) => {
   }
 };
 
-// GENERATE TOKEN
-const generateToken = (req, res) => {
+// GENERATE TOKEN ENDPOINT
+const generateTokenEndpoint = (req, res) => {
   try {
     const { user_id, username, email, role } = req.body;
-    
-    const token = jwt.sign(
-      { user_id, username, email, role },
-      config.jwt.secret,
-      { expiresIn: '24h' }
-    );
+    const token = generateToken({ user_id, username, email, role });
     
     console.log(`🔑 Fresh token generated for: ${username}`);
     res.json({ token });
@@ -60,4 +68,4 @@ const generateToken = (req, res) => {
   }
 };
 
-module.exports = { authenticateToken, refreshToken, generateToken };
+module.exports = { authenticateToken, requireRole, refreshToken, generateTokenEndpoint };

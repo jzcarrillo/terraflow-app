@@ -7,6 +7,7 @@ class RabbitMQService {
     this.channel = null;
   }
 
+// CONNECT TO RABBIT MQ  
   async connect() {
     try {
       if (!this.connection || this.connection.connection.destroyed) {

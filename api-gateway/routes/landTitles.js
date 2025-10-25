@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const landTitleController = require('../controllers/landtitles');
-const { authenticateToken } = require('../middleware/auth');
-const { requireRole } = require('../middleware/roleAuth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { uploadSingle, uploadMultiple, uploadAttachments, handleUploadError } = require('../middleware/upload');
 
 // LAND TITLE ENDPOINTS

@@ -3,18 +3,16 @@ const { landTitleSchema } = require('../schemas/landtitles');
 const rabbitmq = require('../services/publisher');
 const landtitles = require('../services/landtitles');
 const redis = require('../services/redis');
-const { QUEUES, STATUS, CACHE } = require('../config/constants');
+const httpClient = require('../utils/httpClient');
+const { extractToken } = require('../utils/tokenHelper');
+const { QUEUES, STATUS } = require('../config/constants');
 
 // VALIDATE TITLE NUMBER - CHECK DUPLICATES
 const validateTitleNumber = async (req, res) => {
   try {
     const { titleNumber } = req.params;
-    console.log(`🔍 Validating title: ${titleNumber}`);
-    
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = extractToken(req);
     const response = await landtitles.validateTitleNumber(titleNumber, token);
-    
-    console.log(`✅ Title validation result: ${response.exists}`);
     res.json(response);
   } catch (error) {
     console.error('❌ Title validation failed:', error.message);
@@ -29,6 +27,8 @@ const createLandTitle = async (req, res) => {
   const transactionId = require('crypto').randomUUID();
   
   console.log('📋 === CREATE LAND TITLE WITH DOCUMENTS ===');
+  console.log('🔑 User role from token:', req.user?.role);
+  console.log('🔑 User ID:', req.user?.user_id || req.user?.id);
   console.log('📦 Request payload:', JSON.stringify(req.body, null, 2));
   console.log('📎 Files:', req.files ? req.files.length : 0);
   
@@ -46,7 +46,7 @@ const createLandTitle = async (req, res) => {
     const validatedData = landTitleSchema.parse(processedBody);
 
 // VALIDATE TITLE NUMBER VIA BACKEND
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = extractToken(req);
     const validateResponse = await landtitles.validateTitleNumber(validatedData.title_number, token);
     const isDuplicate = validateResponse.exists;
     
@@ -122,7 +122,7 @@ const getAllLandTitles = async (req, res) => {
   try {
     console.log('🔍 Getting all land titles');
     
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = extractToken(req);
     const result = await CacheHelper.getCachedOrFetch(
       'land_titles:all',
       () => landtitles.getLandTitles(token).then(response => response.data)
@@ -130,20 +130,19 @@ const getAllLandTitles = async (req, res) => {
     
     // Ensure data is an array and fetch attachments for each land title
     const dataArray = Array.isArray(result.data) ? result.data : (result.data?.data || []);
-    const axios = require('axios');
     
     const landTitlesWithAttachments = await Promise.all(
       dataArray.map(async (title) => {
         try {
-          const documentsResponse = await axios.get(
-            `${config.services.documents}/api/documents/land-title/${title.id}`
+          const documentsResponse = await httpClient.get(
+            `${config.services.documents}/api/documents/land-title/${title.id}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
           );
           return {
             ...title,
             attachments: documentsResponse.data || []
           };
         } catch (error) {
-          console.log(`⚠️ Failed to fetch attachments for title ${title.id}:`, error.message);
           return {
             ...title,
             attachments: []
@@ -173,21 +172,20 @@ const getLandTitle = async (req, res) => {
     const { id } = req.params;
     console.log(`🔍 Getting land title ID: ${id}`);
     
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = extractToken(req);
     const result = await CacheHelper.getCachedOrFetch(
       `land_title:${id}`,
       () => landtitles.getLandTitle(id, token).then(response => response.data)
     );
     
     // Fetch attachments for this land title
-    const axios = require('axios');
     try {
-      const documentsResponse = await axios.get(
-        `${config.services.documents}/api/documents/land-title/${id}`
+      const documentsResponse = await httpClient.get(
+        `${config.services.documents}/api/documents/land-title/${id}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
       );
       result.data.attachments = documentsResponse.data || [];
     } catch (error) {
-      console.log(`⚠️ Failed to fetch attachments for title ${id}:`, error.message);
       result.data.attachments = [];
     }
     
@@ -209,8 +207,7 @@ const downloadAttachment = async (req, res) => {
     const { documentId } = req.params;
     console.log(`📥 Downloading document: ${documentId}`);
     
-    const axios = require('axios');
-    const response = await axios.get(
+    const response = await httpClient.get(
       `${config.services.documents}/api/documents/download/${documentId}`,
       { responseType: 'stream' }
     );
@@ -252,8 +249,7 @@ const viewAttachment = async (req, res) => {
     
     console.log(`📄 Viewing document: ${documentId}`);
     
-    const axios = require('axios');
-    const response = await axios.get(
+    const response = await httpClient.get(
       `${config.services.documents}/api/documents/view/${documentId}`,
       { responseType: 'stream' }
     );
@@ -270,71 +266,11 @@ const viewAttachment = async (req, res) => {
   }
 };
 
-// PAYMENT CONFIRMATION EVENT HANDLERS - SEQUENTIAL APPROACH
-
-// Step 1: Handle Payment Confirmed Event
-const handlePaymentConfirmed = async (paymentData) => {
-  try {
-    const { EVENT_TYPES } = require('../config/constants');
-    
-    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
-      event_type: EVENT_TYPES.PAYMENT_CONFIRMED,
-      transaction_id: paymentData.transaction_id,
-      land_title_id: paymentData.land_title_id,
-      payment_reference: paymentData.payment_reference,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log(`📤 Payment confirmed, activating land title: ${paymentData.land_title_id}`);
-  } catch (error) {
-    console.error('❌ Payment confirmation failed:', error.message);
-  }
-};
-
-// Step 2: Handle Title Activated Event
-const handleTitleActivated = async (titleData) => {
-  try {
-    const { EVENT_TYPES } = require('../config/constants');
-    
-    await rabbitmq.publishToQueue(QUEUES.DOCUMENTS, {
-      event_type: EVENT_TYPES.TITLE_ACTIVATED,
-      transaction_id: titleData.transaction_id,
-      land_title_id: titleData.land_title_id,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log(`📤 Title activated, updating documents: ${titleData.land_title_id}`);
-  } catch (error) {
-    console.error('❌ Title activation failed:', error.message);
-  }
-};
-
-// Step 3: Handle Documents Activated Event
-const handleDocumentsActivated = async (docData) => {
-  try {
-    const { EVENT_TYPES } = require('../config/constants');
-    
-    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
-      event_type: EVENT_TYPES.DOCUMENTS_ACTIVATED,
-      transaction_id: docData.transaction_id,
-      land_title_id: docData.land_title_id,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log(`✅ Process completed for land title: ${docData.land_title_id}`);
-  } catch (error) {
-    console.error('❌ Process completion failed:', error.message);
-  }
-};
-
 module.exports = {
   validateTitleNumber,
   createLandTitle,
   getAllLandTitles,
   getLandTitle,
   downloadAttachment,
-  viewAttachment,
-  handlePaymentConfirmed,
-  handleTitleActivated,
-  handleDocumentsActivated
+  viewAttachment
 };

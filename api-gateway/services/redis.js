@@ -6,6 +6,7 @@ class RedisService {
     this.client = null;
   }
 
+  // CONNECT TO REDIS
   async connect() {
     try {
       if (!this.client || !this.client.isOpen) {
@@ -16,7 +17,7 @@ class RedisService {
           }
         });
         
-        // Handle Redis errors
+  // HANDLE REDIS ERRORS
         this.client.on('error', (err) => {
           console.error('❌ Redis client error:', err.message);
           this.client = null;

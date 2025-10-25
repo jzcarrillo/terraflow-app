@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payments');
-const { authenticateToken } = require('../middleware/auth');
-const { requireRole } = require('../middleware/roleAuth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 
 // PAYMENT ENDPOINTS - CASHIER has full access
 router.get('/payments', authenticateToken, requireRole(['ADMIN', 'CASHIER']), paymentController.getAllPayments);
