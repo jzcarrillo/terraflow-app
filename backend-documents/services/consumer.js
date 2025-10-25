@@ -61,8 +61,9 @@ const handleDocumentUpload = async (messageData) => {
     });
     
     console.log(`✅ ${uploadedDocuments.length} documents uploaded successfully`);
-    console.log(`📤 Confirmation sent to land registry`);
+    console.log(`📤 Message Confirmation published to queue_landregistry`);
     console.log(`📄 ===== DOCUMENT UPLOAD COMPLETED =====\n`);
+    
   } catch (error) {
     for (const doc of uploadedDocuments) {
       await deleteFile(doc.file_path);
