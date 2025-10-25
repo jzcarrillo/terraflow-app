@@ -88,6 +88,82 @@ class PaymentService {
     
     return updatedPayment;
   }
+  
+  async updatePaymentStatusByPaymentId(paymentId, status, userId = null, transactionId = null) {
+    // First get the payment by payment_id to get the database ID
+    const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
+    
+    if (result.rows.length === 0) {
+      throw new Error(`Payment with payment_id ${paymentId} not found`);
+    }
+    
+    const currentPayment = result.rows[0];
+    
+    if (currentPayment.status === status) {
+      return currentPayment;
+    }
+    
+    const updateData = { status };
+    
+    if (status === STATUS.PAID) {
+      updateData.confirmed_by = userId;
+      updateData.confirmed_at = 'NOW()';
+    } else if (status === 'CANCELLED') {
+      updateData.cancelled_by = userId;
+      updateData.cancelled_at = 'NOW()';
+    }
+    
+    let updateQuery, params;
+    
+    if (userId) {
+      if (status === STATUS.PAID) {
+        updateQuery = `
+          UPDATE ${TABLES.PAYMENTS} 
+          SET status = $1, confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW()
+          WHERE payment_id = $3
+          RETURNING *
+        `;
+        params = [status, userId, paymentId];
+      } else if (status === 'CANCELLED') {
+        updateQuery = `
+          UPDATE ${TABLES.PAYMENTS} 
+          SET status = $1, cancelled_by = $2, cancelled_at = NOW(), updated_at = NOW()
+          WHERE payment_id = $3
+          RETURNING *
+        `;
+        params = [status, userId, paymentId];
+      } else {
+        updateQuery = `
+          UPDATE ${TABLES.PAYMENTS} 
+          SET status = $1, updated_at = NOW()
+          WHERE payment_id = $2
+          RETURNING *
+        `;
+        params = [status, paymentId];
+      }
+    } else {
+      updateQuery = `
+        UPDATE ${TABLES.PAYMENTS} 
+        SET status = $1, updated_at = NOW()
+        WHERE payment_id = $2
+        RETURNING *
+      `;
+      params = [status, paymentId];
+    }
+    
+    const updateResult = await executeQuery(updateQuery, params);
+    
+    const updatedPayment = updateResult.rows[0];
+    
+    console.log('✅ Payment status updated successfully');
+    console.log('💾 Data updated to database successfully');
+    
+    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED')) {
+      await this.publishStatusUpdate(updatedPayment, status, transactionId);
+    }
+    
+    return updatedPayment;
+  }
 
   async publishStatusUpdate(payment, status, transactionId = null) {
     const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';
@@ -129,6 +205,11 @@ class PaymentService {
   async checkLandTitlePaymentExists(landTitleId) {
     const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
     return result.rows.length > 0;
+  }
+
+  async getPaymentByPaymentId(paymentId) {
+    const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
+    return result.rows[0];
   }
 }
 

@@ -110,8 +110,8 @@ const handleStatusUpdate = async (messageData) => {
   console.log(`🔑 Transaction id: ${transaction_id || 'N/A'}`);
   console.log(`🔄 Action: "UPDATE_STATUS",`);
   
-  // GET PAYMENT DETAILS FROM DATABASE
-  const currentPayment = await paymentService.getPaymentById(payment_id);
+  // GET PAYMENT DETAILS  BY PAYMENT_ID STRING
+  const currentPayment = await paymentService.getPaymentByPaymentId(payment_id);
   
   // CREATE COMPLETE PAYLOAD FOR LOGGING
   const completePayload = {
@@ -122,12 +122,11 @@ const handleStatusUpdate = async (messageData) => {
     status: status,
     user_id: user_id,
     username: username || 'system',
-    timestamp: new Date().toISOString()
   };
   
   console.log('📦 Request Payload:', JSON.stringify(completePayload, null, 2));
   
-  await paymentService.updatePaymentStatus(payment_id, status, user_id, transaction_id);
+  await paymentService.updatePaymentStatusByPaymentId(payment_id, status, user_id, transaction_id);
 
   console.log('📤 Message published to queue_landregistry');
 };
