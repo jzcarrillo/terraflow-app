@@ -1,81 +1,40 @@
-const amqp = require('amqplib');
-const { processUserCreation } = require('../processors/userProcessor');
+const rabbitmq = require('../utils/rabbitmq');
+const userService = require('../services/users');
+const { checkEmailExists } = require('../utils/validation');
 const { QUEUES } = require('../config/constants');
 
-const QUEUE_NAME = QUEUES.USERS;
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq-service:5672';
-
-class RabbitMQConsumer {
-  constructor() {
-    this.connection = null;
-    this.channel = null;
-  }
-
-  async connect() {
-    try {
-      this.connection = await amqp.connect(RABBITMQ_URL);
-      this.channel = await this.connection.createChannel();
-      
-      await this.channel.assertQueue(QUEUE_NAME, { durable: true });
-      
-      console.log(`✅ Connected to RabbitMQ: ${QUEUE_NAME}`);
-      return true;
-    } catch (error) {
-      console.error('❌ RabbitMQ connection failed:', error.message);
-      return false;
+const messageHandler = async (messageData) => {
+  console.log('📨 === USER CREATE ===');
+  console.log('📦 Consumed data:', JSON.stringify(messageData, null, 2));
+  
+  const { transaction_id, user_data } = messageData;
+  
+  if (messageData.user_data) {
+    console.log(`🔍 Checking if email exists: ${user_data.email_address}`);
+    const exists = await checkEmailExists(user_data.email_address);
+    if (exists) {
+      console.log(`❌ Email already exists: ${user_data.email_address}`);
+      throw new Error(`Email address ${user_data.email_address} already exists in database`);
     }
-  }
 
-  async startConsumer() {
-    
-    const connected = await this.connect();
-    if (!connected) {
-      console.log('Retrying RabbitMQ connection in 10 seconds...');
-      setTimeout(() => this.startConsumer(), 10000);
-      return;
-    }
-    
-    this.channel.consume(QUEUE_NAME, async (message) => {
-      if (message) {
-        try {
-          const messageData = JSON.parse(message.content.toString());
-          
-          if (messageData.user_data) {
-            console.log('👤 ===CREATE USER REQUEST ===');
-            console.log('📦 Consumed data:', messageData);
-            
-            console.log('⚙️ Processing user creation');
-            await processUserCreation(messageData);
-          } else {
-            console.log('⚠️ Unknown message type:', messageData);
-          }
-          
-          this.channel.ack(message);
-          
-        } catch (error) {
-          console.error('❌ Message processing failed:', error.message);
-          console.error('Error stack:', error.stack);
-          this.channel.nack(message, false, true);
-        }
-      } else {
-        console.log('Received null message');
-      }
+    console.log(`✅ Creating user: ${user_data.username}`);
+    await userService.createUser({
+      ...user_data,
+      transaction_id: transaction_id,
+      status: 'ACTIVE'
     });
+    console.log(`✅ User created successfully: ${user_data.username}`);
   }
+};
 
-  async close() {
-    try {
-      if (this.channel) {
-        await this.channel.close();
-      }
-      if (this.connection) {
-        await this.connection.close();
-      }
-    } catch (error) {
-      console.error('Error closing RabbitMQ connection:', error.message);
-    }
+const startConsumer = async () => {
+  try {
+    await rabbitmq.consume(QUEUES.USERS, messageHandler);
+    console.log(`✅ Consumer started for queue: ${QUEUES.USERS}`);
+  } catch (error) {
+    console.error('❌ Consumer start failed:', error.message);
+    setTimeout(startConsumer, 10000);
   }
-}
+};
 
-const consumer = new RabbitMQConsumer();
-module.exports = consumer;
+module.exports = { startConsumer };

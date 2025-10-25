@@ -3,8 +3,9 @@ const helmet = require('helmet');
 const corsMiddleware = require('./middleware/cors');
 const config = require('./config/services');
 const { testConnection } = require('./config/db');
-const validationRoutes = require('./routes/validation');
-const consumer = require('./services/consumer');
+const usersRoutes = require('./routes/users');
+const { startConsumer } = require('./services/consumer');
+const rabbitmq = require('./utils/rabbitmq');
 
 const app = express();
 
@@ -14,7 +15,7 @@ app.use(corsMiddleware);
 app.use(express.json());
 
 // ROUTES
-app.use('/api', validationRoutes);
+app.use('/api', usersRoutes);
 
 // HEALTH CHECK ENDPOINT ONLY
 app.get('/health', (req, res) => {
@@ -27,16 +28,14 @@ app.get('/health', (req, res) => {
 
 // TEST DATABASE CONNECTION
 testConnection();
-// console.log('✅ Database connection skipped for local testing');
 
 // START MESSAGE QUEUE CONSUMER
-consumer.startConsumer();
-// console.log('✅ RabbitMQ consumer skipped for local testing');
+startConsumer();
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
-  await consumer.close();
+  await rabbitmq.close();
   process.exit(0);
 });
 
