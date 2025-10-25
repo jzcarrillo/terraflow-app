@@ -147,6 +147,10 @@ const createPayment = async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`💳 === CANCEL PAYMENT: ${id} ===`);
+
+    
+// GET PAYMENT DETAILS
+    const paymentDetails = await payments.getPaymentById(id, req.headers.authorization);
     
 // VALIDATE PAYMENT STATUS
     const statusCheck = await payments.getPaymentStatus(id, req.headers.authorization);
@@ -158,19 +162,17 @@ const createPayment = async (req, res) => {
         message: `Payment ${id} is already cancelled`
       });
     }
-    
-    console.log('✅ Payment can be cancelled');
-    
+      
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_STATUS',
-      payment_id: id,
+      payment_id: paymentDetails.payment_id,
       status: 'CANCELLED',
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1'
     };
 
-    console.log('📋 Validated Payload:');
+    console.log('📋 Request Payload:');
     console.log(JSON.stringify(payload, null, 2));
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
@@ -197,6 +199,9 @@ const confirmPayment = async (req, res) => {
     const { id } = req.params;
     console.log(`💳 === CONFIRM PAYMENT: ${id} ===`);
     
+// GET PAYMENT DETAILS
+    const paymentDetails = await payments.getPaymentById(id, req.headers.authorization);
+    
 // VALIDATE PAYMENT STATUS
     const statusCheck = await payments.getPaymentStatus(id, req.headers.authorization);
     
@@ -216,18 +221,16 @@ const confirmPayment = async (req, res) => {
       });
     }
     
-    console.log('✅ Payment can be confirmed');
-    
     const payload = {
       transaction_id: transactionId,
       action: 'UPDATE_STATUS',
-      payment_id: id,
+      payment_id: paymentDetails.payment_id,
       status: 'PAID',
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1'
     };
 
-    console.log('📋 Validated Payload:');
+    console.log('📋 Request Payload:');
     console.log(JSON.stringify(payload, null, 2));
 
     await rabbitmq.publishToQueue(QUEUES.PAYMENTS, payload);
