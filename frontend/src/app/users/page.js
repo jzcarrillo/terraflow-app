@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
-import { ROLES, hasRole } from '../../utils/roleUtils';
+import { useState, useEffect } from 'react'
+import Layout from '@/components/Layout'
+import { hasRole } from '@/utils/auth'
+import { API_CONFIG, ROLES } from '@/utils/config'
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -24,7 +25,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:30081/api/users', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -47,7 +48,7 @@ export default function UsersPage() {
     setUpdating(editingUser.id);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:30081/api/users/${editingUser.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +73,7 @@ export default function UsersPage() {
     }
   };
 
-  if (!hasRole('ADMIN')) {
+  if (!hasRole(ROLES.ADMIN)) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">

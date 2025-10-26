@@ -35,6 +35,11 @@ import {
 import { useForm } from 'react-hook-form'
 import { paymentsAPI } from '@/services/api'
 import Layout from '@/components/Layout'
+import StatusChip from '@/components/common/StatusChip'
+import LoadingTable from '@/components/common/LoadingTable'
+import AlertMessage from '@/components/common/AlertMessage'
+import { formatDate, formatCurrency, generateId } from '@/utils/formatters'
+import { API_CONFIG } from '@/utils/config'
 
 export default function Payments() {
   const [payments, setPayments] = useState([])
@@ -55,13 +60,10 @@ export default function Payments() {
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
-  // Fetch land titles for reference dropdown
   const fetchLandTitles = async () => {
     try {
-      const response = await fetch('http://localhost:30081/api/land-titles', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await fetch(`${API_CONFIG.BASE_URL}/land-titles`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       })
       const data = await response.json()
       let titles = []
@@ -92,10 +94,8 @@ export default function Payments() {
     }
   }
 
-  // Generate payment ID when dialog opens
   const handleDialogOpen = () => {
-    const timestamp = Date.now()
-    setPaymentId(`PAY-${timestamp}`)
+    setPaymentId(generateId('PAY'))
     fetchLandTitles()
     setOpen(true)
   }
@@ -124,11 +124,7 @@ export default function Payments() {
       const formData = {
         ...data,
         payment_id: paymentId,
-        land_title_id: isEditMode ? 
-          // For edit: use numeric ID
-          (landTitles.find(title => title.title_number === data.reference_id)?.id || parseInt(data.reference_id)) :
-          // For create: use string (title number)
-          data.reference_id,
+        land_title_id: data.reference_id, // Always use the selected reference_id (land title string)
         amount: parseFloat(data.amount)
       }
       
@@ -237,14 +233,7 @@ export default function Payments() {
     setDetailsOpen(true)
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PAID': return 'success'
-      case 'PENDING': return 'warning'
-      case 'CANCELLED': return 'error'
-      default: return 'default'
-    }
-  }
+
 
   return (
     <Layout>
@@ -260,8 +249,7 @@ export default function Payments() {
           </Button>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        <AlertMessage error={error} success={success} />
 
         <TableContainer component={Paper}>
           <Table>
@@ -279,13 +267,9 @@ export default function Payments() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">Loading...</TableCell>
-                </TableRow>
+                <LoadingTable colSpan={8} />
               ) : payments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">No payments found</TableCell>
-                </TableRow>
+                <LoadingTable colSpan={8} message="No payments found" />
               ) : (
                 payments.map((payment) => (
                   <TableRow key={payment.id}>
@@ -300,17 +284,13 @@ export default function Payments() {
                     </TableCell>
                     <TableCell>{payment.reference_id}</TableCell>
                     <TableCell>{payment.payer_name}</TableCell>
-                    <TableCell>₱{payment.amount?.toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(payment.amount)}</TableCell>
                     <TableCell>{payment.payment_method}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={payment.status} 
-                        color={getStatusColor(payment.status)}
-                        size="small"
-                      />
+                      <StatusChip status={payment.status} />
                     </TableCell>
                     <TableCell>
-                      {new Date(payment.created_at).toLocaleDateString()}
+                      {formatDate(payment.created_at)}
                     </TableCell>
                     <TableCell>
                       <IconButton onClick={(e) => handleMenuClick(e, payment)}>
@@ -489,7 +469,7 @@ export default function Payments() {
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Box sx={{ flex: 1, display: 'flex' }}>
                     <Typography sx={{ width: 110, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Amount:</Typography>
-                    <Typography sx={{ p: 2, flex: 1 }}>₱{selectedPaymentDetails.amount?.toLocaleString()}</Typography>
+                    <Typography sx={{ p: 2, flex: 1 }}>{formatCurrency(selectedPaymentDetails.amount)}</Typography>
                   </Box>
                   <Box sx={{ flex: 1, display: 'flex', borderLeft: '1px solid #ddd' }}>
                     <Typography sx={{ width: 110, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Payment Method:</Typography>
@@ -500,16 +480,12 @@ export default function Payments() {
                   <Box sx={{ flex: 1, display: 'flex' }}>
                     <Typography sx={{ width: 110, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Status:</Typography>
                     <Box sx={{ p: 2, flex: 1 }}>
-                      <Chip 
-                        label={selectedPaymentDetails.status} 
-                        color={getStatusColor(selectedPaymentDetails.status)}
-                        size="small"
-                      />
+                      <StatusChip status={selectedPaymentDetails.status} />
                     </Box>
                   </Box>
                   <Box sx={{ flex: 1, display: 'flex', borderLeft: '1px solid #ddd' }}>
                     <Typography sx={{ width: 110, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Created Date:</Typography>
-                    <Typography sx={{ p: 2, flex: 1 }}>{new Date(selectedPaymentDetails.created_at).toLocaleDateString()}</Typography>
+                    <Typography sx={{ p: 2, flex: 1 }}>{formatDate(selectedPaymentDetails.created_at)}</Typography>
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>

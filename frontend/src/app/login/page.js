@@ -10,7 +10,9 @@ import {
   Paper
 } from '@mui/material'
 import Link from 'next/link'
-import { authAPI } from '../../services/api'
+import { authAPI } from '@/services/api'
+import { API_CONFIG, ROLES } from '@/utils/config'
+import { getCurrentUser } from '@/utils/auth'
 
 export default function Login() {
   const [credentials, setCredentials] = useState({
@@ -31,18 +33,15 @@ export default function Login() {
       if (result.ok) {
         console.log('✅ Login successful:', result.data.user)
         
-        // Get user role from token
-        const token = result.data.token
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        const userRole = payload.role
+        const user = getCurrentUser()
+        const userRole = user?.role
         
-        // Redirect based on role
-        if (userRole === 'CASHIER') {
+        if (userRole === ROLES.CASHIER) {
           window.location.href = '/payments'
-        } else if (userRole === 'LAND_TITLE_PROCESSOR') {
+        } else if (userRole === ROLES.LAND_TITLE_PROCESSOR) {
           window.location.href = '/land-titles'
         } else {
-          window.location.href = 'http://localhost:4005/'
+          window.location.href = API_CONFIG.DASHBOARD_URL
         }
       } else {
         setError(result.error?.error || 'Login failed')
@@ -54,11 +53,7 @@ export default function Login() {
     }
   }
 
-  const handleBypass = () => {
-    if (typeof window !== 'undefined' && window.bypassAuth) {
-      window.bypassAuth()
-    }
-  }
+
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
@@ -123,18 +118,6 @@ export default function Login() {
             </Typography>
             
             <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                Test Credentials: jzcarrillo / [your password]
-              </Typography>
-              
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleBypass}
-                sx={{ fontSize: '0.75rem' }}
-              >
-                DEV: Bypass Login
-              </Button>
             </Box>
           </Box>
         </form>

@@ -2,33 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
-  Divider,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Button,
-  ThemeProvider,
-  CssBaseline
+  Box, Drawer, AppBar, Toolbar, List, Typography, Divider,
+  ListItem, ListItemButton, ListItemIcon, ListItemText,
+  IconButton, Button, ThemeProvider, CssBaseline
 } from '@mui/material'
 import {
-  Menu as MenuIcon,
-  Home as HomeIcon,
-  Description as LandTitleIcon,
-  Payment as PaymentIcon,
-  People as UsersIcon,
-  Logout as LogoutIcon
+  Menu as MenuIcon, Home as HomeIcon, Description as LandTitleIcon,
+  Payment as PaymentIcon, People as UsersIcon, Logout as LogoutIcon
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import theme from '../app/theme'
+import { getCurrentUser, logout } from '@/utils/auth'
+import { API_CONFIG, ROLES } from '@/utils/config'
 
 const drawerWidth = 240
 
@@ -36,26 +22,26 @@ const menuItems = [
   {
     text: 'Dashboard',
     icon: <HomeIcon />,
-    href: 'http://localhost:4005/',
-    roles: ['ADMIN', 'CASHIER', 'LAND_TITLE_PROCESSOR']
+    href: API_CONFIG.DASHBOARD_URL,
+    roles: [ROLES.ADMIN, ROLES.CASHIER, ROLES.LAND_TITLE_PROCESSOR]
   },
   {
     text: 'Land Titles',
     icon: <LandTitleIcon />,
     href: '/land-titles',
-    roles: ['ADMIN','LAND_TITLE_PROCESSOR']
+    roles: [ROLES.ADMIN, ROLES.LAND_TITLE_PROCESSOR]
   },
   {
     text: 'Payments',
     icon: <PaymentIcon />,
     href: '/payments',
-    roles: ['ADMIN', 'CASHIER']
+    roles: [ROLES.ADMIN, ROLES.CASHIER]
   },
   {
     text: 'Users',
     icon: <UsersIcon />,
     href: '/users',
-    roles: ['ADMIN']
+    roles: [ROLES.ADMIN]
   }
 ]
 
@@ -66,17 +52,8 @@ export default function Layout({ children }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          setCurrentUser(payload)
-        } catch (error) {
-          console.error('Invalid token:', error)
-        }
-      }
-    }
+    const user = getCurrentUser()
+    setCurrentUser(user)
   }, [])
 
   const handleDrawerToggle = () => {
@@ -84,9 +61,7 @@ export default function Layout({ children }) {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/login')
+    logout()
   }
 
   const drawer = (

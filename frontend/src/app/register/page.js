@@ -14,6 +14,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AlertMessage from '@/components/common/AlertMessage'
 
 const registerSchema = z.object({
   email: z.string().email("Valid email address is required"),
@@ -45,7 +46,7 @@ export default function Register() {
     setSuccess('')
     
     try {
-      const response = await fetch('http://localhost:30081/api/auth/register', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:30081/api'}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -90,8 +91,7 @@ export default function Register() {
           Register
         </Typography>
         
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        <AlertMessage error={error} success={success} />
         
         <form onSubmit={handleSubmit(onSubmit)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

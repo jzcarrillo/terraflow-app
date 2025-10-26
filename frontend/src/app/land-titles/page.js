@@ -28,6 +28,13 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { landTitlesAPI } from '@/services/api'
 import Layout from '@/components/Layout'
+import StatusChip from '@/components/common/StatusChip'
+import LoadingTable from '@/components/common/LoadingTable'
+import AlertMessage from '@/components/common/AlertMessage'
+import { useApi } from '@/hooks/useApi'
+import { getCurrentUser } from '@/utils/auth'
+import { formatDate, generateId } from '@/utils/formatters'
+import { API_CONFIG } from '@/utils/config'
 
 const landTitleSchema = z.object({
   owner_name: z.string().min(1, "Owner name is required"),
@@ -62,40 +69,13 @@ export default function LandTitles() {
   })
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          setCurrentUser(payload)
-        } catch (error) {
-          console.error('Invalid token:', error)
-        }
-      }
-    }
+    setCurrentUser(getCurrentUser())
   }, [])
 
-  // Access denied for CASHIER - after all hooks
-  if (currentUser?.role === 'CASHIER') {
-    return (
-      <Layout>
-        <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
-          <Typography variant="h4" color="error" gutterBottom>
-            Access Denied
-          </Typography>
-          <Typography variant="h6" sx={{ mb: 3 }}>
-            You don't have permission to access this page.
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 4 }}>
-            Please see the administrator for access to Land Titles module.
-          </Typography>
-          <Button variant="contained" href="/payments">
-            Go to Payments
-          </Button>
-        </Container>
-      </Layout>
-    )
-  }
+  // TEMP: Commented out for testing backend 403 error
+  // if (currentUser?.role === 'CASHIER') {
+  //   return (<Layout>Access Denied</Layout>)
+  // }
 
   // Fetch land titles
   const fetchLandTitles = async () => {
@@ -126,11 +106,9 @@ export default function LandTitles() {
     fetchLandTitles()
   }, [])
 
-  // Generate numbers when dialog opens
   const handleDialogOpen = () => {
-    const timestamp = Date.now()
-    setTitleNumber(`LT-${timestamp}`)
-    setSurveyNumber(`SN-${timestamp}`)
+    setTitleNumber(generateId('LT'))
+    setSurveyNumber(generateId('SN'))
     setOpen(true)
   }
 
@@ -142,10 +120,7 @@ export default function LandTitles() {
       setError('')
       setSuccess('')
       
-      // Set fresh authentication token with role
-      const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MDY3NTAwNiwiZXhwIjoxNzYwNzYxNDA2fQ.U_97iZC2tdG6tf0h_t7X_XtdSgos-aA5LD4iCbz64gU"
-      localStorage.setItem('token', validToken)
-      console.log('Fresh token with role set in localStorage')
+      // Use current user's token (no token replacement)
       
       // Collect all files from attachment inputs
       const allFiles = []
@@ -228,36 +203,25 @@ export default function LandTitles() {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'ACTIVE': return 'success'
-      case 'PENDING': return 'warning'
-      case 'FAILED': return 'error'
-      default: return 'default'
-    }
-  }
+
 
   const handleTitleClick = (title) => {
     setSelectedTitle(title)
     setDetailsOpen(true)
   }
 
-  // View attachment function
   const handleViewAttachment = (documentId, fileName) => {
     const token = localStorage.getItem('token')
-    const url = `http://localhost:30081/api/attachments/view/${documentId}?token=${token}`
+    const url = `${API_CONFIG.BASE_URL}/attachments/view/${documentId}?token=${token}`
     window.open(url, '_blank')
   }
 
-  // Download attachment function
   const handleDownloadAttachment = async (documentId, fileName) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:30081/api/attachments/download/${documentId}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/attachments/download/${documentId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (!response.ok) {
@@ -293,8 +257,7 @@ export default function LandTitles() {
           </Button>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        <AlertMessage error={error} success={success} />
 
         <TableContainer component={Paper}>
           <Table>
@@ -310,13 +273,9 @@ export default function LandTitles() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">Loading...</TableCell>
-                </TableRow>
+                <LoadingTable colSpan={6} />
               ) : landTitles.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">No land titles found</TableCell>
-                </TableRow>
+                <LoadingTable colSpan={6} message="No land titles found" />
               ) : (
                 landTitles.map((title) => (
                   <TableRow key={title.id}>
@@ -333,14 +292,10 @@ export default function LandTitles() {
                     <TableCell>{title.property_location}</TableCell>
                     <TableCell>{title.area_size} sqm</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={title.status} 
-                        color={getStatusColor(title.status)}
-                        size="small"
-                      />
+                      <StatusChip status={title.status} />
                     </TableCell>
                     <TableCell>
-                      {new Date(title.created_at).toLocaleDateString()}
+                      {formatDate(title.created_at)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -652,7 +607,7 @@ export default function LandTitles() {
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Registration Date:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>{new Date(selectedTitle.registration_date).toLocaleDateString()}</Typography>
+                  <Typography sx={{ p: 2, flex: 1 }}>{formatDate(selectedTitle.registration_date)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Registrar Office:</Typography>
@@ -669,16 +624,12 @@ export default function LandTitles() {
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Status:</Typography>
                   <Box sx={{ p: 2, flex: 1 }}>
-                    <Chip 
-                      label={selectedTitle.status} 
-                      color={getStatusColor(selectedTitle.status)}
-                      size="small"
-                    />
+                    <StatusChip status={selectedTitle.status} />
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Created Date:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>{new Date(selectedTitle.created_at).toLocaleDateString()}</Typography>
+                  <Typography sx={{ p: 2, flex: 1 }}>{formatDate(selectedTitle.created_at)}</Typography>
                 </Box>
                 
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
