@@ -1,6 +1,5 @@
 const rabbitmq = require('../utils/rabbitmq');
 const landtitles = require('../services/landtitles');
-const documents = require('../services/documents');
 const payments = require('../services/payments');
 const rollback = require('../services/rollback');
 const { QUEUES, EVENT_TYPES } = require('../config/constants');
@@ -15,7 +14,7 @@ const messageHandler = async (messageData) => {
   
   switch (event_type) {
     case EVENT_TYPES.DOCUMENT_UPLOADED:
-      await documents.processDocumentUploaded(messageData);
+      console.log('📄 Document uploaded - handled by backend-documents service');
       break;
       
     case EVENT_TYPES.DOCUMENT_FAILED:

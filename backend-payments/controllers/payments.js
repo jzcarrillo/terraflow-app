@@ -55,9 +55,24 @@ const validateLandTitlePayment = async (req, res) => {
   }
 };
 
+const validatePaymentId = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const exists = await paymentService.checkPaymentExists(paymentId);
+    
+    res.json({
+      exists,
+      message: exists ? 'Payment ID already exists' : 'Payment ID is available'
+    });
+  } catch (error) {
+    handleError(error, res, 'Payment ID validation');
+  }
+};
+
 module.exports = {
   getAllPayments,
   getPaymentById,
   getPaymentStatus,
-  validateLandTitlePayment
+  validateLandTitlePayment,
+  validatePaymentId
 };

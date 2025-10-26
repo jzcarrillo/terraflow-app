@@ -3,7 +3,6 @@ const helmet = require('helmet');
 const config = require('./config/services');
 const corsMiddleware = require('./middleware/cors');
 const paymentRoutes = require('./routes/payments');
-const validationRoutes = require('./routes/validation');
 const { startConsumer } = require('./services/consumer');
 const rabbitmq = require('./utils/rabbitmq');
 
@@ -24,7 +23,6 @@ app.get('/health', (req, res) => {
 });
 
 // ROUTES
-app.use('/', validationRoutes);
 app.use('/api', paymentRoutes);
 
 // START RABBITMQ CONSUMER

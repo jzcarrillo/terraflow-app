@@ -1,5 +1,5 @@
 const { pool } = require('../config/db');
-const publisher = require('./publisher');
+const rabbitmq = require('../utils/rabbitmq');
 const { STATUS, QUEUES, EVENT_TYPES } = require('../config/constants');
 
 async function processDocumentFailed(messageData) {
@@ -13,7 +13,7 @@ async function processDocumentFailed(messageData) {
     console.log(`🗑️ Land title ${land_title_id} deleted from database`);
     
     // PUBLISH ROLLBACK EVENT TO DOCUMENTS SERVICE
-    await publisher.publishToQueue(QUEUES.DOCUMENTS, {
+    await rabbitmq.publishToQueue(QUEUES.DOCUMENTS, {
       event_type: EVENT_TYPES.ROLLBACK_TRANSACTION,
       transaction_id,
       land_title_id,
