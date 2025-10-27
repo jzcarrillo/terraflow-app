@@ -207,9 +207,13 @@ const downloadAttachment = async (req, res) => {
     const { documentId } = req.params;
     console.log(`📥 Downloading document: ${documentId}`);
     
+    const token = extractToken(req);
     const response = await httpClient.get(
       `${config.services.documents}/api/documents/download/${documentId}`,
-      { responseType: 'stream' }
+      { 
+        responseType: 'stream',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }
     );
     
     res.setHeader('Content-Type', response.headers['content-type']);
