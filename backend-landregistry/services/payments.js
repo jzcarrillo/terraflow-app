@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { STATUS, QUEUES } = require('../config/constants');
 const rabbitmq = require('../utils/rabbitmq');
+const blockchainClient = require('./blockchain-client');
 
 const paymentStatusUpdate = async (messageData) => {
   const { reference_id, status } = messageData;
@@ -22,19 +23,72 @@ const paymentStatusUpdate = async (messageData) => {
       const landTitle = result.rows[0];
       console.log(`✅ Land title ${landTitle.title_number} status updated to ${status} successfully`);
       
-// PUBLISH SUCCESS EVENT BACK TO PAYMENTS
-      const successEvent = {
-        event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-        reference_id: reference_id,
-        land_title_id: landTitle.id,
-        title_number: landTitle.title_number,
-        new_status: status,
-        timestamp: new Date().toISOString()
-      };
-      
-      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
-      
-      // Process completed - no additional logging needed
+      if (status === 'ACTIVE') {
+        // RECORD ON BLOCKCHAIN
+        try {
+          console.log(`🔗 Recording land title ${landTitle.title_number} to blockchain`);
+          
+          const blockchainResponse = await blockchainClient.recordLandTitle({
+            title_number: landTitle.title_number,
+            owner_name: landTitle.owner_name,
+            property_location: landTitle.property_location,
+            status: status,
+            reference_id: reference_id,
+            timestamp: landTitle.created_at,
+            transaction_id: landTitle.transaction_id
+          });
+          
+          if (blockchainResponse.success) {
+            console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id}`);
+            console.log(`📦 Block: ${blockchainResponse.block_number}`);
+            
+            // PUBLISH SUCCESS EVENT BACK TO PAYMENTS
+            const successEvent = {
+              event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+              reference_id: reference_id,
+              land_title_id: landTitle.id,
+              title_number: landTitle.title_number,
+              new_status: status,
+              blockchain_tx: blockchainResponse.transaction_id,
+              blockchain_hash: blockchainResponse.blockchain_hash,
+              timestamp: new Date().toISOString()
+            };
+            
+            await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+          } else {
+            throw new Error(`Blockchain recording failed: ${blockchainResponse.message}`);
+          }
+          
+        } catch (blockchainError) {
+          console.error('❌ Blockchain integration failed:', blockchainError.message);
+          
+          // PUBLISH SUCCESS WITHOUT BLOCKCHAIN (fallback)
+          const successEvent = {
+            event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+            reference_id: reference_id,
+            land_title_id: landTitle.id,
+            title_number: landTitle.title_number,
+            new_status: status,
+            blockchain_status: 'FAILED',
+            error: blockchainError.message,
+            timestamp: new Date().toISOString()
+          };
+          
+          await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+        }
+      } else {
+        // For non-ACTIVE status, just publish success without blockchain
+        const successEvent = {
+          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+          reference_id: reference_id,
+          land_title_id: landTitle.id,
+          title_number: landTitle.title_number,
+          new_status: status,
+          timestamp: new Date().toISOString()
+        };
+        
+        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+      }
       
       return landTitle;
     } else {

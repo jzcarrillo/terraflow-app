@@ -1,0 +1,112 @@
+version: '3.7'
+
+volumes:
+  orderer.terraflow.com:
+  peer0.landregistry.terraflow.com:
+
+networks:
+  fabric:
+    name: fabric
+
+services:
+  orderer.terraflow.com:
+    container_name: orderer.terraflow.com
+    image: hyperledger/fabric-orderer:2.4
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17050
+      - ORDERER_GENERAL_TLS_ENABLED=false
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+      - ./crypto-config/ordererOrganizations/terraflow.com/orderers/orderer.terraflow.com/msp:/var/hyperledger/orderer/msp
+      - orderer.terraflow.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+      - 17050:17050
+    networks:
+      - fabric
+
+  peer0.landregistry.terraflow.com:
+    container_name: peer0.landregistry.terraflow.com
+    image: hyperledger/fabric-peer:2.4
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.landregistry.terraflow.com
+      - CORE_PEER_ADDRESS=peer0.landregistry.terraflow.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.landregistry.terraflow.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.landregistry.terraflow.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.landregistry.terraflow.com:7051
+      - CORE_PEER_LOCALMSPID=LandRegistryMSP
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:17051
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.landregistry.terraflow.com:/var/hyperledger/production
+    ports:
+      - 7051:7051
+      - 17051:17051
+    depends_on:
+      - couchdb0
+    networks:
+      - fabric
+
+  couchdb0:
+    container_name: couchdb0
+    image: couchdb:3.1.1
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 5984:5984
+    networks:
+      - fabric
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:2.4
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.landregistry.terraflow.com:7051
+      - CORE_PEER_LOCALMSPID=LandRegistryMSP
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/landregistry.terraflow.com/users/Admin@landregistry.terraflow.com/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+      - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+    depends_on:
+      - orderer.terraflow.com
+      - peer0.landregistry.terraflow.com
+    networks:
+      - fabric

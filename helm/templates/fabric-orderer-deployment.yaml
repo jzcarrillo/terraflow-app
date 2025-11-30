@@ -1,0 +1,65 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fabric-orderer.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.fabric.orderer.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "fabric-orderer.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "fabric-orderer.name" . }}
+    spec:
+      containers:
+      - name: fabric-orderer
+        image: {{ .Values.fabric.orderer.image.repository }}:{{ .Values.fabric.orderer.image.tag }}
+        imagePullPolicy: {{ .Values.fabric.orderer.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.fabric.orderer.service.port }}
+        - containerPort: {{ .Values.fabric.orderer.service.operationsPort }}
+        env:
+        - name: FABRIC_LOGGING_SPEC
+          value: {{ .Values.fabric.orderer.env.FABRIC_LOGGING_SPEC | quote }}
+        - name: ORDERER_GENERAL_LISTENADDRESS
+          value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_LISTENADDRESS | quote }}
+        - name: ORDERER_GENERAL_LISTENPORT
+          value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_LISTENPORT | quote }}
+        - name: ORDERER_GENERAL_GENESISMETHOD
+          value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_GENESISMETHOD | quote }}
+        - name: ORDERER_GENERAL_GENESISFILE
+          value: "/var/hyperledger/orderer/orderer.genesis.block"
+        - name: ORDERER_GENERAL_LOCALMSPID
+          value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_LOCALMSPID | quote }}
+        - name: ORDERER_GENERAL_LOCALMSPDIR
+          value: "/var/hyperledger/orderer/msp"
+        - name: ORDERER_OPERATIONS_LISTENADDRESS
+          value: "0.0.0.0:{{ .Values.fabric.orderer.service.operationsPort }}"
+        - name: ORDERER_GENERAL_TLS_ENABLED
+          value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_TLS_ENABLED | quote }}
+        resources:
+          requests:
+            memory: {{ .Values.fabric.orderer.resources.requests.memory }}
+            cpu: {{ .Values.fabric.orderer.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.fabric.orderer.resources.limits.memory }}
+            cpu: {{ .Values.fabric.orderer.resources.limits.cpu }}
+        volumeMounts:
+        - name: orderer-storage
+          mountPath: /var/hyperledger/production/orderer
+        - name: orderer-storage
+          mountPath: /var/hyperledger/orderer/msp
+          subPath: msp
+        - name: orderer-storage
+          mountPath: /var/hyperledger/orderer/orderer.genesis.block
+          subPath: genesis.block
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+        command: ["orderer"]
+      volumes:
+      - name: orderer-storage
+        persistentVolumeClaim:
+          claimName: fabric-orderer-pvc
+{{- end }}

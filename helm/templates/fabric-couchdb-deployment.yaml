@@ -1,0 +1,42 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fabric-couchdb
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.fabric.couchdb.replicaCount }}
+  selector:
+    matchLabels:
+      app: fabric-couchdb
+  template:
+    metadata:
+      labels:
+        app: fabric-couchdb
+    spec:
+      containers:
+      - name: fabric-couchdb
+        image: {{ .Values.fabric.couchdb.image.repository }}:{{ .Values.fabric.couchdb.image.tag }}
+        imagePullPolicy: {{ .Values.fabric.couchdb.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.fabric.couchdb.service.port }}
+        env:
+        - name: COUCHDB_USER
+          value: {{ .Values.fabric.couchdb.auth.username | quote }}
+        - name: COUCHDB_PASSWORD
+          value: {{ .Values.fabric.couchdb.auth.password | quote }}
+        resources:
+          requests:
+            memory: {{ .Values.fabric.couchdb.resources.requests.memory }}
+            cpu: {{ .Values.fabric.couchdb.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.fabric.couchdb.resources.limits.memory }}
+            cpu: {{ .Values.fabric.couchdb.resources.limits.cpu }}
+        volumeMounts:
+        - name: couchdb-storage
+          mountPath: /opt/couchdb/data
+      volumes:
+      - name: couchdb-storage
+        persistentVolumeClaim:
+          claimName: fabric-couchdb-pvc
+{{- end }}

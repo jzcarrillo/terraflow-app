@@ -1,0 +1,76 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-orderer-pv
+spec:
+  capacity:
+    storage: {{ .Values.fabric.orderer.storage.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-orderer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-peer-pv
+spec:
+  capacity:
+    storage: {{ .Values.fabric.peer.storage.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-peer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-couchdb-pv
+spec:
+  capacity:
+    storage: {{ .Values.fabric.couchdb.storage.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-couchdb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-orderer-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.fabric.orderer.storage.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-peer-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.fabric.peer.storage.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-couchdb-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.fabric.couchdb.storage.size }}
+{{- end }}

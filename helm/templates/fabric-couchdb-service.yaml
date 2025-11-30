@@ -1,0 +1,14 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: fabric-couchdb-service
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.fabric.couchdb.service.type }}
+  selector:
+    app: fabric-couchdb
+  ports:
+  - port: {{ .Values.fabric.couchdb.service.port }}
+    targetPort: {{ .Values.fabric.couchdb.service.port }}
+{{- end }}

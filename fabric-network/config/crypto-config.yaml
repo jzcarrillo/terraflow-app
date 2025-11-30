@@ -1,0 +1,14 @@
+OrdererOrgs:
+  - Name: Orderer
+    Domain: terraflow.com
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: LandRegistry
+    Domain: landregistry.terraflow.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1

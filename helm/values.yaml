@@ -184,3 +184,114 @@ rabbitmq:
 
 redis:
   enabled: true
+
+# Hyperledger Fabric Configuration
+fabric:
+  enabled: true
+  
+  # Fabric Orderer
+  orderer:
+    replicaCount: 1
+    image:
+      repository: hyperledger/fabric-orderer
+      tag: "2.4"
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 7050
+      operationsPort: 17050
+    env:
+      FABRIC_LOGGING_SPEC: "INFO"
+      ORDERER_GENERAL_LISTENADDRESS: "0.0.0.0"
+      ORDERER_GENERAL_LISTENPORT: "7050"
+      ORDERER_GENERAL_GENESISMETHOD: "file"
+      ORDERER_GENERAL_LOCALMSPID: "OrdererMSP"
+      ORDERER_GENERAL_TLS_ENABLED: "false"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    storage:
+      size: "5Gi"
+      storageClass: ""
+  
+  # Fabric Peer
+  peer:
+    replicaCount: 1
+    image:
+      repository: hyperledger/fabric-peer
+      tag: "2.4"
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 7051
+      chaincodePort: 7052
+      operationsPort: 17051
+    env:
+      FABRIC_LOGGING_SPEC: "INFO"
+      CORE_PEER_TLS_ENABLED: "false"
+      CORE_PEER_PROFILE_ENABLED: "true"
+      CORE_PEER_ID: "peer0.landregistry.terraflow.com"
+      CORE_PEER_LOCALMSPID: "LandRegistryMSP"
+      CORE_LEDGER_STATE_STATEDATABASE: "CouchDB"
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    storage:
+      size: "10Gi"
+      storageClass: ""
+  
+  # Fabric CouchDB
+  couchdb:
+    replicaCount: 1
+    image:
+      repository: couchdb
+      tag: "3.1.1"
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 5984
+    auth:
+      username: "admin"
+      password: "adminpw"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+    storage:
+      size: "5Gi"
+      storageClass: ""
+
+# Backend Blockchain Service
+backend-blockchain:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-blockchain
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 50051
+  env:
+    FABRIC_CA_URL: "fabric-ca-service:7054"
+    FABRIC_PEER_URL: "fabric-peer-service:7051"
+    FABRIC_ORDERER_URL: "fabric-orderer-service:7050"
+    GRPC_PORT: "50051"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"

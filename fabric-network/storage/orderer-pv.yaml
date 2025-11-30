@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-orderer-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-orderer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-orderer-pvc
+  namespace: terraflow-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeName: fabric-orderer-pv
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 5Gi

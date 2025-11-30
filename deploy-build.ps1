@@ -4,6 +4,7 @@ $API_SERVICE_NAME = "api-gateway"
 $DOCUMENTS_SERVICE_NAME = "backend-documents"
 $USERS_SERVICE_NAME = "backend-users"
 $PAYMENTS_SERVICE_NAME = "backend-payments"
+$BLOCKCHAIN_SERVICE_NAME = "backend-blockchain"
 $RELEASE_NAME = "terraflow"
 $NAMESPACE = "terraflow-app"
 $PORT = 3000
@@ -16,6 +17,7 @@ $API_DOCKER_IMAGE = "terraflow/api-gateway:latest"
 $DOCUMENTS_DOCKER_IMAGE = "terraflow/backend-documents:latest"
 $USERS_DOCKER_IMAGE = "terraflow/backend-users:latest"
 $PAYMENTS_DOCKER_IMAGE = "terraflow/backend-payments:latest"
+$BLOCKCHAIN_DOCKER_IMAGE = "terraflow/backend-blockchain:latest"
 $HELM_CHART = "./helm"
 
 Write-Host "Building $SERVICE_NAME..." -ForegroundColor Green
@@ -246,6 +248,32 @@ while ($buildAttempt -lt $buildRetries) {
     }
 }
 
+# === Build Backend Blockchain ===
+Write-Host "Building $BLOCKCHAIN_SERVICE_NAME..." -ForegroundColor Green
+
+# Build Backend Blockchain Docker image
+Write-Host "Building Backend Blockchain Docker image..." -ForegroundColor Yellow
+$buildRetries = 3
+$buildAttempt = 0
+
+while ($buildAttempt -lt $buildRetries) {
+    $buildAttempt++
+    Write-Host "Backend Blockchain build attempt $buildAttempt/$buildRetries..." -ForegroundColor Gray
+    
+    docker build -t $BLOCKCHAIN_DOCKER_IMAGE ./backend-blockchain
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Backend Blockchain Docker build successful" -ForegroundColor Green
+        break
+    } else {
+        Write-Host "Backend Blockchain build failed, attempt $buildAttempt/$buildRetries" -ForegroundColor Yellow
+        if ($buildAttempt -eq $buildRetries) {
+            Write-Host "Backend Blockchain Docker build failed after $buildRetries attempts!" -ForegroundColor Red
+            exit 1
+        }
+        Start-Sleep -Seconds 10
+    }
+}
+
 # === Clear any pending Helm operations ===
 Write-Host "Clearing pending Helm operations..." -ForegroundColor Yellow
 helm rollback $RELEASE_NAME 0 --namespace=$NAMESPACE 2>$null
@@ -255,6 +283,37 @@ helm uninstall $RELEASE_NAME --namespace=$NAMESPACE 2>$null
 Write-Host "Cleaning up existing resources..." -ForegroundColor Yellow
 kubectl delete service backend-landregistry-service --namespace=$NAMESPACE 2>$null
 kubectl delete deployment backend-landregistry --namespace=$NAMESPACE 2>$null
+
+# === Clean up Fabric PVCs and PVs ===
+Write-Host "Cleaning up Fabric storage resources..." -ForegroundColor Yellow
+# Remove finalizers first to allow deletion
+kubectl patch pvc fabric-orderer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+kubectl patch pvc fabric-peer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+kubectl patch pvc fabric-couchdb-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+# Now delete them
+kubectl delete pvc fabric-orderer-pvc fabric-peer-pvc fabric-couchdb-pvc --namespace=$NAMESPACE --force --grace-period=0 --ignore-not-found=true 2>$null
+kubectl delete pv fabric-orderer-pv fabric-peer-pv fabric-couchdb-pv --force --grace-period=0 --ignore-not-found=true 2>$null
+
+# Wait for PVCs to be completely deleted
+Write-Host "Waiting for PVCs to be fully deleted..." -ForegroundColor Yellow
+$maxWait = 30
+$waited = 0
+do {
+    Start-Sleep -Seconds 2
+    $waited += 2
+    $remainingPVCs = kubectl get pvc --namespace=$NAMESPACE -o name 2>$null | Where-Object { $_ -match "fabric-" }
+    if ($remainingPVCs) {
+        Write-Host "Force deleting remaining PVCs..." -ForegroundColor Yellow
+        kubectl patch pvc fabric-orderer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+        kubectl patch pvc fabric-peer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+        kubectl patch pvc fabric-couchdb-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>$null
+        kubectl delete pvc fabric-orderer-pvc fabric-peer-pvc fabric-couchdb-pvc --namespace=$NAMESPACE --force --grace-period=0 2>$null
+    }
+} while ($remainingPVCs -and $waited -lt $maxWait)
+
+if ($remainingPVCs) {
+    Write-Host "Warning: Some PVCs still exist, continuing anyway..." -ForegroundColor Yellow
+}
 
 # === Deploy with Helm ===
 Write-Host "Deploying with Helm..." -ForegroundColor Yellow
@@ -271,6 +330,7 @@ kubectl rollout restart deployment/$API_SERVICE_NAME --namespace=$NAMESPACE
 kubectl rollout restart deployment/$DOCUMENTS_SERVICE_NAME --namespace=$NAMESPACE
 kubectl rollout restart deployment/$USERS_SERVICE_NAME --namespace=$NAMESPACE
 kubectl rollout restart deployment/$PAYMENTS_SERVICE_NAME --namespace=$NAMESPACE
+kubectl rollout restart deployment/$BLOCKCHAIN_SERVICE_NAME --namespace=$NAMESPACE
 
 # === Ensure proper startup order ===
 Write-Host "Ensuring proper startup order..." -ForegroundColor Yellow

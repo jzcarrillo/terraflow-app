@@ -1,0 +1,16 @@
+{{- if index .Values "backend-blockchain" "enabled" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "backend-blockchain.fullname" . }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ index .Values "backend-blockchain" "service" "type" }}
+  selector:
+    app: {{ include "backend-blockchain.name" . }}
+  ports:
+  - name: grpc
+    port: {{ index .Values "backend-blockchain" "service" "port" }}
+    targetPort: {{ index .Values "backend-blockchain" "service" "port" }}
+    protocol: TCP
+{{- end }}

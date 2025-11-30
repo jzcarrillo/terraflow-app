@@ -1,0 +1,51 @@
+{{- if index .Values "backend-blockchain" "enabled" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend-blockchain.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ index .Values "backend-blockchain" "replicaCount" }}
+  selector:
+    matchLabels:
+      app: {{ include "backend-blockchain.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "backend-blockchain.name" . }}
+    spec:
+      containers:
+      - name: backend-blockchain
+        image: {{ index .Values "backend-blockchain" "image" "repository" }}:{{ index .Values "backend-blockchain" "image" "tag" }}
+        imagePullPolicy: {{ index .Values "backend-blockchain" "image" "pullPolicy" }}
+        ports:
+        - containerPort: {{ index .Values "backend-blockchain" "service" "port" }}
+        env:
+        - name: FABRIC_CA_URL
+          value: {{ index .Values "backend-blockchain" "env" "FABRIC_CA_URL" | quote }}
+        - name: FABRIC_PEER_URL
+          value: {{ index .Values "backend-blockchain" "env" "FABRIC_PEER_URL" | quote }}
+        - name: FABRIC_ORDERER_URL
+          value: {{ index .Values "backend-blockchain" "env" "FABRIC_ORDERER_URL" | quote }}
+        - name: GRPC_PORT
+          value: {{ index .Values "backend-blockchain" "env" "GRPC_PORT" | quote }}
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: {{ index .Values "backend-blockchain" "resources" "requests" "memory" }}
+            cpu: {{ index .Values "backend-blockchain" "resources" "requests" "cpu" }}
+          limits:
+            memory: {{ index .Values "backend-blockchain" "resources" "limits" "memory" }}
+            cpu: {{ index .Values "backend-blockchain" "resources" "limits" "cpu" }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ index .Values "backend-blockchain" "service" "port" }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: {{ index .Values "backend-blockchain" "service" "port" }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+{{- end }}

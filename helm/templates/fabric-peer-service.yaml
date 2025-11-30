@@ -1,0 +1,21 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: fabric-peer-service
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.fabric.peer.service.type }}
+  selector:
+    app: fabric-peer
+  ports:
+  - name: peer
+    port: {{ .Values.fabric.peer.service.port }}
+    targetPort: {{ .Values.fabric.peer.service.port }}
+  - name: chaincode
+    port: {{ .Values.fabric.peer.service.chaincodePort }}
+    targetPort: {{ .Values.fabric.peer.service.chaincodePort }}
+  - name: operations
+    port: {{ .Values.fabric.peer.service.operationsPort }}
+    targetPort: {{ .Values.fabric.peer.service.operationsPort }}
+{{- end }}

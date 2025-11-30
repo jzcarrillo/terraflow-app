@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package blockchain;
+
+service BlockchainService {
+  rpc RecordLandTitle(LandTitleRequest) returns (LandTitleResponse);
+  rpc GetLandTitleHistory(HistoryRequest) returns (HistoryResponse);
+  rpc QueryLandTitle(QueryRequest) returns (QueryResponse);
+}
+
+message LandTitleRequest {
+  string title_number = 1;
+  string owner_name = 2;
+  string property_location = 3;
+  string status = 4;
+  string reference_id = 5;
+  int64 timestamp = 6;
+  string transaction_id = 7;
+}
+
+message LandTitleResponse {
+  bool success = 1;
+  string transaction_id = 2;
+  string block_number = 3;
+  string message = 4;
+  string blockchain_hash = 5;
+}
+
+message HistoryRequest {
+  string title_number = 1;
+}
+
+message HistoryResponse {
+  bool success = 1;
+  repeated LandTitleRecord history = 2;
+  string message = 3;
+}
+
+message QueryRequest {
+  string title_number = 1;
+}
+
+message QueryResponse {
+  bool success = 1;
+  LandTitleRecord land_title = 2;
+  string message = 3;
+}
+
+message LandTitleRecord {
+  string title_number = 1;
+  string owner_name = 2;
+  string property_location = 3;
+  string status = 4;
+  string reference_id = 5;
+  int64 timestamp = 6;
+  string transaction_id = 7;
+  string block_number = 8;
+}

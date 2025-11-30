@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package blockchain;
+
+service BlockchainService {
+  rpc RecordLandTitle(LandTitleRequest) returns (BlockchainResponse);
+  rpc GetLandTitle(GetLandTitleRequest) returns (LandTitleResponse);
+  rpc RecordCancellation(CancellationRequest) returns (BlockchainResponse);
+}
+
+message LandTitleRequest {
+  string landTitleId = 1;
+  string paymentId = 2;
+  string ownerName = 3;
+  string propertyAddress = 4;
+  string lotNumber = 5;
+  string titleNumber = 6;
+  int32 areaSqm = 7;
+  string status = 8;
+  string timestamp = 9;
+}
+
+message GetLandTitleRequest {
+  string landTitleId = 1;
+}
+
+message LandTitleResponse {
+  string landTitleId = 1;
+  string ownerName = 2;
+  string propertyAddress = 3;
+  string status = 4;
+  string blockchainHash = 5;
+  string timestamp = 6;
+}
+
+message CancellationRequest {
+  string landTitleId = 1;
+  string paymentId = 2;
+  string previousStatus = 3;
+  string newStatus = 4;
+  string reason = 5;
+  string timestamp = 6;
+}
+
+message BlockchainResponse {
+  bool success = 1;
+  string message = 2;
+  string transactionId = 3;
+  string blockchainHash = 4;
+}

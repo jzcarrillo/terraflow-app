@@ -1,0 +1,31 @@
+{
+  "name": "backend-blockchain",
+  "version": "1.0.0",
+  "description": "Hyperledger Fabric gRPC service for land title blockchain operations",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.9.0",
+    "@grpc/proto-loader": "^0.7.8",
+    "fabric-network": "^2.2.19",
+    "fabric-ca-client": "^2.2.19",
+    "fabric-common": "^2.2.19",
+    "winston": "^3.10.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "hyperledger",
+    "fabric",
+    "blockchain",
+    "grpc",
+    "land-title"
+  ],
+  "author": "Terraflow Team",
+  "license": "MIT"
+}

@@ -1,0 +1,88 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fabric-peer
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.fabric.peer.replicaCount }}
+  selector:
+    matchLabels:
+      app: fabric-peer
+  template:
+    metadata:
+      labels:
+        app: fabric-peer
+    spec:
+      containers:
+      - name: fabric-peer
+        image: {{ .Values.fabric.peer.image.repository }}:{{ .Values.fabric.peer.image.tag }}
+        imagePullPolicy: {{ .Values.fabric.peer.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.fabric.peer.service.port }}
+        - containerPort: {{ .Values.fabric.peer.service.chaincodePort }}
+        - containerPort: {{ .Values.fabric.peer.service.operationsPort }}
+        env:
+        - name: CORE_VM_ENDPOINT
+          value: "unix:///host/var/run/docker.sock"
+        - name: CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE
+          value: "bridge"
+        - name: FABRIC_LOGGING_SPEC
+          value: {{ .Values.fabric.peer.env.FABRIC_LOGGING_SPEC | quote }}
+        - name: CORE_PEER_TLS_ENABLED
+          value: {{ .Values.fabric.peer.env.CORE_PEER_TLS_ENABLED | quote }}
+        - name: CORE_PEER_PROFILE_ENABLED
+          value: {{ .Values.fabric.peer.env.CORE_PEER_PROFILE_ENABLED | quote }}
+        - name: CORE_PEER_ID
+          value: {{ .Values.fabric.peer.env.CORE_PEER_ID | quote }}
+        - name: CORE_PEER_ADDRESS
+          value: "{{ .Values.fabric.peer.env.CORE_PEER_ID }}:{{ .Values.fabric.peer.service.port }}"
+        - name: CORE_PEER_LISTENADDRESS
+          value: "0.0.0.0:{{ .Values.fabric.peer.service.port }}"
+        - name: CORE_PEER_CHAINCODEADDRESS
+          value: "{{ .Values.fabric.peer.env.CORE_PEER_ID }}:{{ .Values.fabric.peer.service.chaincodePort }}"
+        - name: CORE_PEER_CHAINCODELISTENADDRESS
+          value: "0.0.0.0:{{ .Values.fabric.peer.service.chaincodePort }}"
+        - name: CORE_PEER_GOSSIP_BOOTSTRAP
+          value: "{{ .Values.fabric.peer.env.CORE_PEER_ID }}:{{ .Values.fabric.peer.service.port }}"
+        - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+          value: "{{ .Values.fabric.peer.env.CORE_PEER_ID }}:{{ .Values.fabric.peer.service.port }}"
+        - name: CORE_PEER_LOCALMSPID
+          value: {{ .Values.fabric.peer.env.CORE_PEER_LOCALMSPID | quote }}
+        - name: CORE_OPERATIONS_LISTENADDRESS
+          value: "0.0.0.0:{{ .Values.fabric.peer.service.operationsPort }}"
+        - name: CORE_LEDGER_STATE_STATEDATABASE
+          value: {{ .Values.fabric.peer.env.CORE_LEDGER_STATE_STATEDATABASE | quote }}
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+          value: "fabric-couchdb-service:{{ .Values.fabric.couchdb.service.port }}"
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME
+          value: {{ .Values.fabric.couchdb.auth.username | quote }}
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+          value: {{ .Values.fabric.couchdb.auth.password | quote }}
+        resources:
+          requests:
+            memory: {{ .Values.fabric.peer.resources.requests.memory }}
+            cpu: {{ .Values.fabric.peer.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.fabric.peer.resources.limits.memory }}
+            cpu: {{ .Values.fabric.peer.resources.limits.cpu }}
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /host/var/run/docker.sock
+        - name: peer-msp
+          mountPath: /etc/hyperledger/fabric/msp
+        - name: peer-storage
+          mountPath: /var/hyperledger/production
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+        command: ["peer", "node", "start"]
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: peer-msp
+        configMap:
+          name: fabric-peer-msp
+      - name: peer-storage
+        persistentVolumeClaim:
+          claimName: fabric-peer-pvc
+{{- end }}
