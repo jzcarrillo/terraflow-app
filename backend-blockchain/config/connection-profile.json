@@ -1,0 +1,58 @@
+{
+  "name": "terraflow-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "LandRegistryOrg",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        },
+        "orderer": "300"
+      }
+    }
+  },
+  "organizations": {
+    "LandRegistryOrg": {
+      "mspid": "LandRegistryMSP",
+      "peers": ["fabric-peer-service:7051"],
+      "certificateAuthorities": ["fabric-ca-service:7054"]
+    }
+  },
+  "orderers": {
+    "fabric-orderer-service": {
+      "url": "grpc://fabric-orderer-service:7050"
+    }
+  },
+  "peers": {
+    "fabric-peer-service": {
+      "url": "grpc://fabric-peer-service:7051",
+      "eventUrl": "grpc://fabric-peer-service:7053"
+    }
+  },
+  "certificateAuthorities": {
+    "fabric-ca-service": {
+      "url": "http://fabric-ca-service:7054",
+      "caName": "ca-landregistry",
+      "tlsCACerts": {
+        "pem": []
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    }
+  },
+  "channels": {
+    "mychannel": {
+      "orderers": ["fabric-orderer-service"],
+      "peers": {
+        "fabric-peer-service": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        }
+      }
+    }
+  }
+}

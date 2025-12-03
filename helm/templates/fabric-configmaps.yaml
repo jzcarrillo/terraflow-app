@@ -1,0 +1,32 @@
+{{- if .Values.fabric.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-orderer-msp
+  namespace: {{ .Values.namespace }}
+data:
+  config.yaml: |
+    NodeOUs:
+      Enable: false
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-peer-msp
+  namespace: {{ .Values.namespace }}
+data:
+  config.yaml: |
+    NodeOUs:
+      Enable: false
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-genesis
+  namespace: {{ .Values.namespace }}
+data:
+  genesis.block: ""
+{{- end }}

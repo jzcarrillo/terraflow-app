@@ -1,22 +1,14 @@
 OrdererOrgs:
   - Name: Orderer
-    Domain: terraflow.com
-    EnableNodeOUs: true
+    Domain: example.com
     Specs:
       - Hostname: orderer
-        SANS:
-          - localhost
-          - 127.0.0.1
-          - orderer.terraflow.com
 
 PeerOrgs:
-  - Name: LandRegistry
-    Domain: landregistry.terraflow.com
+  - Name: Org1
+    Domain: org1.example.com
     EnableNodeOUs: true
     Template:
       Count: 1
-      SANS:
-        - localhost
-        - 127.0.0.1
     Users:
       Count: 1

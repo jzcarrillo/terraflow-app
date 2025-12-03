@@ -50,10 +50,10 @@ spec:
         volumeMounts:
         - name: orderer-storage
           mountPath: /var/hyperledger/production/orderer
-        - name: orderer-storage
+        - name: crypto-storage
           mountPath: /var/hyperledger/orderer/msp
-          subPath: msp
-        - name: orderer-storage
+          subPath: ordererOrganizations/terraflow.com/orderers/orderer.terraflow.com/msp
+        - name: channel-artifacts
           mountPath: /var/hyperledger/orderer/orderer.genesis.block
           subPath: genesis.block
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric
@@ -62,4 +62,10 @@ spec:
       - name: orderer-storage
         persistentVolumeClaim:
           claimName: fabric-orderer-pvc
+      - name: crypto-storage
+        persistentVolumeClaim:
+          claimName: fabric-crypto-pvc
+      - name: channel-artifacts
+        persistentVolumeClaim:
+          claimName: fabric-channel-pvc
 {{- end }}

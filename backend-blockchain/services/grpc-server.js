@@ -20,6 +20,7 @@ class GrpcServer {
         enums: String,
         defaults: true,
         oneofs: true,
+        json: true
       });
 
       const blockchainProto = grpc.loadPackageDefinition(packageDefinition).blockchain;
@@ -41,7 +42,9 @@ class GrpcServer {
   async recordLandTitle(call, callback) {
     try {
       const request = call.request;
-      console.log(`📥 gRPC RecordLandTitle request:`, request);
+      console.log(`📥 gRPC RecordLandTitle request:`, JSON.stringify(request, null, 2));
+      console.log(`🔍 Request keys:`, Object.keys(request));
+      console.log(`🔍 Request values:`, Object.values(request));
 
       const result = await this.chaincodeService.recordLandTitle({
         title_number: request.title_number,
@@ -108,13 +111,14 @@ class GrpcServer {
       await this.initialize();
 
       // Bind server
+      const address = `0.0.0.0:${this.port}`;
       this.server.bindAsync(
-        `0.0.0.0:${this.port}`,
+        address,
         grpc.ServerCredentials.createInsecure(),
         (error, port) => {
           if (error) {
             console.error('❌ Failed to bind gRPC server:', error.message);
-            return;
+            process.exit(1);
           }
           
           console.log(`🚀 Blockchain gRPC server running on port ${port}`);

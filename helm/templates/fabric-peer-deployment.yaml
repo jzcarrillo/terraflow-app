@@ -69,8 +69,9 @@ spec:
         volumeMounts:
         - name: docker-sock
           mountPath: /host/var/run/docker.sock
-        - name: peer-msp
+        - name: crypto-storage
           mountPath: /etc/hyperledger/fabric/msp
+          subPath: peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp
         - name: peer-storage
           mountPath: /var/hyperledger/production
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
@@ -79,9 +80,9 @@ spec:
       - name: docker-sock
         hostPath:
           path: /var/run/docker.sock
-      - name: peer-msp
-        configMap:
-          name: fabric-peer-msp
+      - name: crypto-storage
+        persistentVolumeClaim:
+          claimName: fabric-crypto-pvc
       - name: peer-storage
         persistentVolumeClaim:
           claimName: fabric-peer-pvc

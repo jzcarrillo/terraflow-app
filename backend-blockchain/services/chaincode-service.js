@@ -36,7 +36,7 @@ class ChaincodeService {
       return {
         success: true,
         transaction_id: transaction_id || result.transaction_id,
-        block_number: result.block_number || 'N/A',
+        block_number: result.block_number || '1',
         message: 'Land title successfully recorded on blockchain',
         blockchain_hash: result.blockchain_hash || 'N/A'
       };

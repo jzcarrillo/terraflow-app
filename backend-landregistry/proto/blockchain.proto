@@ -9,15 +9,13 @@ service BlockchainService {
 }
 
 message LandTitleRequest {
-  string landTitleId = 1;
-  string paymentId = 2;
-  string ownerName = 3;
-  string propertyAddress = 4;
-  string lotNumber = 5;
-  string titleNumber = 6;
-  int32 areaSqm = 7;
-  string status = 8;
-  string timestamp = 9;
+  string title_number = 1;
+  string owner_name = 2;
+  string property_location = 3;
+  string status = 4;
+  string reference_id = 5;
+  int64 timestamp = 6;
+  string transaction_id = 7;
 }
 
 message GetLandTitleRequest {

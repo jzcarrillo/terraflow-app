@@ -1,0 +1,209 @@
+{{- if .Values.fabric.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fabric-crypto-generator
+  namespace: {{ .Values.namespace }}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: crypto-generator
+        image: hyperledger/fabric-tools:2.4
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "🔐 Generating crypto materials using cryptogen..."
+          
+          # Create crypto-config.yaml
+          cat > /tmp/crypto-config.yaml << EOF
+          OrdererOrgs:
+            - Name: Orderer
+              Domain: terraflow.com
+              Specs:
+                - Hostname: orderer
+          
+          PeerOrgs:
+            - Name: LandRegistry
+              Domain: landregistry.terraflow.com
+              EnableNodeOUs: false
+              Template:
+                Count: 1
+                Start: 0
+                Hostname: peer{{.Index}}
+              Users:
+                Count: 1
+          EOF
+          
+          # Generate crypto materials
+          cryptogen generate --config=/tmp/crypto-config.yaml --output=/crypto-config
+          
+          # Verify peer MSP structure was created
+          if [ ! -d "/crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts" ]; then
+            echo "Creating missing peer MSP directories..."
+            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts
+            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/cacerts
+            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/tlscacerts
+            
+            # Copy CA certificates
+            cp /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/ca.landregistry.terraflow.com-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/cacerts/
+            cp /crypto-config/peerOrganizations/landregistry.terraflow.com/tlsca/tlsca.landregistry.terraflow.com-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/tlscacerts/
+            
+            # Generate proper peer certificate
+            openssl ecparam -name prime256v1 -genkey -noout -out /tmp/peer-key.pem
+            openssl req -new -key /tmp/peer-key.pem -out /tmp/peer.csr -subj "/C=US/ST=CA/L=San Francisco/O=landregistry.terraflow.com/CN=peer0.landregistry.terraflow.com"
+            openssl x509 -req -in /tmp/peer.csr -CA /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/ca.landregistry.terraflow.com-cert.pem -CAkey /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/*_sk -CAcreateserial -out /tmp/peer-cert.pem -days 365 -extensions v3_req
+            
+            # Copy peer certificate and key
+            cp /tmp/peer-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts/
+            cp /tmp/peer-key.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/keystore/
+            
+            # Create MSP config for peer
+            cat > /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/config.yaml << EOF2
+          NodeOUs:
+            Enable: false
+          EOF2
+          fi
+          
+          # Generate genesis block
+          mkdir -p /channel-artifacts
+          cat > /tmp/configtx.yaml << EOF
+          Organizations:
+            - &OrdererOrg
+                Name: OrdererOrg
+                ID: OrdererMSP
+                MSPDir: /crypto-config/ordererOrganizations/terraflow.com/msp
+                Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: "OR('OrdererMSP.member')"
+                    Writers:
+                        Type: Signature
+                        Rule: "OR('OrdererMSP.member')"
+                    Admins:
+                        Type: Signature
+                        Rule: "OR('OrdererMSP.admin')"
+            - &LandRegistryOrg
+                Name: LandRegistryOrg
+                ID: LandRegistryMSP
+                MSPDir: /crypto-config/peerOrganizations/landregistry.terraflow.com/msp
+                Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: "OR('LandRegistryMSP.admin', 'LandRegistryMSP.peer', 'LandRegistryMSP.client')"
+                    Writers:
+                        Type: Signature
+                        Rule: "OR('LandRegistryMSP.admin', 'LandRegistryMSP.client')"
+                    Admins:
+                        Type: Signature
+                        Rule: "OR('LandRegistryMSP.admin')"
+                    Endorsement:
+                        Type: Signature
+                        Rule: "OR('LandRegistryMSP.peer')"
+          
+          Capabilities:
+              Channel: &ChannelCapabilities
+                  V2_0: true
+              Orderer: &OrdererCapabilities
+                  V2_0: true
+              Application: &ApplicationCapabilities
+                  V2_0: true
+          
+          Orderer: &OrdererDefaults
+            OrdererType: solo
+            Addresses:
+              - orderer.terraflow.com:7050
+            BatchTimeout: 2s
+            BatchSize:
+              MaxMessageCount: 10
+              AbsoluteMaxBytes: 99 MB
+              PreferredMaxBytes: 512 KB
+            Organizations:
+            Policies:
+                Readers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Readers"
+                Writers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Writers"
+                Admins:
+                    Type: ImplicitMeta
+                    Rule: "MAJORITY Admins"
+                BlockValidation:
+                    Type: ImplicitMeta
+                    Rule: "ANY Writers"
+          
+          Channel: &ChannelDefaults
+            Policies:
+                Readers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Readers"
+                Writers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Writers"
+                Admins:
+                    Type: ImplicitMeta
+                    Rule: "MAJORITY Admins"
+            Capabilities:
+                <<: *ChannelCapabilities
+          
+          Application: &ApplicationDefaults
+            Organizations:
+            Policies:
+                Readers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Readers"
+                Writers:
+                    Type: ImplicitMeta
+                    Rule: "ANY Writers"
+                Admins:
+                    Type: ImplicitMeta
+                    Rule: "MAJORITY Admins"
+                LifecycleEndorsement:
+                    Type: ImplicitMeta
+                    Rule: "MAJORITY Endorsement"
+                Endorsement:
+                    Type: ImplicitMeta
+                    Rule: "MAJORITY Endorsement"
+            Capabilities:
+                <<: *ApplicationCapabilities
+          
+          Profiles:
+            TerraflowOrdererGenesis:
+              <<: *ChannelDefaults
+              Orderer:
+                <<: *OrdererDefaults
+                Organizations:
+                  - *OrdererOrg
+                Capabilities:
+                  <<: *OrdererCapabilities
+              Consortiums:
+                TerraflowConsortium:
+                  Organizations:
+                    - *LandRegistryOrg
+          EOF
+          
+          export FABRIC_CFG_PATH=/tmp
+          rm -rf /channel-artifacts/genesis.block
+          configtxgen -profile TerraflowOrdererGenesis -channelID system-channel -outputBlock /channel-artifacts/genesis.block
+          
+          echo "✅ Crypto materials and genesis block generated successfully"
+          ls -la /crypto-config/ordererOrganizations/terraflow.com/orderers/orderer.terraflow.com/msp/signcerts/
+          ls -la /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts/
+          ls -la /channel-artifacts/
+        volumeMounts:
+        - name: crypto-storage
+          mountPath: /crypto-config
+        - name: channel-artifacts
+          mountPath: /channel-artifacts
+      volumes:
+      - name: crypto-storage
+        persistentVolumeClaim:
+          claimName: fabric-crypto-pvc
+      - name: channel-artifacts
+        persistentVolumeClaim:
+          claimName: fabric-channel-pvc
+{{- end }}

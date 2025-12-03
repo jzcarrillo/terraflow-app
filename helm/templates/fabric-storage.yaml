@@ -73,4 +73,54 @@ spec:
   resources:
     requests:
       storage: {{ .Values.fabric.couchdb.storage.size }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-crypto-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-crypto
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-crypto-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fabric-channel-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/fabric-channel
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fabric-channel-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
 {{- end }}

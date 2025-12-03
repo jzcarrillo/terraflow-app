@@ -28,19 +28,31 @@ const paymentStatusUpdate = async (messageData) => {
         try {
           console.log(`🔗 Recording land title ${landTitle.title_number} to blockchain`);
           
-          const blockchainResponse = await blockchainClient.recordLandTitle({
+          console.log(`🔍 SIMPLE DEBUG - landTitle exists:`, !!landTitle);
+          console.log(`🔍 SIMPLE DEBUG - title_number:`, landTitle?.title_number);
+          console.log(`🔍 SIMPLE DEBUG - owner_name:`, landTitle?.owner_name);
+          console.log(`🔍 SIMPLE DEBUG - property_location:`, landTitle?.property_location);
+          
+          // Validate land title data exists
+          if (!landTitle || !landTitle.title_number) {
+            throw new Error(`Invalid land title data for reference: ${reference_id}`);
+          }
+          
+          const blockchainPayload = {
             title_number: landTitle.title_number,
             owner_name: landTitle.owner_name,
             property_location: landTitle.property_location,
             status: status,
             reference_id: reference_id,
-            timestamp: landTitle.created_at,
+            timestamp: Math.floor(new Date(landTitle.created_at).getTime() / 1000),
             transaction_id: landTitle.transaction_id
-          });
+          };
+          
+          const blockchainResponse = await blockchainClient.recordLandTitle(blockchainPayload);
           
           if (blockchainResponse.success) {
-            console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id}`);
-            console.log(`📦 Block: ${blockchainResponse.block_number}`);
+            console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id || blockchainResponse.transactionId}`);
+            console.log(`🔗 Hash: ${blockchainResponse.blockchain_hash || blockchainResponse.blockchainHash}`);
             
             // PUBLISH SUCCESS EVENT BACK TO PAYMENTS
             const successEvent = {
@@ -49,8 +61,8 @@ const paymentStatusUpdate = async (messageData) => {
               land_title_id: landTitle.id,
               title_number: landTitle.title_number,
               new_status: status,
-              blockchain_tx: blockchainResponse.transaction_id,
-              blockchain_hash: blockchainResponse.blockchain_hash,
+              blockchain_tx: blockchainResponse.transaction_id || blockchainResponse.transactionId,
+              blockchain_hash: blockchainResponse.blockchain_hash || blockchainResponse.blockchainHash,
               timestamp: new Date().toISOString()
             };
             
