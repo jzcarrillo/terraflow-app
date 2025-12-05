@@ -75,18 +75,6 @@ class BlockchainClient {
       });
     });
   }
-
-  async recordCancellation(cancellationData) {
-    return new Promise((resolve, reject) => {
-      client.RecordCancellation(cancellationData, (error, response) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(response);
-        }
-      });
-    });
-  }
 }
 
 module.exports = new BlockchainClient();
