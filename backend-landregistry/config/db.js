@@ -58,6 +58,22 @@ const initializeDatabase = async (retries = 5) => {
         ADD COLUMN IF NOT EXISTS blockchain_hash VARCHAR(255)
       `);
       
+      // ADD CANCELLATION BLOCKCHAIN FIELDS
+      await pool.query(`
+        ALTER TABLE ${TABLES.LAND_TITLES} 
+        ADD COLUMN IF NOT EXISTS cancellation_hash VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS cancellation_reason TEXT
+      `);
+      
+      // ADD REACTIVATION BLOCKCHAIN FIELDS
+      await pool.query(`
+        ALTER TABLE ${TABLES.LAND_TITLES} 
+        ADD COLUMN IF NOT EXISTS reactivation_hash VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS reactivated_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS reactivation_reason TEXT
+      `);
+      
       console.log('✅ Database tables initialized successfully');
       return;
 

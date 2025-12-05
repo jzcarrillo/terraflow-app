@@ -6,6 +6,7 @@ service BlockchainService {
   rpc RecordLandTitle(LandTitleRequest) returns (BlockchainResponse);
   rpc GetLandTitle(GetLandTitleRequest) returns (LandTitleResponse);
   rpc RecordCancellation(CancellationRequest) returns (BlockchainResponse);
+  rpc RecordReactivation(ReactivationRequest) returns (BlockchainResponse);
 }
 
 message LandTitleRequest {
@@ -32,12 +33,24 @@ message LandTitleResponse {
 }
 
 message CancellationRequest {
-  string landTitleId = 1;
-  string paymentId = 2;
-  string previousStatus = 3;
-  string newStatus = 4;
+  string title_number = 1;
+  string previous_status = 2;
+  string new_status = 3;
+  string original_hash = 4;
   string reason = 5;
-  string timestamp = 6;
+  int64 timestamp = 6;
+  string transaction_id = 7;
+}
+
+message ReactivationRequest {
+  string title_number = 1;
+  string previous_status = 2;
+  string new_status = 3;
+  string original_hash = 4;
+  string cancellation_hash = 5;
+  string reason = 6;
+  int64 timestamp = 7;
+  string transaction_id = 8;
 }
 
 message BlockchainResponse {

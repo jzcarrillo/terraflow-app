@@ -108,6 +108,110 @@ class ChaincodeService {
     }
   }
 
+  async recordCancellation(cancellationData) {
+    try {
+      const {
+        title_number,
+        previous_status,
+        new_status,
+        original_hash,
+        reason,
+        timestamp,
+        transaction_id
+      } = cancellationData;
+
+      console.log(`❌ Recording cancellation on blockchain: ${title_number}`);
+
+      // Submit cancellation transaction to chaincode
+      const result = await this.fabricClient.submitTransaction(
+        'CancelLandTitle',
+        title_number,
+        previous_status,
+        new_status,
+        original_hash,
+        reason,
+        timestamp.toString(),
+        transaction_id
+      );
+
+      console.log(`✅ Cancellation recorded on blockchain: ${title_number}`);
+      
+      console.log(`🔍 DEBUG - fabric-client cancellation result:`, result);
+      
+      return {
+        success: true,
+        transaction_id: result.transaction_id || transaction_id,
+        block_number: result.block_number || '1',
+        message: 'Land title cancellation successfully recorded on blockchain',
+        blockchainHash: result.blockchain_hash
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to record cancellation:', error.message);
+      
+      return {
+        success: false,
+        transaction_id: cancellationData.transaction_id || '',
+        block_number: '',
+        message: `Failed to record cancellation: ${error.message}`,
+        blockchain_hash: ''
+      };
+    }
+  }
+
+  async recordReactivation(reactivationData) {
+    try {
+      const {
+        title_number,
+        previous_status,
+        new_status,
+        original_hash,
+        cancellation_hash,
+        reason,
+        timestamp,
+        transaction_id
+      } = reactivationData;
+
+      console.log(`🔄 Recording reactivation on blockchain: ${title_number}`);
+
+      // Submit reactivation transaction to chaincode
+      const result = await this.fabricClient.submitTransaction(
+        'ReactivateLandTitle',
+        title_number,
+        previous_status,
+        new_status,
+        original_hash,
+        cancellation_hash,
+        reason,
+        timestamp.toString(),
+        transaction_id
+      );
+
+      console.log(`✅ Reactivation recorded on blockchain: ${title_number}`);
+      
+      console.log(`🔍 DEBUG - fabric-client reactivation result:`, result);
+      
+      return {
+        success: true,
+        transaction_id: result.transaction_id || transaction_id,
+        block_number: result.block_number || '1',
+        message: 'Land title reactivation successfully recorded on blockchain',
+        blockchainHash: result.blockchain_hash
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to record reactivation:', error.message);
+      
+      return {
+        success: false,
+        transaction_id: reactivationData.transaction_id || '',
+        block_number: '',
+        message: `Failed to record reactivation: ${error.message}`,
+        blockchain_hash: ''
+      };
+    }
+  }
+
   async disconnect() {
     await this.fabricClient.disconnect();
   }

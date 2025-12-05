@@ -36,6 +36,34 @@ class BlockchainClient {
     });
   }
 
+  async recordCancellation(cancellationData) {
+    return new Promise((resolve, reject) => {
+      client.RecordCancellation(cancellationData, (error, response) => {
+        if (error) {
+          console.error('Cancellation gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('Cancellation response:', response);
+          resolve(response);
+        }
+      });
+    });
+  }
+
+  async recordReactivation(reactivationData) {
+    return new Promise((resolve, reject) => {
+      client.RecordReactivation(reactivationData, (error, response) => {
+        if (error) {
+          console.error('Reactivation gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('Reactivation response:', response);
+          resolve(response);
+        }
+      });
+    });
+  }
+
   async getLandTitle(landTitleId) {
     return new Promise((resolve, reject) => {
       client.GetLandTitle({ landTitleId }, (error, response) => {

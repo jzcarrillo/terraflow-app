@@ -28,6 +28,8 @@ class GrpcServer {
       // Add service implementation
       this.server.addService(blockchainProto.BlockchainService.service, {
         RecordLandTitle: this.recordLandTitle.bind(this),
+        RecordCancellation: this.recordCancellation.bind(this),
+        RecordReactivation: this.recordReactivation.bind(this),
         GetLandTitleHistory: this.getLandTitleHistory.bind(this),
         QueryLandTitle: this.queryLandTitle.bind(this)
       });
@@ -80,6 +82,61 @@ class GrpcServer {
 
     } catch (error) {
       console.error('❌ gRPC GetLandTitleHistory error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async recordCancellation(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC RecordCancellation request:`, JSON.stringify(request, null, 2));
+
+      const result = await this.chaincodeService.recordCancellation({
+        title_number: request.title_number,
+        previous_status: request.previous_status,
+        new_status: request.new_status,
+        original_hash: request.original_hash,
+        reason: request.reason,
+        timestamp: request.timestamp,
+        transaction_id: request.transaction_id
+      });
+
+      console.log(`📤 gRPC RecordCancellation response:`, result);
+      callback(null, result);
+
+    } catch (error) {
+      console.error('❌ gRPC RecordCancellation error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async recordReactivation(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC RecordReactivation request:`, JSON.stringify(request, null, 2));
+
+      const result = await this.chaincodeService.recordReactivation({
+        title_number: request.title_number,
+        previous_status: request.previous_status,
+        new_status: request.new_status,
+        original_hash: request.original_hash,
+        cancellation_hash: request.cancellation_hash,
+        reason: request.reason,
+        timestamp: request.timestamp,
+        transaction_id: request.transaction_id
+      });
+
+      console.log(`📤 gRPC RecordReactivation response:`, result);
+      callback(null, result);
+
+    } catch (error) {
+      console.error('❌ gRPC RecordReactivation error:', error.message);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message

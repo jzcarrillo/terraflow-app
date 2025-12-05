@@ -9,7 +9,20 @@ const paymentStatusUpdate = async (messageData) => {
   try {
     console.log(`🔄 New status: ${status}`);
     
-// UPDATE LAND TITLE STATUS TO ACTIVE WHEN PAYMENT IS PAID
+// GET CURRENT STATUS BEFORE UPDATE
+    const getCurrentQuery = `SELECT * FROM land_titles WHERE title_number = $1`;
+    const currentResult = await pool.query(getCurrentQuery, [reference_id]);
+    
+    if (currentResult.rows.length === 0) {
+      throw new Error(`Land title not found: ${reference_id}`);
+    }
+    
+    const currentLandTitle = currentResult.rows[0];
+    const oldStatus = currentLandTitle.status;
+    
+    console.log(`🔄 Status transition: ${oldStatus} → ${status}`);
+    
+// UPDATE LAND TITLE STATUS
     const query = `
       UPDATE land_titles 
       SET status = $1, updated_at = NOW()
@@ -24,88 +37,161 @@ const paymentStatusUpdate = async (messageData) => {
       console.log(`✅ Land title ${landTitle.title_number} status updated to ${status} successfully`);
       
       if (status === 'ACTIVE') {
-        // RECORD ON BLOCKCHAIN
-        try {
-          console.log(`🔗 Recording land title ${landTitle.title_number} to blockchain`);
-          
-          console.log(`🔍 SIMPLE DEBUG - landTitle exists:`, !!landTitle);
-          console.log(`🔍 SIMPLE DEBUG - title_number:`, landTitle?.title_number);
-          console.log(`🔍 SIMPLE DEBUG - owner_name:`, landTitle?.owner_name);
-          console.log(`🔍 SIMPLE DEBUG - property_location:`, landTitle?.property_location);
-          
-          // Validate land title data exists
-          if (!landTitle || !landTitle.title_number) {
-            throw new Error(`Invalid land title data for reference: ${reference_id}`);
-          }
-          
-          const blockchainPayload = {
-            title_number: landTitle.title_number,
-            owner_name: landTitle.owner_name,
-            property_location: landTitle.property_location,
-            status: status,
-            reference_id: reference_id,
-            timestamp: Math.floor(new Date(landTitle.created_at).getTime() / 1000),
-            transaction_id: landTitle.transaction_id
-          };
-          
-          const blockchainResponse = await blockchainClient.recordLandTitle(blockchainPayload);
-          
-          if (blockchainResponse.success) {
-            console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id || blockchainResponse.transactionId}`);
-            console.log(`🔗 Hash: ${blockchainResponse.blockchain_hash || blockchainResponse.blockchainHash}`);
+        // CHECK IF THIS IS A REACTIVATION (previously cancelled)
+        if (currentLandTitle.cancellation_hash) {
+          // REACTIVATION - Record reactivation transaction
+          try {
+            console.log(`🔄 Recording reactivation for ${landTitle.title_number} on blockchain`);
             
-            // UPDATE LAND TITLE WITH BLOCKCHAIN HASH
-            console.log(`🔍 DEBUG - blockchainResponse.blockchainHash:`, blockchainResponse.blockchainHash);
-            console.log(`🔍 DEBUG - blockchainResponse.blockchain_hash:`, blockchainResponse.blockchain_hash);
-            console.log(`🔍 DEBUG - blockchainResponse.message:`, blockchainResponse.message);
-            
-            const blockchainHash = blockchainResponse.blockchainHash || blockchainResponse.blockchain_hash;
-            console.log(`🔍 DEBUG - Final blockchainHash to store:`, blockchainHash);
-            
-            if (blockchainHash) {
-              await pool.query(
-                'UPDATE land_titles SET blockchain_hash = $1 WHERE title_number = $2',
-                [blockchainHash, reference_id]
-              );
-              console.log(`✅ Blockchain hash stored: ${blockchainHash}`);
-            }
-            
-            // PUBLISH SUCCESS EVENT BACK TO PAYMENTS
-            const successEvent = {
-              event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-              reference_id: reference_id,
-              land_title_id: landTitle.id,
+            const reactivationPayload = {
               title_number: landTitle.title_number,
+              previous_status: oldStatus,
               new_status: status,
-              blockchain_tx: blockchainResponse.transaction_id || blockchainResponse.transactionId,
-              blockchain_hash: blockchainResponse.blockchain_hash || blockchainResponse.blockchainHash,
-              timestamp: new Date().toISOString()
+              original_hash: currentLandTitle.blockchain_hash,
+              cancellation_hash: currentLandTitle.cancellation_hash,
+              reason: 'Payment completed after cancellation - land title reactivated',
+              timestamp: Math.floor(Date.now() / 1000),
+              transaction_id: currentLandTitle.transaction_id
             };
             
-            await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
-          } else {
-            throw new Error(`Blockchain recording failed: ${blockchainResponse.message}`);
+            console.log(`🔍 DEBUG - Reactivation payload:`, reactivationPayload);
+            
+            const reactivationResponse = await blockchainClient.recordReactivation(reactivationPayload);
+            
+            console.log(`🔍 DEBUG - Reactivation response:`, reactivationResponse);
+            
+            if (reactivationResponse.success) {
+              console.log(`🔄 Reactivation TX: ${reactivationResponse.transaction_id}`);
+              console.log(`🔄 Reactivation Hash: ${reactivationResponse.blockchainHash}`);
+              
+              // UPDATE LAND TITLE WITH REACTIVATION HASH
+              const reactivationHash = reactivationResponse.blockchainHash;
+              
+              if (reactivationHash) {
+                await pool.query(
+                  'UPDATE land_titles SET reactivation_hash = $1, reactivated_at = NOW(), reactivation_reason = $2 WHERE title_number = $3',
+                  [reactivationHash, 'Payment completed after cancellation - land title reactivated', reference_id]
+                );
+                console.log(`✅ Reactivation hash stored: ${reactivationHash}`);
+              }
+            }
+            
+          } catch (reactivationError) {
+            console.error('❌ Reactivation blockchain recording failed:', reactivationError.message);
           }
+        } else {
+          // FIRST TIME ACTIVATION - Normal blockchain recording
+          try {
+            console.log(`🔗 Recording land title ${landTitle.title_number} to blockchain (first activation)`);
+            
+            // Validate land title data exists
+            if (!landTitle || !landTitle.title_number) {
+              throw new Error(`Invalid land title data for reference: ${reference_id}`);
+            }
+            
+            const blockchainPayload = {
+              title_number: landTitle.title_number,
+              owner_name: landTitle.owner_name,
+              property_location: landTitle.property_location,
+              status: status,
+              reference_id: reference_id,
+              timestamp: Math.floor(new Date(landTitle.created_at).getTime() / 1000),
+              transaction_id: landTitle.transaction_id
+            };
+            
+            const blockchainResponse = await blockchainClient.recordLandTitle(blockchainPayload);
+            
+            if (blockchainResponse.success) {
+              console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id}`);
+              console.log(`🔗 Hash: ${blockchainResponse.blockchainHash}`);
+              
+              const blockchainHash = blockchainResponse.blockchainHash;
+              
+              if (blockchainHash) {
+                await pool.query(
+                  'UPDATE land_titles SET blockchain_hash = $1 WHERE title_number = $2',
+                  [blockchainHash, reference_id]
+                );
+                console.log(`✅ Blockchain hash stored: ${blockchainHash}`);
+              }
+            } else {
+              throw new Error(`Blockchain recording failed: ${blockchainResponse.message}`);
+            }
           
-        } catch (blockchainError) {
-          console.error('❌ Blockchain integration failed:', blockchainError.message);
+          } catch (blockchainError) {
+            console.error('❌ Blockchain integration failed:', blockchainError.message);
+          }
+        }
+        
+        // PUBLISH SUCCESS EVENT FOR ACTIVATION
+        const successEvent = {
+          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+          reference_id: reference_id,
+          land_title_id: landTitle.id,
+          title_number: landTitle.title_number,
+          new_status: status,
+          timestamp: new Date().toISOString()
+        };
+        
+        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+      } else if (status === 'PENDING' && oldStatus === 'ACTIVE') {
+        // RECORD CANCELLATION ON BLOCKCHAIN (ACTIVE → PENDING means payment cancelled)
+        try {
+          console.log(`❌ Recording cancellation for ${landTitle.title_number} on blockchain (${oldStatus} → ${status})`);
           
-          // PUBLISH SUCCESS WITHOUT BLOCKCHAIN (fallback)
-          const successEvent = {
-            event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-            reference_id: reference_id,
-            land_title_id: landTitle.id,
+          const cancellationPayload = {
             title_number: landTitle.title_number,
+            previous_status: oldStatus,
             new_status: status,
-            blockchain_status: 'FAILED',
-            error: blockchainError.message,
-            timestamp: new Date().toISOString()
+            original_hash: currentLandTitle.blockchain_hash,
+            reason: 'Payment cancelled - reverted to pending status',
+            timestamp: Math.floor(Date.now() / 1000),
+            transaction_id: currentLandTitle.transaction_id
           };
           
-          await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+          console.log(`🔍 DEBUG - Cancellation payload:`, cancellationPayload);
+          
+          const cancellationResponse = await blockchainClient.recordCancellation(cancellationPayload);
+          
+          console.log(`🔍 DEBUG - Cancellation response:`, cancellationResponse);
+          
+          if (cancellationResponse.success) {
+            console.log(`❌ Cancellation TX: ${cancellationResponse.transaction_id}`);
+            console.log(`❌ Cancellation Hash: ${cancellationResponse.blockchainHash}`);
+            
+            // UPDATE LAND TITLE WITH CANCELLATION HASH
+            const cancellationHash = cancellationResponse.blockchainHash;
+            
+            if (cancellationHash) {
+              await pool.query(
+                'UPDATE land_titles SET cancellation_hash = $1, cancelled_at = NOW(), cancellation_reason = $2 WHERE title_number = $3',
+                [cancellationHash, 'Payment cancelled - reverted to pending status', reference_id]
+              );
+              console.log(`✅ Cancellation hash stored: ${cancellationHash}`);
+            } else {
+              console.log(`⚠️ No cancellation hash received`);
+            }
+          } else {
+            console.log(`❌ Cancellation blockchain recording failed: ${cancellationResponse.message}`);
+          }
+          
+        } catch (cancellationError) {
+          console.error('❌ Cancellation blockchain recording failed:', cancellationError.message);
         }
+        
+        // PUBLISH SUCCESS EVENT
+        const successEvent = {
+          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+          reference_id: reference_id,
+          land_title_id: landTitle.id,
+          title_number: landTitle.title_number,
+          new_status: status,
+          timestamp: new Date().toISOString()
+        };
+        
+        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
       } else {
-        // For non-ACTIVE status, just publish success without blockchain
+        // For other status changes, just publish success without blockchain
         const successEvent = {
           event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
           reference_id: reference_id,

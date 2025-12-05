@@ -632,13 +632,6 @@ export default function LandTitles() {
                   <Typography sx={{ p: 2, flex: 1 }}>{formatDate(selectedTitle.created_at)}</Typography>
                 </Box>
                 
-                {selectedTitle.blockchain_hash && (
-                  <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
-                    <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Blockchain Hash:</Typography>
-                    <Typography sx={{ p: 2, flex: 1, fontFamily: 'monospace', fontSize: '14px', wordBreak: 'break-all' }}>{selectedTitle.blockchain_hash}</Typography>
-                  </Box>
-                )}
-                
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Attachments:</Typography>
                   <Box sx={{ p: 2, flex: 1 }}>
@@ -678,6 +671,65 @@ export default function LandTitles() {
                     )}
                   </Box>
                 </Box>
+                
+                {/* BLOCKCHAIN TABLE - MOVED TO BOTTOM */}
+                {(selectedTitle.blockchain_hash || selectedTitle.cancellation_hash || selectedTitle.reactivation_hash) && (
+                  <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
+                    <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Blockchain:</Typography>
+                    <Box sx={{ p: 2, flex: 1 }}>
+                      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '2px solid #ccc' }}>
+                        <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid #ccc' } }}>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Blockchain Hash</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Action</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Timestamp</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Owner</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {selectedTitle.blockchain_hash && (
+                              <TableRow sx={{ '&:hover': { backgroundColor: '#f0f8ff' } }}>
+                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
+                                  {selectedTitle.blockchain_hash}
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>
+                                  <Chip label="CREATED" size="small" color="success" />
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.created_at)}</TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
+                              </TableRow>
+                            )}
+                            {selectedTitle.cancellation_hash && (
+                              <TableRow sx={{ '&:hover': { backgroundColor: '#fff0f0' } }}>
+                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
+                                  {selectedTitle.cancellation_hash}
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>
+                                  <Chip label="CANCELLED" size="small" color="error" />
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.cancelled_at)}</TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
+                              </TableRow>
+                            )}
+                            {selectedTitle.reactivation_hash && (
+                              <TableRow sx={{ '&:hover': { backgroundColor: '#f0fff0' } }}>
+                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
+                                  {selectedTitle.reactivation_hash}
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>
+                                  <Chip label="REACTIVATED" size="small" color="warning" />
+                                </TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.reactivated_at)}</TableCell>
+                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                  </Box>
+                )}
               </Box>
             )}
           </DialogContent>

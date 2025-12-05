@@ -4,6 +4,8 @@ package blockchain;
 
 service BlockchainService {
   rpc RecordLandTitle(LandTitleRequest) returns (LandTitleResponse);
+  rpc RecordCancellation(CancellationRequest) returns (LandTitleResponse);
+  rpc RecordReactivation(ReactivationRequest) returns (LandTitleResponse);
   rpc GetLandTitleHistory(HistoryRequest) returns (HistoryResponse);
   rpc QueryLandTitle(QueryRequest) returns (QueryResponse);
 }
@@ -44,6 +46,27 @@ message QueryResponse {
   bool success = 1;
   LandTitleRecord land_title = 2;
   string message = 3;
+}
+
+message CancellationRequest {
+  string title_number = 1;
+  string previous_status = 2;
+  string new_status = 3;
+  string original_hash = 4;
+  string reason = 5;
+  int64 timestamp = 6;
+  string transaction_id = 7;
+}
+
+message ReactivationRequest {
+  string title_number = 1;
+  string previous_status = 2;
+  string new_status = 3;
+  string original_hash = 4;
+  string cancellation_hash = 5;
+  string reason = 6;
+  int64 timestamp = 7;
+  string transaction_id = 8;
 }
 
 message LandTitleRecord {
