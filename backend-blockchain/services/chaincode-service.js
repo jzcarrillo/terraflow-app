@@ -33,12 +33,14 @@ class ChaincodeService {
 
       console.log(`✅ Land title recorded on blockchain: ${title_number}`);
       
+      console.log(`🔍 DEBUG - fabric-client result:`, result);
+      
       return {
         success: true,
-        transaction_id: transaction_id || result.transaction_id,
+        transaction_id: result.transaction_id || transaction_id,
         block_number: result.block_number || '1',
         message: 'Land title successfully recorded on blockchain',
-        blockchain_hash: result.blockchain_hash || 'N/A'
+        blockchainHash: result.blockchain_hash
       };
 
     } catch (error) {

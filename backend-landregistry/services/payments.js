@@ -54,6 +54,22 @@ const paymentStatusUpdate = async (messageData) => {
             console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id || blockchainResponse.transactionId}`);
             console.log(`🔗 Hash: ${blockchainResponse.blockchain_hash || blockchainResponse.blockchainHash}`);
             
+            // UPDATE LAND TITLE WITH BLOCKCHAIN HASH
+            console.log(`🔍 DEBUG - blockchainResponse.blockchainHash:`, blockchainResponse.blockchainHash);
+            console.log(`🔍 DEBUG - blockchainResponse.blockchain_hash:`, blockchainResponse.blockchain_hash);
+            console.log(`🔍 DEBUG - blockchainResponse.message:`, blockchainResponse.message);
+            
+            const blockchainHash = blockchainResponse.blockchainHash || blockchainResponse.blockchain_hash;
+            console.log(`🔍 DEBUG - Final blockchainHash to store:`, blockchainHash);
+            
+            if (blockchainHash) {
+              await pool.query(
+                'UPDATE land_titles SET blockchain_hash = $1 WHERE title_number = $2',
+                [blockchainHash, reference_id]
+              );
+              console.log(`✅ Blockchain hash stored: ${blockchainHash}`);
+            }
+            
             // PUBLISH SUCCESS EVENT BACK TO PAYMENTS
             const successEvent = {
               event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',

@@ -38,6 +38,7 @@ const initializeDatabase = async (retries = 5) => {
           previous_title_number VARCHAR(100),
           encumbrances TEXT,
           transaction_id UUID,
+          blockchain_hash VARCHAR(255),
           status VARCHAR(50) DEFAULT '${STATUS.PENDING}',
           created_by INT,
           created_at TIMESTAMP DEFAULT NOW(),
@@ -49,6 +50,12 @@ const initializeDatabase = async (retries = 5) => {
       await pool.query(`
         ALTER TABLE ${TABLES.LAND_TITLES} 
         ADD COLUMN IF NOT EXISTS email_address VARCHAR(255)
+      `);
+      
+      // ADD BLOCKCHAIN_HASH COLUMN IF NOT EXISTS
+      await pool.query(`
+        ALTER TABLE ${TABLES.LAND_TITLES} 
+        ADD COLUMN IF NOT EXISTS blockchain_hash VARCHAR(255)
       `);
       
       console.log('✅ Database tables initialized successfully');

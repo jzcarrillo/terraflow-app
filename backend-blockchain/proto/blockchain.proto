@@ -23,7 +23,7 @@ message LandTitleResponse {
   string transaction_id = 2;
   string block_number = 3;
   string message = 4;
-  string blockchain_hash = 5;
+  string blockchainHash = 5;
 }
 
 message HistoryRequest {

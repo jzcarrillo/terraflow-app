@@ -42,7 +42,8 @@ message CancellationRequest {
 
 message BlockchainResponse {
   bool success = 1;
-  string message = 2;
-  string transactionId = 3;
-  string blockchainHash = 4;
+  string transaction_id = 2;
+  string block_number = 3;
+  string message = 4;
+  string blockchainHash = 5;
 }
