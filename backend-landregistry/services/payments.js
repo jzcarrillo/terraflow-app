@@ -2,6 +2,61 @@ const { pool } = require('../config/db');
 const { STATUS, QUEUES } = require('../config/constants');
 const rabbitmq = require('../utils/rabbitmq');
 const blockchainClient = require('./blockchain-client');
+const transactionManager = require('./transaction-manager');
+
+// Fix pool.connect issue
+const getDbClient = async () => {
+  if (typeof pool.connect !== 'function') {
+    throw new Error('Database pool not properly initialized');
+  }
+  return await pool.connect();
+};
+
+const createPayment = async (paymentData) => {
+  return await transactionManager.executeWithTransaction([
+    async (client) => {
+      const result = await client.query(
+        'INSERT INTO payments (title_number, amount, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING payment_id',
+        [paymentData.title_number, paymentData.amount, 'PENDING']
+      );
+      console.log(`💳 Payment created: ${result.rows[0].payment_id}`);
+      return result.rows[0];
+    }
+  ]);
+};
+
+const confirmPayment = async (paymentId) => {
+  // Update payment status only
+  const [payment] = await transactionManager.executeWithTransaction([
+    async (client) => {
+      const result = await client.query(
+        'UPDATE payments SET status = $1, paid_at = NOW() WHERE payment_id = $2 RETURNING *',
+        ['PAID', paymentId]
+      );
+      
+      if (result.rows.length === 0) {
+        throw new Error('Payment not found');
+      }
+      
+      console.log(`✅ Payment confirmed: ${paymentId}`);
+      return result.rows[0];
+    }
+  ]);
+  
+  // Send RabbitMQ message to Land Registry Service
+  const message = {
+    event_type: 'PAYMENT_CONFIRMED',
+    payment_id: paymentId,
+    title_number: payment.title_number,
+    reference_type: 'LAND_TITLE',
+    timestamp: new Date().toISOString()
+  };
+  
+  await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, message);
+  console.log(`📨 Payment confirmation message sent for title: ${payment.title_number}`);
+  
+  return payment;
+};
 
 const paymentStatusUpdate = async (messageData) => {
   const { reference_id, status } = messageData;
@@ -22,21 +77,62 @@ const paymentStatusUpdate = async (messageData) => {
     
     console.log(`🔄 Status transition: ${oldStatus} → ${status}`);
     
-// UPDATE LAND TITLE STATUS
-    const query = `
-      UPDATE land_titles 
-      SET status = $1, updated_at = NOW()
-      WHERE title_number = $2
-      RETURNING *
-    `;
-    
-    const result = await pool.query(query, [status, reference_id]);
+// UPDATE LAND TITLE STATUS WITH TRANSACTION
+    const [result] = await transactionManager.executeWithTransaction([
+      async (client) => {
+        const updateResult = await client.query(
+          'UPDATE land_titles SET status = $1, updated_at = NOW() WHERE title_number = $2 RETURNING *',
+          [status, reference_id]
+        );
+        return updateResult;
+      }
+    ]);
     
     if (result.rows.length > 0) {
       const landTitle = result.rows[0];
       console.log(`✅ Land title ${landTitle.title_number} status updated to ${status} successfully`);
       
-      if (status === 'ACTIVE') {
+      // Process blockchain recording after successful database transaction
+      await processBlockchainRecording(landTitle, status, oldStatus, currentLandTitle, reference_id);
+      
+      return landTitle;
+    } else {
+      console.log(`⚠️ No land title found for reference: ${reference_id}`);
+      
+      const failureEvent = {
+        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
+        reference_id: reference_id,
+        error: 'Land title not found',
+        timestamp: new Date().toISOString()
+      };
+      
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error(`❌ Payment status update failed:`, error.message);
+    
+    try {
+      const failureEvent = {
+        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
+        reference_id: reference_id,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
+    } catch (publishError) {
+      console.error('❌ Failed to publish failure event:', publishError.message);
+    }
+    
+    throw error;
+  }
+};
+
+const processBlockchainRecording = async (landTitle, status, oldStatus, currentLandTitle, reference_id) => {
+  try {
+    if (status === 'ACTIVE') {
         // CHECK IF THIS IS A REACTIVATION (previously cancelled)
         if (currentLandTitle.cancellation_hash) {
           // REACTIVATION - Record reactivation transaction
@@ -78,6 +174,24 @@ const paymentStatusUpdate = async (messageData) => {
             
           } catch (reactivationError) {
             console.error('❌ Reactivation blockchain recording failed:', reactivationError.message);
+            
+            // Rollback land title to PENDING
+            await pool.query(
+              'UPDATE land_titles SET status = $1 WHERE title_number = $2',
+              ['PENDING', reference_id]
+            );
+            console.log(`🔄 Reactivation rollback: ${reference_id} reverted to PENDING`);
+            
+            // Send rollback event to Payment Service
+            const rollbackMessage = {
+              event_type: 'PAYMENT_ROLLBACK_REQUIRED',
+              title_number: reference_id,
+              reason: 'Blockchain reactivation failed',
+              timestamp: new Date().toISOString()
+            };
+            
+            await rabbitmq.publishToQueue(QUEUES.PAYMENTS, rollbackMessage);
+            console.log(`📨 Rollback event sent to Payment Service for title: ${reference_id}`);
           }
         } else {
           // FIRST TIME ACTIVATION - Normal blockchain recording
@@ -120,128 +234,97 @@ const paymentStatusUpdate = async (messageData) => {
           
           } catch (blockchainError) {
             console.error('❌ Blockchain integration failed:', blockchainError.message);
+            
+            // Rollback land title to PENDING
+            await pool.query(
+              'UPDATE land_titles SET status = $1 WHERE title_number = $2',
+              ['PENDING', reference_id]
+            );
+            console.log(`🔄 Land title rollback: ${reference_id} reverted to PENDING`);
+            
+            // Send rollback event to Payment Service
+            const rollbackMessage = {
+              event_type: 'PAYMENT_ROLLBACK_REQUIRED',
+              title_number: reference_id,
+              reason: 'Blockchain recording failed',
+              timestamp: new Date().toISOString()
+            };
+            
+            await rabbitmq.publishToQueue(QUEUES.PAYMENTS, rollbackMessage);
+            console.log(`📨 Rollback event sent to Payment Service for title: ${reference_id}`);
           }
         }
         
-        // PUBLISH SUCCESS EVENT FOR ACTIVATION
-        const successEvent = {
-          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-          reference_id: reference_id,
-          land_title_id: landTitle.id,
+      // PUBLISH SUCCESS EVENT FOR ACTIVATION
+      const successEvent = {
+        event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
+        reference_id: reference_id,
+        land_title_id: landTitle.id,
+        title_number: landTitle.title_number,
+        new_status: status,
+        timestamp: new Date().toISOString()
+      };
+      
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+    } else if (status === 'PENDING' && oldStatus === 'ACTIVE') {
+      // RECORD CANCELLATION ON BLOCKCHAIN (ACTIVE → PENDING means payment cancelled)
+      try {
+        console.log(`❌ Recording cancellation for ${landTitle.title_number} on blockchain (${oldStatus} → ${status})`);
+        
+        const cancellationPayload = {
           title_number: landTitle.title_number,
+          previous_status: oldStatus,
           new_status: status,
-          timestamp: new Date().toISOString()
+          original_hash: currentLandTitle.blockchain_hash,
+          reason: 'Payment cancelled - reverted to pending status',
+          timestamp: Math.floor(Date.now() / 1000),
+          transaction_id: currentLandTitle.transaction_id
         };
         
-        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
-      } else if (status === 'PENDING' && oldStatus === 'ACTIVE') {
-        // RECORD CANCELLATION ON BLOCKCHAIN (ACTIVE → PENDING means payment cancelled)
-        try {
-          console.log(`❌ Recording cancellation for ${landTitle.title_number} on blockchain (${oldStatus} → ${status})`);
+        console.log(`🔍 DEBUG - Cancellation payload:`, cancellationPayload);
+        
+        const cancellationResponse = await blockchainClient.recordCancellation(cancellationPayload);
+        
+        console.log(`🔍 DEBUG - Cancellation response:`, cancellationResponse);
+        
+        if (cancellationResponse.success) {
+          console.log(`❌ Cancellation TX: ${cancellationResponse.transaction_id}`);
+          console.log(`❌ Cancellation Hash: ${cancellationResponse.blockchainHash}`);
           
-          const cancellationPayload = {
-            title_number: landTitle.title_number,
-            previous_status: oldStatus,
-            new_status: status,
-            original_hash: currentLandTitle.blockchain_hash,
-            reason: 'Payment cancelled - reverted to pending status',
-            timestamp: Math.floor(Date.now() / 1000),
-            transaction_id: currentLandTitle.transaction_id
-          };
+          const cancellationHash = cancellationResponse.blockchainHash;
           
-          console.log(`🔍 DEBUG - Cancellation payload:`, cancellationPayload);
-          
-          const cancellationResponse = await blockchainClient.recordCancellation(cancellationPayload);
-          
-          console.log(`🔍 DEBUG - Cancellation response:`, cancellationResponse);
-          
-          if (cancellationResponse.success) {
-            console.log(`❌ Cancellation TX: ${cancellationResponse.transaction_id}`);
-            console.log(`❌ Cancellation Hash: ${cancellationResponse.blockchainHash}`);
-            
-            // UPDATE LAND TITLE WITH CANCELLATION HASH
-            const cancellationHash = cancellationResponse.blockchainHash;
-            
-            if (cancellationHash) {
-              await pool.query(
-                'UPDATE land_titles SET cancellation_hash = $1, cancelled_at = NOW(), cancellation_reason = $2 WHERE title_number = $3',
-                [cancellationHash, 'Payment cancelled - reverted to pending status', reference_id]
-              );
-              console.log(`✅ Cancellation hash stored: ${cancellationHash}`);
-            } else {
-              console.log(`⚠️ No cancellation hash received`);
-            }
-          } else {
-            console.log(`❌ Cancellation blockchain recording failed: ${cancellationResponse.message}`);
+          if (cancellationHash) {
+            await pool.query(
+              'UPDATE land_titles SET cancellation_hash = $1, cancelled_at = NOW(), cancellation_reason = $2 WHERE title_number = $3',
+              [cancellationHash, 'Payment cancelled - reverted to pending status', reference_id]
+            );
+            console.log(`✅ Cancellation hash stored: ${cancellationHash}`);
           }
-          
-        } catch (cancellationError) {
-          console.error('❌ Cancellation blockchain recording failed:', cancellationError.message);
         }
         
-        // PUBLISH SUCCESS EVENT
-        const successEvent = {
-          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-          reference_id: reference_id,
-          land_title_id: landTitle.id,
-          title_number: landTitle.title_number,
-          new_status: status,
-          timestamp: new Date().toISOString()
-        };
-        
-        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
-      } else {
-        // For other status changes, just publish success without blockchain
-        const successEvent = {
-          event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
-          reference_id: reference_id,
-          land_title_id: landTitle.id,
-          title_number: landTitle.title_number,
-          new_status: status,
-          timestamp: new Date().toISOString()
-        };
-        
-        await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
+      } catch (cancellationError) {
+        console.error('❌ Cancellation blockchain recording failed:', cancellationError.message);
       }
       
-      return landTitle;
-    } else {
-      console.log(`⚠️ No land title found for reference: ${reference_id}`);
-      
-// PUBLISH FAILURE EVENT BACK TO PAYMENTS
-      const failureEvent = {
-        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
+      const successEvent = {
+        event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS',
         reference_id: reference_id,
-        error: 'Land title not found',
+        land_title_id: landTitle.id,
+        title_number: landTitle.title_number,
+        new_status: status,
         timestamp: new Date().toISOString()
       };
       
-      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
-      
-      return null;
+      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, successEvent);
     }
     
-  } catch (error) {
-    console.error(`❌ Payment status update failed:`, error.message);
-    
-// PUBLISH FAILURE EVENT BACK TO PAYMENTS
-    try {
-      const failureEvent = {
-        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
-        reference_id: reference_id,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      };
-      
-      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
-    } catch (publishError) {
-      console.error('❌ Failed to publish failure event:', publishError.message);
-    }
-    
-    throw error;
+  } catch (blockchainError) {
+    console.error('❌ Blockchain processing failed:', blockchainError.message);
   }
 };
 
 module.exports = {
+  createPayment,
+  confirmPayment,
   paymentStatusUpdate
 };

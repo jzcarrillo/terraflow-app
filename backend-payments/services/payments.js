@@ -203,13 +203,35 @@ class PaymentService {
   }
 
   async checkLandTitlePaymentExists(landTitleId) {
-    const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
+    const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PAID'`, [landTitleId]);
     return result.rows.length > 0;
   }
 
   async getPaymentByPaymentId(paymentId) {
     const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
     return result.rows[0];
+  }
+  
+  async rollbackPaymentByTitle(titleNumber) {
+    const result = await executeQuery(`
+      UPDATE ${TABLES.PAYMENTS} 
+      SET status = 'PENDING', confirmed_by = NULL, confirmed_at = NULL, updated_at = NOW()
+      WHERE reference_id = $1 AND status = 'PAID'
+      RETURNING *
+    `, [titleNumber]);
+    
+    if (result.rows.length > 0) {
+      console.log(`🔄 Payment rollback: ${result.rows[0].payment_id} reverted to PENDING`);
+      return result.rows[0];
+    } else {
+      console.log(`⚠️ No PAID payment found for title: ${titleNumber}`);
+      return null;
+    }
+  }
+  
+  async getExistingPendingPayment(landTitleId) {
+    const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
+    return result.rows[0] || null;
   }
 }
 

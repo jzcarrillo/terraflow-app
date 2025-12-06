@@ -12,6 +12,8 @@ const messageHandler = async (messageData) => {
     await handleStatusUpdate(messageData);
   } else if (messageData.event_type === 'LAND_TITLE_STATUS_UPDATE_SUCCESS' || messageData.event_type === 'LAND_TITLE_STATUS_UPDATE_FAILED') {
     await paymentService.handleLandTitleResponse(messageData);
+  } else if (messageData.event_type === 'PAYMENT_ROLLBACK_REQUIRED') {
+    await handlePaymentRollback(messageData);
   }
 };
 
@@ -23,12 +25,21 @@ const handlePaymentCreate = async (messageData) => {
   console.log(`🔍 ===== VALIDATE PAYMENT =====`);
   if (payment_data.land_title_id) {
     console.log(`🔍 Checking existing payment for land title: ${payment_data.land_title_id}`);
-    const existingPayment = await paymentService.checkLandTitlePaymentExists(payment_data.land_title_id);
-
-    if (existingPayment) {
-      console.log(`❌ Payment already exists for land title ${payment_data.land_title_id}`);
+    
+    // Check for existing PAID payment (block creation)
+    const paidPayment = await paymentService.checkLandTitlePaymentExists(payment_data.land_title_id);
+    if (paidPayment) {
+      console.log(`❌ Payment already PAID for land title ${payment_data.land_title_id}`);
       throw new Error(`Payment already exists for land title ${payment_data.land_title_id}`);
     }
+    
+    // Check for existing PENDING payment (reuse it)
+    const pendingPayment = await paymentService.getExistingPendingPayment(payment_data.land_title_id);
+    if (pendingPayment) {
+      console.log(`🔄 Reusing existing PENDING payment: ${pendingPayment.payment_id}`);
+      return; // Exit early, don't create new payment
+    }
+    
     console.log(`✅ No existing payment for land title ${payment_data.land_title_id}`);
   }
   
@@ -129,6 +140,22 @@ const handleStatusUpdate = async (messageData) => {
   await paymentService.updatePaymentStatusByPaymentId(payment_id, status, user_id, transaction_id);
 
   console.log('📤 Message published to queue_landregistry');
+};
+
+const handlePaymentRollback = async (messageData) => {
+  const { title_number, reason } = messageData;
+  
+  console.log(`\n🔄 ===== PAYMENT ROLLBACK =====`);
+  console.log(`🏠 Title: ${title_number}`);
+  console.log(`ℹ️ Reason: ${reason}`);
+  
+  try {
+    // Find payment by title_number and rollback to PENDING
+    await paymentService.rollbackPaymentByTitle(title_number);
+    console.log(`✅ Payment rollback completed for title: ${title_number}`);
+  } catch (error) {
+    console.error(`❌ Payment rollback failed for title ${title_number}:`, error.message);
+  }
 };
 
 const startConsumer = async () => {

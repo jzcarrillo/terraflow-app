@@ -25,6 +25,10 @@ const messageHandler = async (messageData) => {
       await payments.paymentStatusUpdate(messageData);
       break;
       
+    case 'PAYMENT_CONFIRMED':
+      await rabbitmq.processPaymentConfirmed(messageData);
+      break;
+      
     case EVENT_TYPES.ROLLBACK_TRANSACTION:
       await rollback.processRollbackTransaction(messageData);
       break;
