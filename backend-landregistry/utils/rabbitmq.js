@@ -129,7 +129,7 @@ const processPaymentConfirmed = async (messageData) => {
           event_type: 'PAYMENT_ROLLBACK_REQUIRED',
           payment_id: payment_id,
           title_number: title_number,
-          reason: 'Blockchain recording failed',
+          reason: 'Blockchain recording failed - payment will be marked as FAILED',
           timestamp: new Date().toISOString()
         };
         

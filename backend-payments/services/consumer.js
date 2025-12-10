@@ -36,8 +36,16 @@ const handlePaymentCreate = async (messageData) => {
     // Check for existing PENDING payment (reuse it)
     const pendingPayment = await paymentService.getExistingPendingPayment(payment_data.land_title_id);
     if (pendingPayment) {
-      console.log(`🔄 Reusing existing PENDING payment: ${pendingPayment.payment_id}`);
-      return; // Exit early, don't create new payment
+      console.log(`🔍 Found existing PENDING payment: ${pendingPayment.payment_id}`);
+      console.log(`🔍 Payment details:`, JSON.stringify(pendingPayment, null, 2));
+      
+      // Don't reuse if this payment was previously failed (has confirmed_at but status is PENDING)
+      if (pendingPayment.confirmed_at) {
+        console.log(`⚠️ Payment was previously processed and failed, creating new payment instead`);
+      } else {
+        console.log(`🔄 Reusing existing PENDING payment: ${pendingPayment.payment_id}`);
+        return; // Exit early, don't create new payment
+      }
     }
     
     console.log(`✅ No existing payment for land title ${payment_data.land_title_id}`);

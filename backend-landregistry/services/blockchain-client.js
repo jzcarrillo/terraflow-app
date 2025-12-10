@@ -23,13 +23,22 @@ const client = new blockchainProto.BlockchainService(
 
 class BlockchainClient {
   async recordLandTitle(landTitleData) {
+    console.log(`🔗 Attempting blockchain connection to: ${process.env.BLOCKCHAIN_SERVICE_URL || 'backend-blockchain-service:50051'}`);
+    console.log(`🔗 Payload:`, JSON.stringify(landTitleData, null, 2));
+    
     return new Promise((resolve, reject) => {
-      client.RecordLandTitle(landTitleData, (error, response) => {
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10); // 10 second timeout
+      
+      client.RecordLandTitle(landTitleData, { deadline }, (error, response) => {
         if (error) {
-          console.error('Blockchain gRPC error:', error);
+          console.error('❌ Blockchain gRPC error:', error);
+          console.error('❌ Error code:', error.code);
+          console.error('❌ Error details:', error.details);
+          console.error('❌ Error metadata:', error.metadata);
           reject(error);
         } else {
-          console.log('Blockchain response:', response);
+          console.log('✅ Blockchain response:', response);
           resolve(response);
         }
       });

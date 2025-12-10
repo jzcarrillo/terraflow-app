@@ -40,6 +40,12 @@ class PaymentService {
       throw new Error('No fields to update');
     }
     
+    // Check if payment is FAILED
+    const currentPayment = await this.getPaymentById(id);
+    if (currentPayment && currentPayment.status === 'FAILED') {
+      throw new Error('Cannot edit a FAILED payment');
+    }
+    
     const result = await updateById(TABLES.PAYMENTS, id, data);
     
     if (!result) {
@@ -54,6 +60,11 @@ class PaymentService {
     const currentPayment = await this.getPaymentById(id);
     if (!currentPayment) {
       throw new Error(`Payment with ID ${id} not found`);
+    }
+    
+    // Prevent actions on FAILED payments
+    if (currentPayment.status === 'FAILED') {
+      throw new Error(`Cannot update status of a FAILED payment: ${id}`);
     }
     
     if (currentPayment.status === status) {
@@ -82,7 +93,8 @@ class PaymentService {
     console.log('✅ Payment status updated successfully');
     console.log('💾 Data updated to database successfully');
     
-    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED')) {
+    // Only publish for PAID or CANCELLED status, not for FAILED
+    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED') && updatedPayment.status !== 'FAILED') {
       await this.publishStatusUpdate(updatedPayment, status, transactionId);
     }
     
@@ -98,6 +110,11 @@ class PaymentService {
     }
     
     const currentPayment = result.rows[0];
+    
+    // Prevent actions on FAILED payments
+    if (currentPayment.status === 'FAILED') {
+      throw new Error(`Cannot update status of a FAILED payment: ${paymentId}`);
+    }
     
     if (currentPayment.status === status) {
       return currentPayment;
@@ -158,7 +175,8 @@ class PaymentService {
     console.log('✅ Payment status updated successfully');
     console.log('💾 Data updated to database successfully');
     
-    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED')) {
+    // Only publish for PAID or CANCELLED status, not for FAILED
+    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED') && updatedPayment.status !== 'FAILED') {
       await this.publishStatusUpdate(updatedPayment, status, transactionId);
     }
     
@@ -168,6 +186,9 @@ class PaymentService {
   async publishStatusUpdate(payment, status, transactionId = null) {
     const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';
     
+    // Add message deduplication key
+    const messageKey = `${payment.payment_id || payment.id}-${status}-${Date.now()}`;
+    
     await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: 'PAYMENT_STATUS_UPDATE',
       transaction_id: transactionId,
@@ -175,10 +196,11 @@ class PaymentService {
       reference_id: payment.reference_id,
       status: landTitleStatus,
       payment_status: payment.status,
+      message_key: messageKey,
       timestamp: new Date().toISOString()
     });
     
-    console.log('📤 Message published to queue_landregistry');
+    console.log(`📤 Message published to queue_landregistry (key: ${messageKey})`);
   }
   
   async handleLandTitleResponse(messageData) {
@@ -212,16 +234,35 @@ class PaymentService {
     return result.rows[0];
   }
   
+  async rollbackPaymentById(paymentId) {
+    const result = await executeQuery(`
+      UPDATE ${TABLES.PAYMENTS} 
+      SET status = 'FAILED', confirmed_by = NULL, confirmed_at = NULL, updated_at = NOW()
+      WHERE id = $1 AND status = 'PAID'
+      RETURNING *
+    `, [paymentId]);
+    
+    if (result.rows.length > 0) {
+      console.log(`❌ Payment rollback: ${result.rows[0].payment_id} set to FAILED`);
+      return result.rows[0];
+    }
+    return null;
+  }
+  
   async rollbackPaymentByTitle(titleNumber) {
     const result = await executeQuery(`
       UPDATE ${TABLES.PAYMENTS} 
-      SET status = 'PENDING', confirmed_by = NULL, confirmed_at = NULL, updated_at = NOW()
-      WHERE reference_id = $1 AND status = 'PAID'
+      SET status = 'FAILED', confirmed_by = NULL, confirmed_at = NULL, updated_at = NOW()
+      WHERE id = (
+        SELECT id FROM ${TABLES.PAYMENTS} 
+        WHERE reference_id = $1 AND status = 'PAID' 
+        ORDER BY confirmed_at DESC LIMIT 1
+      )
       RETURNING *
     `, [titleNumber]);
     
     if (result.rows.length > 0) {
-      console.log(`🔄 Payment rollback: ${result.rows[0].payment_id} reverted to PENDING`);
+      console.log(`❌ Payment rollback: ${result.rows[0].payment_id} set to FAILED`);
       return result.rows[0];
     } else {
       console.log(`⚠️ No PAID payment found for title: ${titleNumber}`);

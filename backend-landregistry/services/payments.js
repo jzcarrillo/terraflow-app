@@ -186,12 +186,13 @@ const processBlockchainRecording = async (landTitle, status, oldStatus, currentL
             const rollbackMessage = {
               event_type: 'PAYMENT_ROLLBACK_REQUIRED',
               title_number: reference_id,
-              reason: 'Blockchain reactivation failed',
+              reason: 'Blockchain reactivation failed - payment will be marked as FAILED',
               timestamp: new Date().toISOString()
             };
             
             await rabbitmq.publishToQueue(QUEUES.PAYMENTS, rollbackMessage);
             console.log(`📨 Rollback event sent to Payment Service for title: ${reference_id}`);
+            return; // Exit early, don't send success event
           }
         } else {
           // FIRST TIME ACTIVATION - Normal blockchain recording
@@ -246,12 +247,13 @@ const processBlockchainRecording = async (landTitle, status, oldStatus, currentL
             const rollbackMessage = {
               event_type: 'PAYMENT_ROLLBACK_REQUIRED',
               title_number: reference_id,
-              reason: 'Blockchain recording failed',
+              reason: 'Blockchain recording failed - payment will be marked as FAILED',
               timestamp: new Date().toISOString()
             };
             
             await rabbitmq.publishToQueue(QUEUES.PAYMENTS, rollbackMessage);
             console.log(`📨 Rollback event sent to Payment Service for title: ${reference_id}`);
+            return; // Exit early, don't send success event
           }
         }
         

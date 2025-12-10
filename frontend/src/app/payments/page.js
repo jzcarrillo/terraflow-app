@@ -293,7 +293,7 @@ export default function Payments() {
                       {formatDate(payment.created_at)}
                     </TableCell>
                     <TableCell>
-                      <IconButton onClick={(e) => handleMenuClick(e, payment)}>
+                      <IconButton onClick={(e) => handleMenuClick(e, payment)} disabled={payment.status === 'FAILED'}>
                         <MoreVertIcon />
                       </IconButton>
                     </TableCell>
@@ -310,15 +310,15 @@ export default function Payments() {
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
         >
-          <MenuItem onClick={handleUpdatePayment} disabled={selectedPayment?.status === 'CANCELLED' || selectedPayment?.status === 'PAID'}>
+          <MenuItem onClick={handleUpdatePayment} disabled={selectedPayment?.status === 'CANCELLED' || selectedPayment?.status === 'PAID' || selectedPayment?.status === 'FAILED'}>
             <EditIcon sx={{ mr: 1 }} />
             Update Payment Details
           </MenuItem>
-          <MenuItem onClick={handleConfirmPayment} disabled={selectedPayment?.status === 'PAID' || selectedPayment?.status === 'CANCELLED'}>
+          <MenuItem onClick={handleConfirmPayment} disabled={selectedPayment?.status === 'PAID' || selectedPayment?.status === 'CANCELLED' || selectedPayment?.status === 'FAILED'}>
             <ConfirmIcon sx={{ mr: 1 }} />
             Confirm Payment
           </MenuItem>
-          <MenuItem onClick={handleCancelPayment} disabled={selectedPayment?.status === 'CANCELLED'}>
+          <MenuItem onClick={handleCancelPayment} disabled={selectedPayment?.status === 'CANCELLED' || selectedPayment?.status === 'FAILED'}>
             <CancelIcon sx={{ mr: 1 }} />
             Cancel Payment
           </MenuItem>
