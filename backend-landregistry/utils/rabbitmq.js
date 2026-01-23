@@ -146,6 +146,127 @@ const processPaymentConfirmed = async (messageData) => {
   }
 };
 
+// Transfer payment confirmation handler
+const processTransferPaymentConfirmed = async (messageData) => {
+  const transfersService = require('../services/transfers');
+  const { transfer_id, title_number, payment_status } = messageData;
+  
+  try {
+    console.log(`📨 Processing transfer payment confirmation:`);
+    console.log(`   Transfer ID: ${transfer_id}`);
+    console.log(`   Title Number: ${title_number}`);
+    console.log(`   Payment Status: ${payment_status}`);
+    
+    if (payment_status === 'PAID') {
+      // Try to find transfer by transfer_id first, then by title_number
+      let transfer = null;
+      
+      if (transfer_id) {
+        try {
+          transfer = await transfersService.getTransferById(transfer_id);
+          console.log(`✅ Transfer found by ID: ${transfer_id}`);
+        } catch (error) {
+          console.log(`⚠️ Transfer not found by ID: ${transfer_id}, trying title number...`);
+        }
+      }
+      
+      if (!transfer && title_number) {
+        try {
+          transfer = await transfersService.getTransferByTitleNumber(title_number);
+          console.log(`✅ Transfer found by title number: ${title_number}`);
+        } catch (error) {
+          console.log(`⚠️ Transfer not found by title number: ${title_number}`);
+        }
+      }
+      
+      if (transfer) {
+        // Process the transfer payment confirmation
+        await transfersService.processPaymentConfirmed(messageData);
+        console.log(`✅ Transfer payment processed successfully for ${transfer_id || title_number}`);
+      } else {
+        console.log(`❌ Transfer not found for ID: ${transfer_id}, Title: ${title_number}`);
+        throw new Error(`Transfer not found for ID: ${transfer_id}, Title: ${title_number}`);
+      }
+    } else {
+      console.log(`⚠️ Transfer payment not PAID, status: ${payment_status}`);
+    }
+  } catch (error) {
+    console.error('❌ Transfer payment confirmation processing failed:', error.message);
+    throw error;
+  }
+};
+
+// Transfer message handlers
+const processTransferCreate = async (messageData) => {
+  const transfersService = require('../services/transfers');
+  try {
+    const result = await transfersService.submitTransfer(messageData.transfer_data);
+    console.log('📨 Transfer created successfully:', result.transfer_id);
+    return result;
+  } catch (error) {
+    console.error('❌ Transfer creation failed:', error.message);
+    throw error;
+  }
+};
+
+const processTransferGetAll = async (messageData) => {
+  const transfersService = require('../services/transfers');
+  try {
+    const result = await transfersService.getAllTransfers();
+    console.log('📨 All transfers retrieved successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Get all transfers failed:', error.message);
+    throw error;
+  }
+};
+
+const processTransferGetById = async (messageData) => {
+  const transfersService = require('../services/transfers');
+  try {
+    const result = await transfersService.getTransferById(messageData.transfer_id);
+    console.log('📨 Transfer retrieved successfully:', messageData.transfer_id);
+    return result;
+  } catch (error) {
+    console.error('❌ Get transfer by ID failed:', error.message);
+    throw error;
+  }
+};
+
+const processTransferComplete = async (messageData) => {
+  const transfersService = require('../services/transfers');
+  try {
+    const result = await transfersService.updateTransferStatus(messageData.transfer_id, 'COMPLETED');
+    console.log('📨 Transfer completed successfully:', messageData.transfer_id);
+    return result;
+  } catch (error) {
+    console.error('❌ Transfer completion failed:', error.message);
+    throw error;
+  }
+};
+
+// Main message processor
+const processMessage = async (messageData) => {
+  switch (messageData.event_type) {
+    case 'PAYMENT_CONFIRMED':
+      return await processPaymentConfirmed(messageData);
+    case 'TRANSFER_PAYMENT_CONFIRMED':
+      return await processTransferPaymentConfirmed(messageData);
+    case 'TRANSFER_CREATE':
+      return await processTransferCreate(messageData);
+    case 'TRANSFER_GET_ALL':
+      return await processTransferGetAll(messageData);
+    case 'TRANSFER_GET_BY_ID':
+      return await processTransferGetById(messageData);
+    case 'TRANSFER_COMPLETE':
+      return await processTransferComplete(messageData);
+    default:
+      console.log(`⚠️ Unknown event type: ${messageData.event_type}`);
+      return null;
+  }
+};
+
 const rabbitmqService = new RabbitMQService();
 rabbitmqService.processPaymentConfirmed = processPaymentConfirmed;
+rabbitmqService.processMessage = processMessage;
 module.exports = rabbitmqService;

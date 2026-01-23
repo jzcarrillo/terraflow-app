@@ -6,7 +6,7 @@ const config = {
     env: process.env.NODE_ENV || 'development'
   },
   services: {
-    landRegistry: process.env.LANDREGISTRY_SERVICE_URL || 'http://backend-landregistry-service:3000',
+    landregistry: process.env.LANDREGISTRY_SERVICE_URL || 'http://backend-landregistry-service:3000',
     users: process.env.USERS_SERVICE_URL || 'http://backend-users-service:3001',
     payments: process.env.PAYMENTS_SERVICE_URL || 'http://backend-payments-service:3003',
     documents: process.env.DOCUMENTS_SERVICE_URL || 'http://backend-documents-service:3002'

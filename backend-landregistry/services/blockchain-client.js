@@ -73,6 +73,25 @@ class BlockchainClient {
     });
   }
 
+  async recordTransfer(transferData) {
+    console.log(`🔄 Recording transfer to blockchain:`, JSON.stringify(transferData, null, 2));
+    
+    return new Promise((resolve, reject) => {
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10);
+      
+      client.RecordTransfer(transferData, { deadline }, (error, response) => {
+        if (error) {
+          console.error('❌ Transfer blockchain gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('✅ Transfer blockchain response:', response);
+          resolve(response);
+        }
+      });
+    });
+  }
+
   async getLandTitle(landTitleId) {
     return new Promise((resolve, reject) => {
       client.GetLandTitle({ landTitleId }, (error, response) => {

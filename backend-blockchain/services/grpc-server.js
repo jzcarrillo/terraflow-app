@@ -30,6 +30,7 @@ class GrpcServer {
         RecordLandTitle: this.recordLandTitle.bind(this),
         RecordCancellation: this.recordCancellation.bind(this),
         RecordReactivation: this.recordReactivation.bind(this),
+        RecordTransfer: this.recordTransfer.bind(this),
         GetLandTitleHistory: this.getLandTitleHistory.bind(this),
         QueryLandTitle: this.queryLandTitle.bind(this)
       });
@@ -137,6 +138,33 @@ class GrpcServer {
 
     } catch (error) {
       console.error('❌ gRPC RecordReactivation error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async recordTransfer(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC RecordTransfer request:`, JSON.stringify(request, null, 2));
+
+      const result = await this.chaincodeService.recordTransfer({
+        title_number: request.title_number,
+        from_owner: request.from_owner,
+        to_owner: request.to_owner,
+        transfer_fee: request.transfer_fee,
+        transfer_date: request.transfer_date,
+        transaction_type: request.transaction_type,
+        transfer_id: request.transfer_id
+      });
+
+      console.log(`📤 gRPC RecordTransfer response:`, result);
+      callback(null, result);
+
+    } catch (error) {
+      console.error('❌ gRPC RecordTransfer error:', error.message);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message

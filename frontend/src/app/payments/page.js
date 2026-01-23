@@ -53,6 +53,8 @@ export default function Payments() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingPaymentId, setEditingPaymentId] = useState(null)
   const [landTitles, setLandTitles] = useState([])
+  const [pendingTransfers, setPendingTransfers] = useState([])
+  const [selectedReferenceType, setSelectedReferenceType] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
@@ -94,9 +96,54 @@ export default function Payments() {
     }
   }
 
+  const fetchPendingTransfers = async () => {
+    try {
+      const [transfersResponse, paymentsResponse] = await Promise.all([
+        fetch(`${API_CONFIG.BASE_URL}/transfers`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }),
+        fetch(`${API_CONFIG.BASE_URL}/payments`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+      ])
+      
+      const transfersData = await transfersResponse.json()
+      const paymentsData = await paymentsResponse.json()
+      
+      let transfers = []
+      if (Array.isArray(transfersData.data)) {
+        transfers = transfersData.data
+      } else if (transfersData.data && Array.isArray(transfersData.data.data)) {
+        transfers = transfersData.data.data
+      }
+      
+      let existingPayments = []
+      if (Array.isArray(paymentsData)) {
+        existingPayments = paymentsData
+      } else if (paymentsData.data && Array.isArray(paymentsData.data)) {
+        existingPayments = paymentsData.data
+      }
+      
+      // Get title numbers that already have pending payments
+      const titlesWithPendingPayments = existingPayments
+        .filter(payment => payment.status === 'PENDING' && payment.reference_type === 'Transfer Title')
+        .map(payment => payment.reference_id)
+      
+      // Filter for PENDING transfers that don't have pending payments
+      const availableTransfers = transfers.filter(transfer => 
+        transfer.status === 'PENDING' && !titlesWithPendingPayments.includes(transfer.title_number)
+      )
+      
+      setPendingTransfers(availableTransfers)
+    } catch (error) {
+      console.error('Failed to fetch transfers:', error)
+    }
+  }
+
   const handleDialogOpen = () => {
     setPaymentId(generateId('PAY'))
     fetchLandTitles()
+    fetchPendingTransfers()
     setOpen(true)
   }
 
@@ -115,6 +162,19 @@ export default function Payments() {
 
   useEffect(() => {
     fetchPayments()
+    
+    // Check for pending transfer
+    const pendingTransfer = localStorage.getItem('pendingTransfer')
+    if (pendingTransfer) {
+      const transferData = JSON.parse(pendingTransfer)
+      console.log('Found pending transfer:', transferData)
+      
+      // Auto-create payment for transfer
+      createTransferPayment(transferData)
+      
+      // Clear pending transfer
+      localStorage.removeItem('pendingTransfer')
+    }
   }, [])
 
   // Create or update payment
@@ -212,10 +272,12 @@ export default function Payments() {
     setEditingPaymentId(selectedPayment.id)
     setPaymentId(selectedPayment.payment_id)
     fetchLandTitles()
+    fetchPendingTransfers()
     setOpen(true)
     
     // Pre-populate form with existing payment data after dialog opens
     setTimeout(() => {
+      setSelectedReferenceType(selectedPayment.reference_type)
       reset({
         reference_type: selectedPayment.reference_type,
         reference_id: selectedPayment.reference_id,
@@ -231,6 +293,27 @@ export default function Payments() {
   const handlePaymentClick = (payment) => {
     setSelectedPaymentDetails(payment)
     setDetailsOpen(true)
+  }
+
+  const createTransferPayment = async (transferData) => {
+    try {
+      const paymentData = {
+        payment_id: generateId('PAY'),
+        reference_type: 'Transfer Title',
+        reference_id: transferData.title_number,
+        payer_name: transferData.new_owner_name,
+        amount: transferData.transfer_fee,
+        payment_method: 'CASH'
+      }
+      
+      console.log('Creating transfer payment:', paymentData)
+      await paymentsAPI.create(paymentData)
+      setSuccess(`Transfer payment created for ${transferData.title_number}!`)
+      fetchPayments()
+    } catch (error) {
+      console.error('Failed to create transfer payment:', error)
+      setError('Failed to create transfer payment')
+    }
   }
 
 
@@ -255,7 +338,8 @@ export default function Payments() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Payment ID</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Payment ID</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Type</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Reference ID</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Payer Name</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
@@ -267,29 +351,30 @@ export default function Payments() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <LoadingTable colSpan={8} />
+                <LoadingTable colSpan={9} />
               ) : payments.length === 0 ? (
-                <LoadingTable colSpan={8} message="No payments found" />
+                <LoadingTable colSpan={9} message="No payments found" />
               ) : (
                 payments.map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', textAlign: 'center' }}>
                       <Button 
                         variant="text" 
                         onClick={() => handlePaymentClick(payment)}
-                        sx={{ textTransform: 'none', color: 'primary.main', fontWeight: 'bold' }}
+                        sx={{ textTransform: 'none', color: 'primary.main', fontWeight: 'bold', whiteSpace: 'nowrap' }}
                       >
                         {payment.payment_id}
                       </Button>
                     </TableCell>
-                    <TableCell>{payment.reference_id}</TableCell>
-                    <TableCell>{payment.payer_name}</TableCell>
-                    <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                    <TableCell>{payment.payment_method}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', textAlign: 'center' }}>{payment.reference_type}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{payment.reference_id}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{payment.payer_name}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatCurrency(payment.amount)}</TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{payment.payment_method}</TableCell>
                     <TableCell>
                       <StatusChip status={payment.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
                       {formatDate(payment.created_at)}
                     </TableCell>
                     <TableCell>
@@ -357,6 +442,7 @@ export default function Payments() {
                     <Box sx={{ flex: 1 }}>
                       <select 
                         {...register('reference_type', { required: 'Reference type is required' })}
+                        onChange={(e) => setSelectedReferenceType(e.target.value)}
                         style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
                       >
                         <option value="">Select Reference Type</option>
@@ -378,12 +464,22 @@ export default function Payments() {
                         {...register('reference_id', { required: 'Reference ID is required' })}
                         style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
                       >
-                        <option value="">Select Land Title</option>
-                        {landTitles.map((title) => (
-                          <option key={title.id} value={title.title_number}>
-                            {title.title_number} - {title.owner_name}
-                          </option>
-                        ))}
+                        <option value="">
+                          {selectedReferenceType === 'Transfer Title' ? 'Select Transfer' : 'Select Land Title'}
+                        </option>
+                        {selectedReferenceType === 'Transfer Title' ? (
+                          pendingTransfers.map((transfer) => (
+                            <option key={transfer.transfer_id} value={transfer.title_number}>
+                              TR-{transfer.transfer_id} - {transfer.title_number} ({transfer.buyer_name})
+                            </option>
+                          ))
+                        ) : (
+                          landTitles.map((title) => (
+                            <option key={title.id} value={title.title_number}>
+                              {title.title_number} - {title.owner_name}
+                            </option>
+                          ))
+                        )}
                       </select>
                       {errors.reference_id && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.reference_id.message}</Typography>}
                     </Box>

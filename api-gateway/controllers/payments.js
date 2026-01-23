@@ -51,7 +51,7 @@ const createPayment = async (req, res) => {
     }
 
 // VALIDATE LAND TITLE PAYMENT
-    const validation = await payments.validateLandTitlePayment(validatedData.land_title_id);
+    const validation = await payments.validateLandTitlePayment(validatedData.land_title_id, validatedData.reference_type);
     
     if (validation.exists) {
       console.log('❌ Payment already exists for this land title');

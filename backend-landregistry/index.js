@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const corsMiddleware = require('./middleware/cors');
 const config = require('./config/services');
 const { testConnection } = require('./config/db');
+const { initializeDatabase } = require('./utils/init-database');
 const { startConsumer } = require('./services/consumer');
 const rabbitmq = require('./utils/rabbitmq');
 
@@ -16,6 +17,7 @@ app.use(express.json());
 // ROUTES
 app.use('/api/land-titles', require('./routes/landtitles'));
 app.use('/api/blockchain', require('./routes/blockchain'));
+app.use('/api/transfers', require('./routes/transfers'));
 
 // HEALTH CHECK ENDPOINT ONLY
 app.get('/health', (req, res) => {
@@ -28,6 +30,9 @@ app.get('/health', (req, res) => {
 
 // TEST DATABASE CONNECTION
 testConnection();
+
+// INITIALIZE DATABASE TABLES
+initializeDatabase();
 
 // START MESSAGE QUEUE CONSUMER
 startConsumer();

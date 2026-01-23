@@ -4,8 +4,8 @@ module.exports = {
   },
   QUEUES: {
     PAYMENTS: 'queue_payments',
-    LAND_REGISTRY: 'queue_landregistry'
-
+    LAND_REGISTRY: 'queue_landregistry',
+    TRANSFERS: 'queue_transfers'
   },
   STATUS: {
     PENDING: 'PENDING',

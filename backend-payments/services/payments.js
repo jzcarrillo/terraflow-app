@@ -184,23 +184,49 @@ class PaymentService {
   }
 
   async publishStatusUpdate(payment, status, transactionId = null) {
-    const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';
-    
-    // Add message deduplication key
     const messageKey = `${payment.payment_id || payment.id}-${status}-${Date.now()}`;
     
-    await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
-      event_type: 'PAYMENT_STATUS_UPDATE',
-      transaction_id: transactionId,
-      payment_id: payment.id,
-      reference_id: payment.reference_id,
-      status: landTitleStatus,
-      payment_status: payment.status,
-      message_key: messageKey,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log(`📤 Message published to queue_landregistry (key: ${messageKey})`);
+    if (payment.reference_type === 'Transfer Title') {
+      // For transfer payments, we need to extract transfer_id from the title number
+      // Assuming transfer_id can be derived or is stored separately
+      const transferId = await this.getTransferIdByTitleNumber(payment.reference_id);
+      
+      // Send transfer payment event to land registry queue
+      await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+        event_type: 'TRANSFER_PAYMENT_CONFIRMED',
+        transaction_id: transactionId,
+        payment_id: payment.id,
+        transfer_id: transferId || 'TR-1', // Fallback to TR-1 for now
+        title_number: payment.reference_id,
+        payment_status: status,
+        message_key: messageKey,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`📤 Transfer payment event published to land registry queue (key: ${messageKey})`);
+    } else {
+      // Regular land registration payment - send to land registry queue
+      const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';
+      
+      await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+        event_type: 'PAYMENT_STATUS_UPDATE',
+        transaction_id: transactionId,
+        payment_id: payment.id,
+        reference_id: payment.reference_id,
+        status: landTitleStatus,
+        payment_status: payment.status,
+        message_key: messageKey,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`📤 Land registration payment event published to land registry queue (key: ${messageKey})`);
+    }
+  }
+  
+  async getTransferIdByTitleNumber(titleNumber) {
+    // For now, return a hardcoded transfer_id
+    // In production, this should query the transfers table or service
+    return 'TR-1';
   }
   
   async handleLandTitleResponse(messageData) {
@@ -224,8 +250,22 @@ class PaymentService {
     return result.rows.length > 0;
   }
 
-  async checkLandTitlePaymentExists(landTitleId) {
-    const result = await executeQuery(`SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PAID'`, [landTitleId]);
+  async checkLandTitlePaymentExists(landTitleId, referenceType = null) {
+    let query = `SELECT id FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PAID'`;
+    let params = [landTitleId];
+    
+    console.log(`🔍 checkLandTitlePaymentExists: landTitleId=${landTitleId}, referenceType=${referenceType}`);
+    
+    if (referenceType) {
+      query += ` AND reference_type = $2`;
+      params.push(referenceType);
+      console.log(`🔍 Using query with reference_type: ${query}`);
+    } else {
+      console.log(`🔍 Using query without reference_type: ${query}`);
+    }
+    
+    const result = await executeQuery(query, params);
+    console.log(`🔍 Query result: ${result.rows.length} rows found`);
     return result.rows.length > 0;
   }
 
@@ -270,8 +310,16 @@ class PaymentService {
     }
   }
   
-  async getExistingPendingPayment(landTitleId) {
-    const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`, [landTitleId]);
+  async getExistingPendingPayment(landTitleId, referenceType = null) {
+    let query = `SELECT * FROM ${TABLES.PAYMENTS} WHERE reference_id = $1 AND status = 'PENDING'`;
+    let params = [landTitleId];
+    
+    if (referenceType) {
+      query += ` AND reference_type = $2`;
+      params.push(referenceType);
+    }
+    
+    const result = await executeQuery(query, params);
     return result.rows[0] || null;
   }
 }

@@ -7,6 +7,7 @@ service BlockchainService {
   rpc GetLandTitle(GetLandTitleRequest) returns (LandTitleResponse);
   rpc RecordCancellation(CancellationRequest) returns (BlockchainResponse);
   rpc RecordReactivation(ReactivationRequest) returns (BlockchainResponse);
+  rpc RecordTransfer(TransferRequest) returns (BlockchainResponse);
 }
 
 message LandTitleRequest {
@@ -51,6 +52,16 @@ message ReactivationRequest {
   string reason = 6;
   int64 timestamp = 7;
   string transaction_id = 8;
+}
+
+message TransferRequest {
+  string title_number = 1;
+  string from_owner = 2;
+  string to_owner = 3;
+  string transfer_fee = 4;
+  int64 transfer_date = 5;
+  string transaction_type = 6;
+  string transfer_id = 7;
 }
 
 message BlockchainResponse {

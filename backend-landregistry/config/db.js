@@ -99,9 +99,6 @@ const testConnection = async () => {
   }
 };
 
-// INITIALIZE ON STARTUP WITH DELAY
-setTimeout(() => {
-  initializeDatabase();
-}, 10000); // WAIT 10 SECONDS FOR POSTGRESQL TO BE READY
+// Database initialization handled by utils/init-database.js
 
 module.exports = { pool, testConnection, initializeDatabase };

@@ -23,18 +23,25 @@ const handlePaymentCreate = async (messageData) => {
   
   // VALIDATE PAYMENT BEFORE CREATE
   console.log(`🔍 ===== VALIDATE PAYMENT =====`);
+  console.log(`🔍 Message data:`, JSON.stringify(messageData, null, 2));
   if (payment_data.land_title_id) {
     console.log(`🔍 Checking existing payment for land title: ${payment_data.land_title_id}`);
+    console.log(`🔍 Reference type from messageData: ${messageData.reference_type}`);
+    console.log(`🔍 Reference type from payment_data: ${payment_data.reference_type}`);
     
-    // Check for existing PAID payment (block creation)
-    const paidPayment = await paymentService.checkLandTitlePaymentExists(payment_data.land_title_id);
-    if (paidPayment) {
-      console.log(`❌ Payment already PAID for land title ${payment_data.land_title_id}`);
-      throw new Error(`Payment already exists for land title ${payment_data.land_title_id}`);
+    // Check for existing PAID payment (block creation) - Skip for Transfer Title
+    if (messageData.reference_type !== 'Transfer Title') {
+      const paidPayment = await paymentService.checkLandTitlePaymentExists(payment_data.land_title_id, messageData.reference_type);
+      if (paidPayment) {
+        console.log(`❌ Payment already PAID for land title ${payment_data.land_title_id} with reference_type ${messageData.reference_type}`);
+        throw new Error(`Payment already exists for land title ${payment_data.land_title_id} with reference type ${messageData.reference_type}`);
+      }
+    } else {
+      console.log(`✅ Skipping PAID payment check for Transfer Title`);
     }
     
     // Check for existing PENDING payment (reuse it)
-    const pendingPayment = await paymentService.getExistingPendingPayment(payment_data.land_title_id);
+    const pendingPayment = await paymentService.getExistingPendingPayment(payment_data.land_title_id, messageData.reference_type);
     if (pendingPayment) {
       console.log(`🔍 Found existing PENDING payment: ${pendingPayment.payment_id}`);
       console.log(`🔍 Payment details:`, JSON.stringify(pendingPayment, null, 2));

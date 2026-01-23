@@ -8,7 +8,8 @@ import {
 } from '@mui/material'
 import {
   Menu as MenuIcon, Home as HomeIcon, Description as LandTitleIcon,
-  Payment as PaymentIcon, People as UsersIcon, Logout as LogoutIcon
+  Payment as PaymentIcon, People as UsersIcon, Logout as LogoutIcon,
+  SwapHoriz as TransferIcon
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -29,6 +30,12 @@ const menuItems = [
     text: 'Land Titles',
     icon: <LandTitleIcon />,
     href: '/land-titles',
+    roles: [ROLES.ADMIN, ROLES.LAND_TITLE_PROCESSOR]
+  },
+  {
+    text: 'Transfer Title',
+    icon: <TransferIcon />,
+    href: '/transfer-land-title',
     roles: [ROLES.ADMIN, ROLES.LAND_TITLE_PROCESSOR]
   },
   {

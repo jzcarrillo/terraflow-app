@@ -42,13 +42,16 @@ const getPaymentStatus = async (req, res) => {
 
 const validateLandTitlePayment = async (req, res) => {
   try {
-    const { land_title_id } = req.query;
+    const { land_title_id, reference_type } = req.query;
     
     if (!land_title_id) {
       return res.status(400).json({ error: 'Land title ID is required' });
     }
     
-    const exists = await paymentService.checkLandTitlePaymentExists(land_title_id);
+    // Check for existing PENDING payment with same reference_type
+    const pendingPayment = await paymentService.getExistingPendingPayment(land_title_id, reference_type);
+    const exists = pendingPayment !== null;
+    
     res.json({ exists });
   } catch (error) {
     handleError(error, res, 'Validate land title payment');

@@ -1,6 +1,7 @@
 const rabbitmq = require('../utils/rabbitmq');
 const landtitles = require('../services/landtitles');
 const payments = require('../services/payments');
+const transfers = require('../services/transfers');
 const rollback = require('../services/rollback');
 const { QUEUES, EVENT_TYPES } = require('../config/constants');
 
@@ -27,6 +28,17 @@ const messageHandler = async (messageData) => {
       
     case 'PAYMENT_CONFIRMED':
       await rabbitmq.processPaymentConfirmed(messageData);
+      break;
+      
+    case 'TRANSFER_PAYMENT_CONFIRMED':
+      await transfers.processPaymentConfirmed(messageData);
+      break;
+      
+    case 'TRANSFER_CREATE':
+    case 'TRANSFER_GET_ALL':
+    case 'TRANSFER_GET_BY_ID':
+    case 'TRANSFER_COMPLETE':
+      await rabbitmq.processMessage(messageData);
       break;
       
     case EVENT_TYPES.ROLLBACK_TRANSACTION:

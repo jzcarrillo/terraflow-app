@@ -17,11 +17,15 @@ class PaymentService {
   }
 
  // VALIDATE LAND TITLE NUMBER IF DUPLICATE
-  async validateLandTitlePayment(landTitleId) {
+  async validateLandTitlePayment(landTitleId, referenceType = null) {
     try {
       console.log ('💳 === VALIDATE PAYMENT ===');
-      console.log(`🔍 Validating land title payment: ${landTitleId}`);
-      const response = await axios.get(`${BACKEND_PAYMENTS_URL}/api/validate/land-title-payment?land_title_id=${landTitleId}`);
+      console.log(`🔍 Validating land title payment: ${landTitleId} (${referenceType})`);
+      let url = `${BACKEND_PAYMENTS_URL}/api/validate/land-title-payment?land_title_id=${landTitleId}`;
+      if (referenceType) {
+        url += `&reference_type=${encodeURIComponent(referenceType)}`;
+      }
+      const response = await axios.get(url);
       console.log(`✅ Validation result: ${response.data.exists}`);
       return response.data;
     } catch (error) {

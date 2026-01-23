@@ -96,6 +96,16 @@ export const paymentsAPI = {
   getStatus: (id) => api.get(`/payments/${id}/status`),
 }
 
+// Transfers API
+export const transfersAPI = {
+  getAll: () => api.get('/transfers'),
+  getById: (id) => api.get(`/transfers/${id}`),
+  create: (data) => api.post('/transfers', data),
+  complete: (id, paymentId) => api.put(`/transfers/${id}/complete`, { payment_id: paymentId }),
+  updateStatus: (id, status) => api.put(`/transfers/${id}`, { status }),
+  delete: (id) => api.delete(`/transfers/${id}`),
+}
+
 // Authentication API
 export const authAPI = {
   login: async (credentials) => {

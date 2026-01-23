@@ -212,6 +212,57 @@ class ChaincodeService {
     }
   }
 
+  async recordTransfer(transferData) {
+    try {
+      const {
+        title_number,
+        from_owner,
+        to_owner,
+        transfer_fee,
+        transfer_date,
+        transaction_type,
+        transfer_id
+      } = transferData;
+
+      console.log(`🔄 Recording transfer on blockchain: ${title_number}`);
+
+      // Submit transfer transaction to chaincode
+      const result = await this.fabricClient.submitTransaction(
+        'TransferLandTitle',
+        title_number,
+        from_owner,
+        to_owner,
+        transfer_fee,
+        transfer_date.toString(),
+        transaction_type,
+        transfer_id
+      );
+
+      console.log(`✅ Transfer recorded on blockchain: ${title_number}`);
+      
+      console.log(`🔍 DEBUG - fabric-client transfer result:`, result);
+      
+      return {
+        success: true,
+        transaction_id: result.transaction_id || transfer_id,
+        block_number: result.block_number || '1',
+        message: 'Land title transfer successfully recorded on blockchain',
+        blockchainHash: result.blockchain_hash
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to record transfer:', error.message);
+      
+      return {
+        success: false,
+        transaction_id: transferData.transfer_id || '',
+        block_number: '',
+        message: `Failed to record transfer: ${error.message}`,
+        blockchain_hash: ''
+      };
+    }
+  }
+
   async disconnect() {
     await this.fabricClient.disconnect();
   }
