@@ -1,0 +1,8 @@
+{
+  "name": "terraflow-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for Terraflow testing",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
