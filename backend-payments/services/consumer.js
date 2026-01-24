@@ -97,7 +97,8 @@ const handlePaymentCreate = async (messageData) => {
     payer_name: validatedData.payer_name,
     payment_method: validatedData.payment_method,
     status: 'PENDING',
-    created_by: messageData.username || messageData.user_id || 'system'
+    created_by: messageData.username || messageData.user_id || 'system',
+    transfer_id: validatedData.transfer_id || messageData.transfer_id || null
   };
   
   await paymentService.createPayment(paymentData);

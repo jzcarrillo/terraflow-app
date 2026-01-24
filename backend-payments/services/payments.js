@@ -18,16 +18,16 @@ class PaymentService {
   async createPayment(data) {
     const { 
       payment_id, reference_type, reference_id, amount, payer_name, 
-      payment_method = 'CASH', status = STATUS.PENDING, created_by
+      payment_method = 'CASH', status = STATUS.PENDING, created_by, transfer_id
     } = data;
 
     const result = await executeQuery(`
       INSERT INTO ${TABLES.PAYMENTS} (
         payment_id, reference_type, reference_id, amount, payer_name, 
-        payment_method, status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        payment_method, status, created_by, transfer_id, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       RETURNING *
-    `, [payment_id, reference_type, reference_id, amount, payer_name, payment_method, status, created_by]);
+    `, [payment_id, reference_type, reference_id, amount, payer_name, payment_method, status, created_by, transfer_id]);
 
     console.log(`✅ Payment created: ${payment_id} for ${reference_id}`);
     console.log('💾 Data inserted to database successfully')
@@ -187,16 +187,18 @@ class PaymentService {
     const messageKey = `${payment.payment_id || payment.id}-${status}-${Date.now()}`;
     
     if (payment.reference_type === 'Transfer Title') {
-      // For transfer payments, we need to extract transfer_id from the title number
-      // Assuming transfer_id can be derived or is stored separately
-      const transferId = await this.getTransferIdByTitleNumber(payment.reference_id);
+      // Use transfer_id from payment record
+      if (!payment.transfer_id) {
+        console.error(`❌ Cannot send transfer payment event: No transfer_id in payment record`);
+        console.log(`⚠️ Skipping transfer event - payment may need to be recreated with transfer_id`);
+        return;
+      }
       
-      // Send transfer payment event to land registry queue
       await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
         event_type: 'TRANSFER_PAYMENT_CONFIRMED',
         transaction_id: transactionId,
         payment_id: payment.id,
-        transfer_id: transferId || 'TR-1', // Fallback to TR-1 for now
+        transfer_id: payment.transfer_id,
         title_number: payment.reference_id,
         payment_status: status,
         message_key: messageKey,
@@ -224,9 +226,8 @@ class PaymentService {
   }
   
   async getTransferIdByTitleNumber(titleNumber) {
-    // For now, return a hardcoded transfer_id
-    // In production, this should query the transfers table or service
-    return 'TR-1';
+    // No longer needed - transfer_id is now a column
+    return null;
   }
   
   async handleLandTitleResponse(messageData) {

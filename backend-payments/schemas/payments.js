@@ -6,7 +6,8 @@ const paymentSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
   payment_method: z.string().min(1, "Payment method is required"),
   description: z.string().optional(),
-  payer_name: z.string().min(1, "Payer name is required").optional()
+  payer_name: z.string().min(1, "Payer name is required").optional(),
+  transfer_id: z.string().optional()
 });
 
 const paymentEditSchema = z.object({
