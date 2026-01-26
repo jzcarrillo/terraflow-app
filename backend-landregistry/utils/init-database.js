@@ -43,7 +43,7 @@ const initializeDatabase = async () => {
     // Create land_transfers table with Buyer/Seller terminology
     await pool.query(`
       CREATE TABLE IF NOT EXISTS land_transfers (
-        transfer_id SERIAL PRIMARY KEY,
+        transfer_id VARCHAR(50) PRIMARY KEY,
         title_number VARCHAR(50) NOT NULL,
         seller_name VARCHAR(255) NOT NULL,
         seller_contact VARCHAR(11),

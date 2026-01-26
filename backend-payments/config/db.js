@@ -18,6 +18,7 @@ const createTables = async () => {
         payment_id VARCHAR(255) UNIQUE NOT NULL,
         reference_type VARCHAR(100) NOT NULL,
         reference_id VARCHAR(255) NOT NULL,
+        transfer_id VARCHAR(50),
         amount DECIMAL(10,2) NOT NULL,
         payer_name VARCHAR(255) NOT NULL,
         payment_method VARCHAR(50) DEFAULT 'CASH',
