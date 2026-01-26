@@ -66,6 +66,29 @@ const updateTransferStatus = async (req, res) => {
   }
 };
 
+const updateTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    console.log(`🔄 Updating transfer: ID=${id}`);
+    
+    const transfer = await transferService.updateTransfer(id, updateData);
+    
+    res.json({
+      success: true,
+      message: 'Transfer updated successfully',
+      data: transfer
+    });
+  } catch (error) {
+    console.error('❌ Update transfer error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update transfer'
+    });
+  }
+};
+
 const deleteTransfer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -90,5 +113,6 @@ module.exports = {
   submitTransfer,
   getAllTransfers,
   updateTransferStatus,
+  updateTransfer,
   deleteTransfer
 };

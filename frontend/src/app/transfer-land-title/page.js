@@ -26,7 +26,7 @@ import {
   IconButton,
   Menu
 } from '@mui/material'
-import { Add as AddIcon, MoreVert as MoreVertIcon, Cancel as CancelIcon } from '@mui/icons-material'
+import { Add as AddIcon, MoreVert as MoreVertIcon, Cancel as CancelIcon, Edit as EditIcon } from '@mui/icons-material'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -39,11 +39,12 @@ import { getCurrentUser } from '@/utils/auth'
 import { formatDate, generateId } from '@/utils/formatters'
 
 const transferSchema = z.object({
-  title_number: z.string().min(1, "Please select a land title"),
+  title_number: z.string().min(1, "Please select a land title").optional(),
   buyer_name: z.string().min(1, "Buyer name is required"),
   buyer_contact: z.string().regex(/^[0-9]{11}$/, "Contact number must be exactly 11 digits"),
   buyer_email: z.string().email("Valid email address is required"),
-  buyer_address: z.string().min(1, "Buyer address is required")
+  buyer_address: z.string().min(1, "Buyer address is required"),
+  transfer_fee: z.number().positive("Transfer fee must be positive").optional()
 })
 
 export default function TransferLandTitle() {
@@ -51,6 +52,7 @@ export default function TransferLandTitle() {
   const [landTitles, setLandTitles] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [error, setError] = useState('')
@@ -168,6 +170,36 @@ export default function TransferLandTitle() {
   const handleActionsClose = () => {
     setAnchorEl(null)
     setSelectedTransferForAction(null)
+  }
+
+  const handleEditTransfer = () => {
+    const transferToEdit = selectedTransferForAction
+    reset({
+      buyer_name: transferToEdit.buyer_name,
+      buyer_contact: transferToEdit.buyer_contact,
+      buyer_email: transferToEdit.buyer_email,
+      buyer_address: transferToEdit.buyer_address,
+      transfer_fee: transferToEdit.transfer_fee
+    })
+    setEditOpen(true)
+    setAnchorEl(null)
+  }
+
+  const onEditSubmit = async (data) => {
+    try {
+      setError('')
+      setSuccess('')
+      
+      await transfersAPI.update(selectedTransferForAction.transfer_id, data)
+      setSuccess('Transfer updated successfully!')
+      setEditOpen(false)
+      setSelectedTransferForAction(null)
+      reset()
+      fetchTransfers()
+    } catch (error) {
+      console.error('Update transfer error:', error)
+      setError(error.response?.data?.error || error.message || 'Failed to update transfer')
+    }
   }
 
   const handleCancelTransfer = async () => {
@@ -371,6 +403,90 @@ export default function TransferLandTitle() {
           </form>
         </Dialog>
 
+        {/* Edit Transfer Dialog */}
+        <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Edit Transfer</DialogTitle>
+          <form onSubmit={handleSubmit(onEditSubmit)}>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Transfer ID:</Typography>
+                  <input 
+                    type="text" 
+                    value={selectedTransferForAction?.transfer_id || ''}
+                    disabled
+                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: '#f5f5f5', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                  />
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Name:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="text" 
+                      {...register('buyer_name')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.buyer_name && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_name.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Contact:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="text" 
+                      {...register('buyer_contact')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.buyer_contact && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_contact.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Email:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="email" 
+                      {...register('buyer_email')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.buyer_email && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_email.message}</Typography>}
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Buyer Address:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <textarea 
+                      rows={3}
+                      {...register('buyer_address')}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.buyer_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_address.message}</Typography>}
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Transfer Fee:</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <input 
+                      type="number" 
+                      {...register('transfer_fee', { valueAsNumber: true })}
+                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
+                    />
+                    {errors.transfer_fee && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.transfer_fee.message}</Typography>}
+                  </Box>
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="contained">Update Transfer</Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+
         {/* Transfer Details Modal */}
         <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth>
           <DialogTitle>Transfer Details</DialogTitle>
@@ -445,6 +561,10 @@ export default function TransferLandTitle() {
           open={Boolean(anchorEl)}
           onClose={handleActionsClose}
         >
+          <MenuItem onClick={handleEditTransfer}>
+            <EditIcon sx={{ mr: 1 }} />
+            Edit Transfer
+          </MenuItem>
           <MenuItem onClick={handleCancelTransfer}>
             <CancelIcon sx={{ mr: 1 }} />
             Cancel Transfer

@@ -101,8 +101,9 @@ export const transfersAPI = {
   getAll: () => api.get('/transfers'),
   getById: (id) => api.get(`/transfers/${id}`),
   create: (data) => api.post('/transfers', data),
+  update: (id, data) => api.put(`/transfers/${id}`, data),
   complete: (id, paymentId) => api.put(`/transfers/${id}/complete`, { payment_id: paymentId }),
-  updateStatus: (id, status) => api.put(`/transfers/${id}`, { status }),
+  updateStatus: (id, status) => api.put(`/transfers/${id}/status`, { status }),
   delete: (id) => api.delete(`/transfers/${id}`),
 }
 

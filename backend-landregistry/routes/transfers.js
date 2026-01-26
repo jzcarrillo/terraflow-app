@@ -6,7 +6,8 @@ const { authenticateToken } = require('../middleware/auth');
 // TRANSFER ENDPOINTS
 router.post('/', authenticateToken, transferController.submitTransfer);
 router.get('/', authenticateToken, transferController.getAllTransfers);
-router.put('/:id', authenticateToken, transferController.updateTransferStatus);
+router.put('/:id/status', authenticateToken, transferController.updateTransferStatus);
+router.put('/:id', authenticateToken, transferController.updateTransfer);
 router.delete('/:id', authenticateToken, transferController.deleteTransfer);
 
 module.exports = router;

@@ -180,6 +180,73 @@ const processPaymentConfirmed = async (paymentData) => {
   }
 };
 
+const updateTransfer = async (transferId, updateData) => {
+  try {
+    // Check if transfer exists and is PENDING
+    const checkResult = await pool.query(
+      'SELECT * FROM land_transfers WHERE transfer_id = $1',
+      [transferId]
+    );
+    
+    if (checkResult.rows.length === 0) {
+      throw new Error('Transfer not found');
+    }
+    
+    const transfer = checkResult.rows[0];
+    
+    if (transfer.status !== 'PENDING') {
+      throw new Error('Only PENDING transfers can be updated');
+    }
+    
+    // Build update query dynamically
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+    
+    if (updateData.buyer_name !== undefined) {
+      updates.push(`buyer_name = $${paramCount++}`);
+      values.push(updateData.buyer_name);
+    }
+    if (updateData.buyer_contact !== undefined) {
+      updates.push(`buyer_contact = $${paramCount++}`);
+      values.push(updateData.buyer_contact);
+    }
+    if (updateData.buyer_email !== undefined) {
+      updates.push(`buyer_email = $${paramCount++}`);
+      values.push(updateData.buyer_email);
+    }
+    if (updateData.buyer_address !== undefined) {
+      updates.push(`buyer_address = $${paramCount++}`);
+      values.push(updateData.buyer_address);
+    }
+    if (updateData.transfer_fee !== undefined) {
+      updates.push(`transfer_fee = $${paramCount++}`);
+      values.push(updateData.transfer_fee);
+    }
+    
+    if (updates.length === 0) {
+      throw new Error('No fields to update');
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    values.push(transferId);
+    
+    const query = `
+      UPDATE land_transfers 
+      SET ${updates.join(', ')} 
+      WHERE transfer_id = $${paramCount} 
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, values);
+    console.log(`✅ Transfer updated: ${transferId}`);
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Update transfer failed:', error.message);
+    throw error;
+  }
+};
+
 const deleteTransfer = async (transferId) => {
   try {
     const result = await pool.query(
@@ -203,6 +270,7 @@ module.exports = {
   submitTransfer,
   getAllTransfers,
   updateTransferStatus,
+  updateTransfer,
   deleteTransfer,
   processPaymentConfirmed
 };

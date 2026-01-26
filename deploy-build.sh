@@ -38,6 +38,10 @@ else
     echo -e "\033[0;32mDocker Desktop is running\033[0m"
 fi
 
+# Ensure Docker context is set correctly
+export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
+echo -e "\033[0;90mDocker host: $DOCKER_HOST\033[0m"
+
 # === Kill existing port-forward / processes on ALL service ports ===
 ALL_PORTS=($PORT $API_PORT $DOCUMENTS_PORT $USERS_PORT $PAYMENTS_PORT 15432 15433 15434 15435 15672 30081 4005)
 echo -e "\033[0;33mKilling existing processes on all service ports...\033[0m"
@@ -58,31 +62,37 @@ kubectl delete pod -l app=$SERVICE_NAME --namespace=$NAMESPACE --force --grace-p
 echo -e "\033[0;33mBuilding all Docker images in parallel...\033[0m"
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $DOCKER_IMAGE ./backend-landregistry && echo -e "\033[0;32m✓ backend-landregistry\033[0m"
 ) &
 PID1=$!
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $API_DOCKER_IMAGE ./api-gateway && echo -e "\033[0;32m✓ api-gateway\033[0m"
 ) &
 PID2=$!
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents && echo -e "\033[0;32m✓ backend-documents\033[0m"
 ) &
 PID3=$!
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $USERS_DOCKER_IMAGE ./backend-users && echo -e "\033[0;32m✓ backend-users\033[0m"
 ) &
 PID4=$!
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $PAYMENTS_DOCKER_IMAGE ./backend-payments && echo -e "\033[0;32m✓ backend-payments\033[0m"
 ) &
 PID5=$!
 
 (
+  export DOCKER_HOST="unix://$HOME/.docker/run/docker.sock"
   docker build -t $BLOCKCHAIN_DOCKER_IMAGE ./backend-blockchain && echo -e "\033[0;32m✓ backend-blockchain\033[0m"
 ) &
 PID6=$!

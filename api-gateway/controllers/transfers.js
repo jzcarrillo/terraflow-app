@@ -64,10 +64,25 @@ const completeTransfer = async (req, res) => {
   }
 };
 
-const updateTransferStatus = async (req, res) => {
+const updateTransfer = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await transfersAPI.put(`/api/transfers/${id}`, req.body, {
+      headers: { Authorization: req.headers.authorization }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('❌ Update transfer failed:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.message || 'Failed to update transfer'
+    });
+  }
+};
+
+const updateTransferStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const response = await transfersAPI.put(`/api/transfers/${id}/status`, req.body, {
       headers: { Authorization: req.headers.authorization }
     });
     res.json(response.data);
@@ -83,6 +98,7 @@ module.exports = {
   getAllTransfers,
   getTransferById,
   createTransfer,
+  updateTransfer,
   updateTransferStatus,
   completeTransfer
 };

@@ -12,6 +12,7 @@ export const ROLES = {
 export const STATUS_COLORS = {
   ACTIVE: 'success',
   PENDING: 'warning',
+  COMPLETED: 'success',
   PAID: 'success',
   CANCELLED: 'error',
   FAILED: 'error'
