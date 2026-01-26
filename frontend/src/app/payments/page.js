@@ -181,11 +181,28 @@ export default function Payments() {
   const onSubmit = async (data) => {
     try {
       setError('')
+      
+      // Get transfer_id if reference_type is Transfer Title
+      let transferId = null
+      if (data.reference_type === 'Transfer Title' && data.reference_id) {
+        console.log('Looking for transfer with title_number:', data.reference_id)
+        console.log('Available transfers:', pendingTransfers)
+        const selectedTransfer = pendingTransfers.find(t => t.title_number === data.reference_id)
+        console.log('Selected transfer:', selectedTransfer)
+        if (selectedTransfer) {
+          transferId = selectedTransfer.transfer_id.toString()
+          console.log('Transfer ID found:', transferId)
+        } else {
+          console.warn('No transfer found for title_number:', data.reference_id)
+        }
+      }
+      
       const formData = {
         ...data,
         payment_id: paymentId,
         land_title_id: data.reference_id, // Always use the selected reference_id (land title string)
-        amount: parseFloat(data.amount)
+        amount: parseFloat(data.amount),
+        transfer_id: transferId // Add transfer_id if available
       }
       
       if (isEditMode) {
@@ -195,6 +212,8 @@ export default function Payments() {
         await paymentsAPI.update(editingPaymentId, formData)
         setSuccess('Payment updated successfully!')
       } else {
+        console.log('=== CREATE PAYMENT DEBUG ===')
+        console.log('Form data:', formData)
         await paymentsAPI.create(formData)
         setSuccess('Payment created successfully!')
       }

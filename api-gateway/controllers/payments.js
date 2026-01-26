@@ -75,6 +75,7 @@ const createPayment = async (req, res) => {
       reference_id: validatedData.land_title_id,
       reference_type: validatedData.reference_type,
       payment_data: validatedData,
+      transfer_id: validatedData.transfer_id || null,
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1',
       timestamp: new Date().toISOString()
@@ -120,6 +121,7 @@ const createPayment = async (req, res) => {
       reference_id: validatedData.land_title_id,
       reference_type: validatedData.reference_type,
       payment_data: validatedData,
+      transfer_id: validatedData.transfer_id || null,
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1',
       timestamp: new Date().toISOString()

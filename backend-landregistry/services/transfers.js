@@ -54,24 +54,8 @@ const submitTransfer = async (transferData) => {
     
     const transfer = result.rows[0];
     console.log(`🔄 Transfer submitted: ${transfer.transfer_id}`);
-    
-    // Automatically create payment for transfer
-    const paymentMessage = {
-      payment_data: {
-        land_title_id: transferData.title_number,
-        reference_type: 'Transfer Title',
-        amount: parseFloat(transfer.transfer_fee),
-        payment_method: 'CASH',
-        payer_name: transferData.buyer_name,
-        transfer_id: transfer.transfer_id.toString()
-      },
-      reference_type: 'Transfer Title',
-      transfer_id: transfer.transfer_id.toString(),
-      username: transferData.created_by
-    };
-    
-    await rabbitmq.publishToQueue(QUEUES.PAYMENTS, paymentMessage);
-    console.log(`💳 Payment automatically created for transfer: ${transfer.transfer_id}`);
+    console.log(`💳 Transfer fee: ${transfer.transfer_fee}`);
+    console.log(`⚠️ Note: Create payment manually with transfer_id: ${transfer.transfer_id}`);
     
     return transfer;
   } catch (error) {
