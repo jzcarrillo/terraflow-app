@@ -228,7 +228,7 @@ export default function TransferLandTitle() {
                         onClick={() => handleTransferClick(transfer)}
                         sx={{ textTransform: 'none', color: 'primary.main', fontWeight: 'bold' }}
                       >
-                        TR-{transfer.transfer_id}
+                        {transfer.transfer_id}
                       </Button>
                     </TableCell>
                     <TableCell>{transfer.title_number}</TableCell>
@@ -379,7 +379,7 @@ export default function TransferLandTitle() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Transfer ID:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>TR-{selectedTransfer.transfer_id}</Typography>
+                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.transfer_id}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Title Number:</Typography>

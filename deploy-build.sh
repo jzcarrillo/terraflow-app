@@ -234,6 +234,15 @@ else
     echo -e "\033[0;33m⚠ Migration skipped (column may already exist)\033[0m"
 fi
 
+echo -e "\033[0;90mUpdating transfer_id format to TRF-YYYY-TIMESTAMP...\033[0m"
+kubectl exec -n terraflow-app deployment/postgres-landregistry -- psql -U postgres -d terraflow_landregistry -c "ALTER TABLE land_transfers DROP CONSTRAINT IF EXISTS land_transfers_pkey; ALTER TABLE land_transfers ALTER COLUMN transfer_id TYPE VARCHAR(50); ALTER TABLE land_transfers ADD PRIMARY KEY (transfer_id);" 2>/dev/null
+kubectl exec -n terraflow-app deployment/postgres-payments -- psql -U postgres -d terraflow_payments -c "ALTER TABLE payments ALTER COLUMN transfer_id TYPE VARCHAR(50);" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo -e "\033[0;32m✓ Transfer ID format updated\033[0m"
+else
+    echo -e "\033[0;33m⚠ Transfer ID update skipped\033[0m"
+fi
+
 # === Start Frontend Application ===
 echo -e "\033[0;32mStarting Frontend Application...\033[0m"
 

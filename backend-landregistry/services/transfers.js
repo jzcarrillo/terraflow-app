@@ -28,15 +28,19 @@ const submitTransfer = async (transferData) => {
     
     const landTitle = titleCheck.rows[0];
     
+    // Generate transfer ID: TRF-YYYY-TIMESTAMP
+    const transferId = `TRF-${new Date().getFullYear()}-${Date.now()}`;
+    
     // Create transfer record with Buyer/Seller terminology
     const result = await pool.query(
       `INSERT INTO land_transfers (
-        title_number, seller_name, seller_contact, seller_email, seller_address,
+        transfer_id, title_number, seller_name, seller_contact, seller_email, seller_address,
         buyer_name, buyer_contact, buyer_email, buyer_address, 
         transfer_fee, status, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
       RETURNING *`,
       [
+        transferId,
         transferData.title_number,
         landTitle.owner_name,
         landTitle.contact_no,

@@ -489,7 +489,7 @@ export default function Payments() {
                         {selectedReferenceType === 'Transfer Title' ? (
                           pendingTransfers.map((transfer) => (
                             <option key={transfer.transfer_id} value={transfer.title_number}>
-                              TR-{transfer.transfer_id} - {transfer.title_number} ({transfer.buyer_name})
+                              {transfer.transfer_id} - {transfer.title_number} ({transfer.buyer_name})
                             </option>
                           ))
                         ) : (
