@@ -1,5 +1,23 @@
 const transferService = require('../services/transfers');
 
+// Helper function for success response
+const sendSuccess = (res, data, message, statusCode = 200) => {
+  res.status(statusCode).json({
+    success: true,
+    message,
+    data
+  });
+};
+
+// Helper function for error response
+const sendError = (res, error, action) => {
+  console.error(`❌ ${action} error:`, error.message);
+  res.status(500).json({
+    success: false,
+    error: error.message || `Failed to ${action.toLowerCase()}`
+  });
+};
+
 const submitTransfer = async (req, res) => {
   try {
     const transferData = {
@@ -8,38 +26,23 @@ const submitTransfer = async (req, res) => {
     };
     
     console.log('🔄 Submitting transfer:', transferData);
-    
     const transfer = await transferService.submitTransfer(transferData);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Transfer request submitted successfully',
-      data: transfer
-    });
+    sendSuccess(res, transfer, 'Transfer request submitted successfully', 201);
   } catch (error) {
-    console.error('❌ Submit transfer error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to submit transfer'
-    });
+    sendError(res, error, 'Submit transfer');
   }
 };
 
 const getAllTransfers = async (req, res) => {
   try {
     const transfers = await transferService.getAllTransfers();
-    
     res.json({
       success: true,
       count: transfers.length,
       data: transfers
     });
   } catch (error) {
-    console.error('❌ Get all transfers error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to fetch transfers'
-    });
+    sendError(res, error, 'Get all transfers');
   }
 };
 
@@ -49,63 +52,31 @@ const updateTransferStatus = async (req, res) => {
     const { status } = req.body;
     
     console.log(`🔄 Updating transfer status: ID=${id}, Status=${status}`);
-    
     const transfer = await transferService.updateTransferStatus(id, status);
-    
-    res.json({
-      success: true,
-      message: 'Transfer status updated successfully',
-      data: transfer
-    });
+    sendSuccess(res, transfer, 'Transfer status updated successfully');
   } catch (error) {
-    console.error('❌ Update transfer status error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to update transfer status'
-    });
+    sendError(res, error, 'Update transfer status');
   }
 };
 
 const updateTransfer = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
-    
     console.log(`🔄 Updating transfer: ID=${id}`);
-    
-    const transfer = await transferService.updateTransfer(id, updateData);
-    
-    res.json({
-      success: true,
-      message: 'Transfer updated successfully',
-      data: transfer
-    });
+    const transfer = await transferService.updateTransfer(id, req.body);
+    sendSuccess(res, transfer, 'Transfer updated successfully');
   } catch (error) {
-    console.error('❌ Update transfer error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to update transfer'
-    });
+    sendError(res, error, 'Update transfer');
   }
 };
 
 const deleteTransfer = async (req, res) => {
   try {
     const { id } = req.params;
-    
     const transfer = await transferService.deleteTransfer(id);
-    
-    res.json({
-      success: true,
-      message: 'Transfer deleted successfully',
-      data: transfer
-    });
+    sendSuccess(res, transfer, 'Transfer deleted successfully');
   } catch (error) {
-    console.error('❌ Delete transfer error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to delete transfer'
-    });
+    sendError(res, error, 'Delete transfer');
   }
 };
 

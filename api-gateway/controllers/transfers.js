@@ -6,6 +6,14 @@ const transfersAPI = axios.create({
   timeout: 30000
 });
 
+// Helper function for error handling
+const handleError = (error, res, action) => {
+  console.error(`❌ ${action} failed:`, error.message);
+  res.status(error.response?.status || 500).json({
+    error: error.response?.data?.message || `Failed to ${action.toLowerCase()}`
+  });
+};
+
 const getAllTransfers = async (req, res) => {
   try {
     const response = await transfersAPI.get('/api/transfers', {
@@ -13,10 +21,7 @@ const getAllTransfers = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ Get all transfers failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to fetch transfers'
-    });
+    handleError(error, res, 'Get all transfers');
   }
 };
 
@@ -28,10 +33,7 @@ const getTransferById = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ Get transfer by ID failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to fetch transfer'
-    });
+    handleError(error, res, 'Get transfer by ID');
   }
 };
 
@@ -42,10 +44,7 @@ const createTransfer = async (req, res) => {
     });
     res.status(201).json(response.data);
   } catch (error) {
-    console.error('❌ Create transfer failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to create transfer'
-    });
+    handleError(error, res, 'Create transfer');
   }
 };
 
@@ -57,10 +56,7 @@ const completeTransfer = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ Complete transfer failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to complete transfer'
-    });
+    handleError(error, res, 'Complete transfer');
   }
 };
 
@@ -72,10 +68,7 @@ const updateTransfer = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ Update transfer failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to update transfer'
-    });
+    handleError(error, res, 'Update transfer');
   }
 };
 
@@ -87,10 +80,7 @@ const updateTransferStatus = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ Update transfer status failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to update transfer status'
-    });
+    handleError(error, res, 'Update transfer status');
   }
 };
 

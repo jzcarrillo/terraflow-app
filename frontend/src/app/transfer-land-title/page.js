@@ -12,7 +12,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   Box,
   Dialog,
   DialogTitle,
@@ -20,7 +19,6 @@ import {
   DialogActions,
   Grid,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   IconButton,
@@ -68,16 +66,17 @@ export default function TransferLandTitle() {
   const selectedTitleNumber = watch('title_number')
   const selectedTitle = landTitles.find(title => title.title_number === selectedTitleNumber)
 
+  // Helper function to normalize API response
+  const normalizeData = (response) => {
+    if (Array.isArray(response.data)) return response.data
+    if (response.data.data && Array.isArray(response.data.data)) return response.data.data
+    return []
+  }
+
   const fetchTransfers = async () => {
     try {
       const response = await transfersAPI.getAll()
-      let transfersData = []
-      if (Array.isArray(response.data)) {
-        transfersData = response.data
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        transfersData = response.data.data
-      }
-      setTransfers(transfersData)
+      setTransfers(normalizeData(response))
     } catch (error) {
       setError('Failed to fetch transfers')
       console.error('Error:', error)
@@ -93,19 +92,8 @@ export default function TransferLandTitle() {
         transfersAPI.getAll()
       ])
       
-      let titles = []
-      if (Array.isArray(titlesResponse.data)) {
-        titles = titlesResponse.data
-      } else if (titlesResponse.data.data && Array.isArray(titlesResponse.data.data)) {
-        titles = titlesResponse.data.data
-      }
-      
-      let existingTransfers = []
-      if (Array.isArray(transfersResponse.data)) {
-        existingTransfers = transfersResponse.data
-      } else if (transfersResponse.data.data && Array.isArray(transfersResponse.data.data)) {
-        existingTransfers = transfersResponse.data.data
-      }
+      const titles = normalizeData(titlesResponse)
+      const existingTransfers = normalizeData(transfersResponse)
       
       // Get title numbers that already have pending or completed transfers
       const transferredTitles = existingTransfers
@@ -144,7 +132,7 @@ export default function TransferLandTitle() {
         created_by: getCurrentUser()?.id || 1
       }
       
-      const response = await transfersAPI.create(transferData)
+      await transfersAPI.create(transferData)
       setSuccess('Transfer created successfully!')
       setOpen(false)
       reset()
