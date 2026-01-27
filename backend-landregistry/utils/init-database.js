@@ -27,6 +27,7 @@ const initializeDatabase = async () => {
         blockchain_hash VARCHAR(255),
         cancellation_hash VARCHAR(255),
         cancelled_at TIMESTAMP,
+        cancellation_reason TEXT,
         reactivation_hash VARCHAR(255),
         reactivated_at TIMESTAMP,
         reactivation_reason TEXT,

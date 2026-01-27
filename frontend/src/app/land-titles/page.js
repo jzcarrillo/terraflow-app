@@ -720,9 +720,18 @@ export default function LandTitles() {
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>
                                   <Chip 
-                                    label={tx.transaction_type === 'CREATED' ? 'Create' : 'Transfer'} 
+                                    label={
+                                      tx.transaction_type === 'CREATED' ? 'Create' : 
+                                      tx.transaction_type === 'TRANSFER' ? 'Transfer' :
+                                      tx.transaction_type === 'CANCELLED' ? 'Cancelled' :
+                                      tx.transaction_type === 'REACTIVATED' ? 'Reactivated' : 'Other'
+                                    } 
                                     size="small" 
-                                    color="success"
+                                    color={
+                                      tx.transaction_type === 'TRANSFER' ? 'primary' :
+                                      tx.transaction_type === 'CANCELLED' ? 'error' :
+                                      tx.transaction_type === 'REACTIVATED' ? 'warning' : 'success'
+                                    }
                                   />
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>

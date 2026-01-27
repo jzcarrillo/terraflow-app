@@ -120,7 +120,9 @@ class FabricClient {
       const txRecord = {
         blockchain_hash: blockchain_hash,
         transaction_type: functionName === 'CreateLandTitle' ? 'CREATED' : 
-                         functionName === 'TransferLandTitle' ? 'TRANSFER' : 'OTHER',
+                         functionName === 'TransferLandTitle' ? 'TRANSFER' :
+                         functionName === 'CancelLandTitle' ? 'CANCELLED' :
+                         functionName === 'ReactivateLandTitle' ? 'REACTIVATED' : 'OTHER',
         timestamp: Date.now(),
         owner_name: functionName === 'TransferLandTitle' ? args[7] : args[1],
         from_owner: functionName === 'TransferLandTitle' ? args[1] : '',

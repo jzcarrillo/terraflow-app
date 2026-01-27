@@ -214,11 +214,17 @@ const processPaymentConfirmed = async (paymentData) => {
       }
       
       if (hashes.length > 0) {
+        // Store in land_transfers table
         await pool.query(
           'UPDATE land_transfers SET blockchain_hash = $1 WHERE transfer_id = $2',
           [hashes.join(','), transfer_id]
         );
-        console.log(`✅ Stored ${hashes.length} blockchain hashes`);
+        // Store in land_titles table
+        await pool.query(
+          'UPDATE land_titles SET transfer_hash = $1, last_transfer_date = NOW(), transfer_count = transfer_count + 1 WHERE title_number = $2',
+          [hashes.join(','), transfer.title_number]
+        );
+        console.log(`✅ Stored ${hashes.length} blockchain hashes in both tables`);
       }
     } catch (blockchainError) {
       console.error('❌ Transfer blockchain recording failed:', blockchainError.message);
