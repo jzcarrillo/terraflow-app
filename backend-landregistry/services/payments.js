@@ -13,7 +13,7 @@ const getDbClient = async () => {
 };
 
 const createPayment = async (paymentData) => {
-  return await transactionManager.executeWithTransaction([
+  const [payment] = await transactionManager.executeWithTransaction([
     async (client) => {
       const result = await client.query(
         'INSERT INTO payments (title_number, amount, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING payment_id',
@@ -23,6 +23,7 @@ const createPayment = async (paymentData) => {
       return result.rows[0];
     }
   ]);
+  return payment;
 };
 
 const confirmPayment = async (paymentId) => {
