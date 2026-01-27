@@ -270,11 +270,35 @@ const viewAttachment = async (req, res) => {
   }
 };
 
+// GET BLOCKCHAIN HISTORY
+const getBlockchainHistory = async (req, res) => {
+  try {
+    const { titleNumber } = req.params;
+    console.log(`📜 Getting blockchain history for: ${titleNumber}`);
+    
+    const token = extractToken(req);
+    const response = await httpClient.get(
+      `${config.services.landregistry}/api/blockchain/history/${titleNumber}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    
+    console.log(`✅ Blockchain history retrieved for ${titleNumber}`);
+    res.json(response.data);
+    
+  } catch (error) {
+    console.error('❌ Get blockchain history failed:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.message || 'Failed to fetch blockchain history'
+    });
+  }
+};
+
 module.exports = {
   validateTitleNumber,
   createLandTitle,
   getAllLandTitles,
   getLandTitle,
   downloadAttachment,
-  viewAttachment
+  viewAttachment,
+  getBlockchainHistory
 };

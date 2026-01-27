@@ -103,6 +103,25 @@ class BlockchainClient {
       });
     });
   }
+
+  async getTransactionHistory(titleNumber) {
+    console.log(`📜 Fetching blockchain transaction history for: ${titleNumber}`);
+    
+    return new Promise((resolve, reject) => {
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10);
+      
+      client.GetTransactionHistory({ title_number: titleNumber }, { deadline }, (error, response) => {
+        if (error) {
+          console.error('❌ Get transaction history gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('✅ Transaction history response:', response);
+          resolve(response.transactions || []);
+        }
+      });
+    });
+  }
 }
 
 module.exports = new BlockchainClient();

@@ -221,10 +221,11 @@ class ChaincodeService {
         transfer_fee,
         transfer_date,
         transaction_type,
-        transfer_id
+        transfer_id,
+        owner_name
       } = transferData;
 
-      console.log(`🔄 Recording transfer on blockchain: ${title_number}`);
+      console.log(`🔄 Recording transfer on blockchain: ${title_number}, owner: ${owner_name}`);
 
       // Submit transfer transaction to chaincode
       const result = await this.fabricClient.submitTransaction(
@@ -235,7 +236,8 @@ class ChaincodeService {
         transfer_fee,
         transfer_date.toString(),
         transaction_type,
-        transfer_id
+        transfer_id,
+        owner_name
       );
 
       console.log(`✅ Transfer recorded on blockchain: ${title_number}`);
@@ -260,6 +262,25 @@ class ChaincodeService {
         message: `Failed to record transfer: ${error.message}`,
         blockchain_hash: ''
       };
+    }
+  }
+
+  async getTransactionHistory(titleNumber) {
+    try {
+      console.log(`📜 Getting transaction history: ${titleNumber}`);
+
+      const result = await this.fabricClient.evaluateTransaction(
+        'GetTransactionHistory',
+        titleNumber
+      );
+
+      // Parse JSON string to array
+      const transactions = typeof result === 'string' ? JSON.parse(result) : result;
+      return Array.isArray(transactions) ? transactions : [];
+
+    } catch (error) {
+      console.error('❌ Failed to get transaction history:', error.message);
+      return [];
     }
   }
 

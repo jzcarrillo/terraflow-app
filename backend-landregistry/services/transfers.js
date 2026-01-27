@@ -146,27 +146,79 @@ const processPaymentConfirmed = async (paymentData) => {
     
     console.log(`🏠 Land title ownership updated: ${transfer.title_number} (${transfer.seller_name} -> ${transfer.buyer_name})`);
     
-    // Record transfer on blockchain
-    const transferPayload = {
-      title_number: transfer.title_number,
-      from_owner: transfer.seller_name,
-      to_owner: transfer.buyer_name,
-      transfer_fee: transfer.transfer_fee.toString(),
-      transfer_date: Math.floor(Date.now() / 1000),
-      transaction_type: 'TRANSFER',
-      transfer_id: transfer.transfer_id.toString()
-    };
+    // Record 2 separate blockchain transactions - seller and buyer
+    const timestamp = Math.floor(Date.now() / 1000);
+    const hashes = [];
     
     try {
-      console.log(`🔗 Recording transfer to blockchain: ${transfer.title_number}`);
-      const blockchainResponse = await blockchainClient.recordTransfer(transferPayload);
+      // Seller transaction
+      const sellerPayload = {
+        title_number: transfer.title_number,
+        from_owner: transfer.seller_name,
+        to_owner: transfer.buyer_name,
+        transfer_fee: transfer.transfer_fee.toString(),
+        transfer_date: timestamp,
+        transaction_type: 'TRANSFER',
+        transfer_id: transfer.transfer_id.toString(),
+        owner_name: transfer.seller_name,
+        seller_details: {
+          name: transfer.seller_name,
+          contact: transfer.seller_contact,
+          email: transfer.seller_email,
+          address: transfer.seller_address
+        },
+        buyer_details: {
+          name: transfer.buyer_name,
+          contact: transfer.buyer_contact,
+          email: transfer.buyer_email,
+          address: transfer.buyer_address
+        }
+      };
       
-      if (blockchainResponse.success && blockchainResponse.blockchainHash) {
+      console.log(`🔗 Recording seller transaction: ${transfer.seller_name}`);
+      const sellerResponse = await blockchainClient.recordTransfer(sellerPayload);
+      if (sellerResponse.success && sellerResponse.blockchainHash) {
+        hashes.push(sellerResponse.blockchainHash);
+        console.log(`✅ Seller hash: ${sellerResponse.blockchainHash}`);
+      }
+      
+      // Buyer transaction
+      const buyerPayload = {
+        title_number: transfer.title_number,
+        from_owner: transfer.seller_name,
+        to_owner: transfer.buyer_name,
+        transfer_fee: transfer.transfer_fee.toString(),
+        transfer_date: timestamp,
+        transaction_type: 'TRANSFER',
+        transfer_id: transfer.transfer_id.toString(),
+        owner_name: transfer.buyer_name,
+        seller_details: {
+          name: transfer.seller_name,
+          contact: transfer.seller_contact,
+          email: transfer.seller_email,
+          address: transfer.seller_address
+        },
+        buyer_details: {
+          name: transfer.buyer_name,
+          contact: transfer.buyer_contact,
+          email: transfer.buyer_email,
+          address: transfer.buyer_address
+        }
+      };
+      
+      console.log(`🔗 Recording buyer transaction: ${transfer.buyer_name}`);
+      const buyerResponse = await blockchainClient.recordTransfer(buyerPayload);
+      if (buyerResponse.success && buyerResponse.blockchainHash) {
+        hashes.push(buyerResponse.blockchainHash);
+        console.log(`✅ Buyer hash: ${buyerResponse.blockchainHash}`);
+      }
+      
+      if (hashes.length > 0) {
         await pool.query(
           'UPDATE land_transfers SET blockchain_hash = $1 WHERE transfer_id = $2',
-          [blockchainResponse.blockchainHash, transfer_id]
+          [hashes.join(','), transfer_id]
         );
-        console.log(`✅ Transfer blockchain hash stored: ${blockchainResponse.blockchainHash}`);
+        console.log(`✅ Stored ${hashes.length} blockchain hashes`);
       }
     } catch (blockchainError) {
       console.error('❌ Transfer blockchain recording failed:', blockchainError.message);

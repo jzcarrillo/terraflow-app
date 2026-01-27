@@ -10,6 +10,8 @@ class FabricClient {
     this.contract = null;
     this.wallet = null;
     this.connected = false;
+    // In-memory transaction store
+    this.transactionStore = new Map();
   }
 
   async initialize() {
@@ -109,6 +111,26 @@ class FabricClient {
 
       console.log(`🔗 Fabric orderer recorded:`, transactionData);
 
+      // Store transaction in memory
+      const titleNumber = args[0];
+      if (!this.transactionStore.has(titleNumber)) {
+        this.transactionStore.set(titleNumber, []);
+      }
+      
+      const txRecord = {
+        blockchain_hash: blockchain_hash,
+        transaction_type: functionName === 'CreateLandTitle' ? 'CREATED' : 
+                         functionName === 'TransferLandTitle' ? 'TRANSFER' : 'OTHER',
+        timestamp: Date.now(),
+        owner_name: functionName === 'TransferLandTitle' ? args[7] : args[1],
+        from_owner: functionName === 'TransferLandTitle' ? args[1] : '',
+        to_owner: functionName === 'TransferLandTitle' ? args[2] : '',
+        transfer_fee: functionName === 'TransferLandTitle' ? args[3] : ''
+      };
+      
+      this.transactionStore.get(titleNumber).push(txRecord);
+      console.log(`💾 Stored transaction for ${titleNumber}:`, txRecord);
+
       const response = {
         success: true,
         message: `${functionName} submitted successfully to Fabric orderer`,
@@ -137,6 +159,13 @@ class FabricClient {
       console.log(`📦 Query args:`, args);
       
       const titleNumber = args[0];
+      
+      if (functionName === 'GetTransactionHistory') {
+        // Return stored transactions for this title
+        const transactions = this.transactionStore.get(titleNumber) || [];
+        console.log(`✅ Retrieved ${transactions.length} transactions for ${titleNumber}`);
+        return transactions;
+      }
       
       if (functionName === 'GetLandTitle') {
         // Return stored blockchain data format

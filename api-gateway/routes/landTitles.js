@@ -9,6 +9,7 @@ router.post('/land-titles', authenticateToken, requireRole(['ADMIN', 'LAND_TITLE
 router.get('/land-titles', authenticateToken, requireRole(['ADMIN', 'LAND_TITLE_PROCESSOR']), landTitleController.getAllLandTitles);
 router.get('/land-titles/validate/:titleNumber', landTitleController.validateTitleNumber);
 router.get('/land-titles/:id', authenticateToken, requireRole(['ADMIN', 'LAND_TITLE_PROCESSOR']), landTitleController.getLandTitle);
+router.get('/blockchain/history/:titleNumber', authenticateToken, requireRole(['ADMIN', 'LAND_TITLE_PROCESSOR']), landTitleController.getBlockchainHistory);
 router.get('/attachments/download/:documentId', authenticateToken, requireRole(['ADMIN', 'LAND_TITLE_PROCESSOR']), landTitleController.downloadAttachment);
 router.get('/attachments/view/:documentId', landTitleController.viewAttachment);
 

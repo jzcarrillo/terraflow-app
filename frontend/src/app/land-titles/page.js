@@ -63,6 +63,8 @@ export default function LandTitles() {
   const [titleNumber, setTitleNumber] = useState('')
   const [surveyNumber, setSurveyNumber] = useState('')
   const [attachments, setAttachments] = useState([{ id: 1 }])
+  const [blockchainHistory, setBlockchainHistory] = useState([])
+  const [loadingBlockchain, setLoadingBlockchain] = useState(false)
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(landTitleSchema)
@@ -205,9 +207,11 @@ export default function LandTitles() {
 
 
 
-  const handleTitleClick = (title) => {
+  const handleTitleClick = async (title) => {
     setSelectedTitle(title)
     setDetailsOpen(true)
+    setBlockchainHistory([])
+    await fetchBlockchainHistory(title.title_number)
   }
 
   const handleViewAttachment = (documentId, fileName) => {
@@ -240,6 +244,20 @@ export default function LandTitles() {
     } catch (error) {
       console.error('Download failed:', error)
       setError('Failed to download attachment')
+    }
+  }
+
+  const fetchBlockchainHistory = async (titleNumber) => {
+    try {
+      setLoadingBlockchain(true)
+      const response = await landTitlesAPI.getBlockchainHistory(titleNumber)
+      console.log('🔍 Blockchain transactions:', response.data?.history)
+      setBlockchainHistory(response.data?.history || [])
+    } catch (error) {
+      console.error('❌ Failed to fetch blockchain history:', error)
+      setBlockchainHistory([])
+    } finally {
+      setLoadingBlockchain(false)
     }
   }
 
@@ -672,11 +690,13 @@ export default function LandTitles() {
                   </Box>
                 </Box>
                 
-                {/* BLOCKCHAIN TABLE - MOVED TO BOTTOM */}
-                {(selectedTitle.blockchain_hash || selectedTitle.cancellation_hash || selectedTitle.reactivation_hash) && (
-                  <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
-                    <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Blockchain:</Typography>
-                    <Box sx={{ p: 2, flex: 1 }}>
+                {/* BLOCKCHAIN TABLE */}
+                <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
+                  <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Blockchain:</Typography>
+                  <Box sx={{ p: 2, flex: 1 }}>
+                    {loadingBlockchain ? (
+                      <Typography>Loading blockchain history...</Typography>
+                    ) : blockchainHistory.length > 0 ? (
                       <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '2px solid #ccc' }}>
                         <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid #ccc' } }}>
                           <TableHead>
@@ -684,52 +704,53 @@ export default function LandTitles() {
                               <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Blockchain Hash</TableCell>
                               <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Action</TableCell>
                               <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Timestamp</TableCell>
-                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Owner</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f8f9fa', border: '1px solid #999', borderBottom: '1px solid #666' }}>Details</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {selectedTitle.blockchain_hash && (
-                              <TableRow sx={{ '&:hover': { backgroundColor: '#f0f8ff' } }}>
+                            {blockchainHistory.map((tx, index) => (
+                              <TableRow key={index} sx={{ '&:hover': { backgroundColor: tx.transaction_type === 'CREATED' ? '#f0f8ff' : '#fff8f0' } }}>
                                 <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
-                                  {selectedTitle.blockchain_hash}
+                                  {tx.transaction_type === 'TRANSFER' && (
+                                    <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                                      {tx.owner_name === tx.from_owner ? 'Seller Hash:' : 'Buyer Hash:'}
+                                    </Typography>
+                                  )}
+                                  {tx.blockchain_hash || tx.hash}
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>
-                                  <Chip label="CREATED" size="small" color="success" />
-                                </TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.created_at)}</TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
-                              </TableRow>
-                            )}
-                            {selectedTitle.cancellation_hash && (
-                              <TableRow sx={{ '&:hover': { backgroundColor: '#fff0f0' } }}>
-                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
-                                  {selectedTitle.cancellation_hash}
+                                  <Chip 
+                                    label={tx.transaction_type === 'CREATED' ? 'Create' : 'Transfer'} 
+                                    size="small" 
+                                    color="success"
+                                  />
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>
-                                  <Chip label="CANCELLED" size="small" color="error" />
-                                </TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.cancelled_at)}</TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
-                              </TableRow>
-                            )}
-                            {selectedTitle.reactivation_hash && (
-                              <TableRow sx={{ '&:hover': { backgroundColor: '#f0fff0' } }}>
-                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
-                                  {selectedTitle.reactivation_hash}
+                                  {formatDate(parseInt(tx.timestamp) || tx.recorded_at || tx.created_at)}
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>
-                                  <Chip label="REACTIVATED" size="small" color="warning" />
+                                  {tx.transaction_type === 'CREATED' ? (
+                                    <Typography variant="caption">
+                                      {tx.owner_name || 'N/A'}
+                                    </Typography>
+                                  ) : (
+                                    <Typography variant="caption">
+                                      {tx.owner_name === tx.from_owner ? tx.from_owner : tx.to_owner}
+                                    </Typography>
+                                  )}
                                 </TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{formatDate(selectedTitle.reactivated_at)}</TableCell>
-                                <TableCell sx={{ border: '1px solid #ccc' }}>{selectedTitle.owner_name}</TableCell>
                               </TableRow>
-                            )}
+                            ))}
                           </TableBody>
                         </Table>
                       </TableContainer>
-                    </Box>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'gray', fontStyle: 'italic' }}>
+                        No blockchain transactions found
+                      </Typography>
+                    )}
                   </Box>
-                )}
+                </Box>
               </Box>
             )}
           </DialogContent>

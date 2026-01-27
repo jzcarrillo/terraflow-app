@@ -83,6 +83,7 @@ export const landTitlesAPI = {
     })
   },
   validate: (titleNumber) => api.get(`/land-titles/validate/${titleNumber}`),
+  getBlockchainHistory: (titleNumber) => api.get(`/blockchain/history/${titleNumber}`),
 }
 
 // Payments API

@@ -32,7 +32,8 @@ class GrpcServer {
         RecordReactivation: this.recordReactivation.bind(this),
         RecordTransfer: this.recordTransfer.bind(this),
         GetLandTitleHistory: this.getLandTitleHistory.bind(this),
-        QueryLandTitle: this.queryLandTitle.bind(this)
+        QueryLandTitle: this.queryLandTitle.bind(this),
+        GetTransactionHistory: this.getTransactionHistory.bind(this)
       });
 
       console.log('✅ gRPC server initialized');
@@ -157,7 +158,8 @@ class GrpcServer {
         transfer_fee: request.transfer_fee,
         transfer_date: request.transfer_date,
         transaction_type: request.transaction_type,
-        transfer_id: request.transfer_id
+        transfer_id: request.transfer_id,
+        owner_name: request.owner_name
       });
 
       console.log(`📤 gRPC RecordTransfer response:`, result);
@@ -184,6 +186,25 @@ class GrpcServer {
 
     } catch (error) {
       console.error('❌ gRPC QueryLandTitle error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async getTransactionHistory(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC GetTransactionHistory request:`, request);
+
+      const result = await this.chaincodeService.getTransactionHistory(request.title_number);
+
+      console.log(`📤 gRPC GetTransactionHistory response:`, result);
+      callback(null, { transactions: result || [] });
+
+    } catch (error) {
+      console.error('❌ gRPC GetTransactionHistory error:', error.message);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message
