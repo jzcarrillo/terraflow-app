@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1769575723090" clover="3.2.0">
+  <project timestamp="1769575723090" name="All files">
+    <metrics statements="15" coveredstatements="15" conditionals="2" coveredconditionals="2" methods="3" coveredmethods="3" elements="20" coveredelements="20" complexity="0" loc="15" ncloc="15" packages="1" files="1" classes="1"/>
+    <file name="users.js" path="/Users/johnchristophermcarrillo/Projects/terraflow-app/backend-users/services/users.js">
+      <metrics statements="15" coveredstatements="15" conditionals="2" coveredconditionals="2" methods="3" coveredmethods="3"/>
+      <line num="1" count="1" type="stmt"/>
+      <line num="2" count="1" type="stmt"/>
+      <line num="3" count="1" type="stmt"/>
+      <line num="8" count="6" type="stmt"/>
+      <line num="9" count="6" type="stmt"/>
+      <line num="14" count="6" type="stmt"/>
+      <line num="16" count="6" type="stmt"/>
+      <line num="18" count="6" type="stmt"/>
+      <line num="27" count="5" type="stmt"/>
+      <line num="31" count="3" type="stmt"/>
+      <line num="38" count="3" type="stmt"/>
+      <line num="42" count="2" type="stmt"/>
+      <line num="48" count="2" type="stmt"/>
+      <line num="54" count="1" type="stmt"/>
+      <line num="55" count="1" type="stmt"/>
+    </file>
+  </project>
+</coverage>

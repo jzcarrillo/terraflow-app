@@ -1,7 +1,3 @@
-const userService = require('../../services/users');
-const { pool } = require('../../config/db');
-const { checkEmailExists, checkUsernameExists, validateWithSchema } = require('../../utils/validation');
-
 jest.mock('../../config/db', () => ({
   pool: {
     query: jest.fn()
@@ -12,6 +8,10 @@ jest.mock('../../utils/validation');
 jest.mock('../../schemas/users', () => ({
   userSchema: {}
 }));
+
+const userService = require('../../services/users');
+const { pool } = require('../../config/db');
+const { checkEmailExists, checkUsernameExists, validateWithSchema } = require('../../utils/validation');
 
 describe('User Service Tests', () => {
   beforeEach(() => {
