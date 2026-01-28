@@ -5,13 +5,17 @@
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "test:landregistry": "cd backend-landregistry && npm test",
-    "test:users": "cd backend-users && npm test",
-    "test:documents": "cd backend-documents && npm test",
-    "test:blockchain": "cd backend-blockchain && npm test"
+    "cucumber": "cucumber-js",
+    "bdd:landtitle": "cucumber-js features/land-title-registration.feature",
+    "bdd:auth": "cucumber-js features/user-authentication.feature",
+    "bdd:all": "cucumber-js",
+    "bdd:report": "open bdd-reports/bdd-report.html",
+    "automate": "node playwright/automate-registration.js"
   },
   "private": true,
   "devDependencies": {
+    "@cucumber/cucumber": "^12.6.0",
+    "@playwright/test": "^1.58.0",
     "jest": "^30.2.0"
   }
 }
