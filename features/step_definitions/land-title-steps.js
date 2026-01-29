@@ -162,10 +162,6 @@ Then('documents should be uploaded to document service', function() {
   assert.ok(documents.length > 0);
 });
 
-Then('the payment status should be {string}', function(status) {
-  assert.strictEqual(payment.status, status);
-});
-
 Then('the land title status should change to {string}', function(status) {
   assert.strictEqual(landTitle.status, status);
 });

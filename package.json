@@ -8,9 +8,11 @@
     "cucumber": "cucumber-js",
     "bdd:landtitle": "cucumber-js features/land-title-registration.feature",
     "bdd:auth": "cucumber-js features/user-authentication.feature",
+    "bdd:payment": "cucumber-js features/payment-processing.feature",
     "bdd:all": "cucumber-js",
     "bdd:report": "open bdd-reports/bdd-report.html",
-    "automate": "node playwright/automate-registration.js"
+    "automate": "node playwright/automate-registration.js",
+    "automate:transfer": "node playwright/automate-transfer.js"
   },
   "private": true,
   "devDependencies": {
