@@ -31,6 +31,9 @@ logs/
 .DS_Store
 Thumbs.db
 
+# BDD Reports
+bdd-reports/
+
 # Scripts (test files with tokens)
 scripts/clear-redis-cache.ps1
 scripts/landtitle-create.ps1
