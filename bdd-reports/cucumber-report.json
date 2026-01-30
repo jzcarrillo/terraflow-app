@@ -1,0 +1,5218 @@
+[
+  {
+    "description": "  As a land owner\n  I want to register my land title\n  So that I can have a verified and blockchain-recorded property ownership",
+    "elements": [
+      {
+        "description": "",
+        "id": "land-title-registration;successful-land-title-registration-with-payment",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Successful land title registration with payment",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 319542
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 26250
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 40458
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 27749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 89083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25542
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-001"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Juan Dela Cruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact_no",
+                      "09123456789"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email_address",
+                      "juan@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Manila, Philippines"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "property_location",
+                      "Quezon City"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "lot_number",
+                      "123"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "area",
+                      "500"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "I have valid land title information",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 92666
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "document_type",
+                      "file_name"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "DEED",
+                      "deed.pdf"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "TAX_DECLARATION",
+                      "tax_dec.pdf"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 21,
+            "name": "I have uploaded required documents",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I submit the land title registration",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "the land title should be created with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:168"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 60999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "a transaction ID should be generated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:172"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "documents should be uploaded to document service",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:176"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 29,
+            "name": "I complete the payment",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:116"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 30,
+            "name": "the payment status should be \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:168"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 31,
+            "name": "the land title status should change to \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:180"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 32,
+            "name": "the land title should be recorded on blockchain",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:184"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 57709
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 33,
+            "name": "a blockchain hash should be stored",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:188"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20250
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;land-title-registration-without-documents",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "Land title registration without documents",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 11374
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 10457
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 12625
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 11540
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12540
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-002"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "property_location",
+                      "Makati City"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "I have valid land title information",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "But ",
+            "line": 41,
+            "name": "I have not uploaded any documents",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:49"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 42,
+            "name": "I submit the land title registration",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 43,
+            "name": "the land title registration should fail",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:288"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "I should see error message \"No attachments provided\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:192"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25625
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;duplicate-land-title-registration",
+        "keyword": "Scenario",
+        "line": 46,
+        "name": "Duplicate land title registration",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 12416
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8125
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 14207
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 11334
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 47,
+            "name": "a land title already exists with title number \"TCT-2024-003\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:53"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 45834
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 48,
+            "name": "I try to register a land title with the same title number \"TCT-2024-003\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:110"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36209
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 49,
+            "name": "the land title registration should fail",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:288"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "I should see error message \"Land title already exists\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:192"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28958
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;payment-cancellation-and-rollback",
+        "keyword": "Scenario",
+        "line": 52,
+        "name": "Payment cancellation and rollback",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 13041
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9125
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9500
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 10791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13707
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12833
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-004"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 53,
+            "name": "I have a land title with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 57333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "I have created a payment",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:62"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 56,
+            "name": "I cancel the payment",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:280"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 57,
+            "name": "the payment status should be \"CANCELLED\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:168"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19915
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 58,
+            "name": "the land title should remain \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:197"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 59,
+            "name": "no blockchain recording should occur",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:202"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17416
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;payment-confirmation-triggers-blockchain-recording",
+        "keyword": "Scenario",
+        "line": 61,
+        "name": "Payment confirmation triggers blockchain recording",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 17334
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9874
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9667
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12499
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-005"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 62,
+            "name": "I have a land title with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 64,
+            "name": "I have created a payment",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:62"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 65,
+            "name": "the payment is confirmed as \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:136"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 66,
+            "name": "the land title status should change to \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:180"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "the blockchain service should be called",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:206"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 68,
+            "name": "the blockchain hash should be stored in database",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:210"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 69,
+            "name": "a success event should be sent to payment service",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:214"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16791
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;blockchain-failure-triggers-rollback",
+        "keyword": "Scenario",
+        "line": 71,
+        "name": "Blockchain failure triggers rollback",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8709
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9166
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9832
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 9666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12583
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-006"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 72,
+            "name": "I have a land title with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 74,
+            "name": "I have created a payment",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:62"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 75,
+            "name": "the blockchain service is down",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 76,
+            "name": "the payment is confirmed as \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:136"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 77,
+            "name": "the land title status should change to \"ACTIVE\" temporarily",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:218"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "But ",
+            "line": 78,
+            "name": "the blockchain recording should fail",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:223"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 79,
+            "name": "the land title status should rollback to \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:227"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 80,
+            "name": "a rollback event should be sent to payment service",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:231"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 81,
+            "name": "the payment should be marked as \"FAILED\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:235"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17499
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;retrieve-land-title-by-title-number",
+        "keyword": "Scenario",
+        "line": 83,
+        "name": "Retrieve land title by title number",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8499
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 754457
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 18124
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 7207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 84,
+            "name": "a land title exists with title number \"TCT-2024-007\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 66166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 85,
+            "name": "I search for land title \"TCT-2024-007\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:151"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 86,
+            "name": "I should see the land title details",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:240"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 87,
+            "name": "the status should be displayed",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:244"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17209
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 88,
+            "name": "the blockchain hash should be displayed if available",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:248"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12292
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;list-all-land-titles",
+        "keyword": "Scenario",
+        "line": 90,
+        "name": "List all land titles",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 14417
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6750
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8582
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6915
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8915
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "title_number",
+                      "owner_name",
+                      "status"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "TCT-2024-008",
+                      "Pedro Garcia",
+                      "ACTIVE"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "TCT-2024-009",
+                      "Ana Lopez",
+                      "PENDING"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "TCT-2024-010",
+                      "Carlos Reyes",
+                      "ACTIVE"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 91,
+            "name": "multiple land titles exist in the system",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:86"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 96,
+            "name": "I request all land titles",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:156"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 97,
+            "name": "I should see a list of 3 land titles",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:253"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 98,
+            "name": "the list should be ordered by creation date",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:257"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12207
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-title-registration;payment-reactivation-after-cancellation",
+        "keyword": "Scenario",
+        "line": 100,
+        "name": "Payment reactivation after cancellation",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 12625
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 11792
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 10124
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 46500
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "title_number",
+                      "TCT-2024-011"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 101,
+            "name": "I have a land title with status \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 103,
+            "name": "the land title has a blockchain hash",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:91"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 104,
+            "name": "the payment is cancelled",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:124"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 105,
+            "name": "the land title status should change to \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:180"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 106,
+            "name": "a cancellation hash should be recorded on blockchain",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:261"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30459
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 107,
+            "name": "the payment is reactivated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:161"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15540
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 108,
+            "name": "the land title status should change back to \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:276"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 109,
+            "name": "a reactivation hash should be recorded on blockchain",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:266"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 110,
+            "name": "all three hashes should be stored (original, cancellation, reactivation)",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:270"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13166
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "land-title-registration",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Land Title Registration",
+    "tags": [],
+    "uri": "features/land-title-registration.feature"
+  },
+  {
+    "description": "  As a land registry officer\n  I want to manage land title transfers\n  So that ownership can be transferred between parties",
+    "elements": [
+      {
+        "description": "",
+        "id": "land-transfer-management;create-land-transfer-with-active-land-title",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Create land transfer with ACTIVE land title",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 12624
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 49958
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 43666
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 61707
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 60916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 68624
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "title_number",
+                      "LT-2024-001"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Jose Rizal"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09123456789"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "jose@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Manila"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "a land title exists with status \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 78000
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "buyer_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09187654321"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "maria@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Mandaluyong"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 18,
+            "name": "I create a land transfer with buyer details",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:29"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 42625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 24,
+            "name": "the land transfer should be created with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:90"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 25,
+            "name": "the land title should remain \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:197"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13417
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;cannot-create-land-transfer-with-pending-land-title",
+        "keyword": "Scenario",
+        "line": 27,
+        "name": "Cannot create land transfer with PENDING land title",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5957
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4791
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5707
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18584
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12332
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "title_number",
+                      "LT-2024-002"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Jose Rizal"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 28,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 32,
+            "name": "I try to create a land transfer",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "I should see error message \"Cannot transfer land title with PENDING status\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:192"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 34,
+            "name": "the land transfer should not be created",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:94"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12749
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;cancel-land-transfer-with-pending-status",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "Cancel land transfer with PENDING status",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6000
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4582
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5124
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 7249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 37,
+            "name": "a land title exists with status \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 171041
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "buyer_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09187654321"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 38,
+            "name": "a land transfer exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 49207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 42,
+            "name": "I cancel the land transfer",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:49"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 43,
+            "name": "the land transfer status should change to \"CANCELLED\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:98"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "the land title should remain \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:197"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10791
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;cannot-cancel-land-transfer-with-completed-status",
+        "keyword": "Scenario",
+        "line": 46,
+        "name": "Cannot cancel land transfer with COMPLETED status",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5334
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5374
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5832
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 47,
+            "name": "a land transfer exists with status \"COMPLETED\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 47416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 48,
+            "name": "I try to cancel the land transfer",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 49,
+            "name": "I should see error message \"Cannot cancel completed land transfer\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:192"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12874
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;update-land-transfer-with-pending-status",
+        "keyword": "Scenario",
+        "line": 51,
+        "name": "Update land transfer with PENDING status",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8999
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 7625
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 13584
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8499
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "buyer_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09187654321"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 52,
+            "name": "a land transfer exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15334
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "buyer_name",
+                      "Juan Dela Cruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09198765432"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "juan@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Quezon City"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 56,
+            "name": "I update the land transfer with new buyer details",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22915
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 62,
+            "name": "the land transfer should be updated successfully",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:102"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 63,
+            "name": "the buyer details should reflect the new values",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:106"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12167
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;cannot-update-land-transfer-with-completed-status",
+        "keyword": "Scenario",
+        "line": 65,
+        "name": "Cannot update land transfer with COMPLETED status",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 7167
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6207
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6333
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 6416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8584
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 66,
+            "name": "a land transfer exists with status \"COMPLETED\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 39166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 67,
+            "name": "I try to update the land transfer",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:72"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 68,
+            "name": "I should see error message \"Cannot update completed land transfer\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:192"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26208
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "land-transfer-management;complete-land-transfer-when-payment-is-paid",
+        "keyword": "Scenario",
+        "line": 70,
+        "name": "Complete land transfer when payment is PAID",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5125
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4791
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4832
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6333
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "title_number",
+                      "LT-2024-003"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Jose Rizal"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09123456789"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "jose@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Manila"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 71,
+            "name": "a land title exists with status \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13000
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "buyer_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09187654321"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "maria@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Mandaluyong"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 78,
+            "name": "a land transfer exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 84,
+            "name": "the transfer payment status changes to \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:78"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 85,
+            "name": "the land transfer status should change to \"COMPLETED\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:98"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 86,
+            "name": "the land title status should remain \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:123"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17875
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "owner_name",
+                      "Maria Santos"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact",
+                      "09187654321"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "maria@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "address",
+                      "Mandaluyong"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 87,
+            "name": "the land title owner details should be updated",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:110"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19875
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "hash_type"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Seller Hash"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Buyer Hash"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 93,
+            "name": "the land title should have blockchain details",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:118"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 97,
+            "name": "both seller and buyer hashes should be recorded on blockchain",
+            "match": {
+              "location": "features/step_definitions/land-transfer-steps.js:127"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11958
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "land-transfer-management",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Land Transfer Management",
+    "tags": [],
+    "uri": "features/land-transfer.feature"
+  },
+  {
+    "description": "  As a user\n  I want to create and manage payments\n  So that I can complete land title registration transactions",
+    "elements": [
+      {
+        "description": "",
+        "id": "payment-processing;create-payment-with-validation-error",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "Create payment with validation error",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4374
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 4500
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3832
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3957
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 25207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "I am on the payments page",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:33"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I click create new payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9959
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 14,
+            "name": "I submit without filling required fields",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:70"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "I should see validation error messages",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:155"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 16,
+            "name": "the payment should not be created",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:159"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10792
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "payment-processing;successfully-create-payment",
+        "keyword": "Scenario",
+        "line": 18,
+        "name": "Successfully create payment",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8667
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5124
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3167
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 19,
+            "name": "I am on the payments page",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:33"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 20,
+            "name": "I click create new payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4749
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "transaction_id",
+                      "TXN-2024-001"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "amount",
+                      "5000"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "payer_name",
+                      "Juan Dela Cruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "payment_method",
+                      "Credit Card"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "And ",
+            "line": 21,
+            "name": "I fill in payment details",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:80"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 27,
+            "name": "I submit the payment form",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:88"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 28,
+            "name": "the payment should be created successfully",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:163"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "the payment status should be \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:168"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11333
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "payment-processing;update-payment-details",
+        "keyword": "Scenario",
+        "line": 31,
+        "name": "Update payment details",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3374
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2499
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2500
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2665
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 32,
+            "name": "a payment exists with transaction ID \"TXN-2024-002\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:37"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 33,
+            "name": "the payment status is \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 34,
+            "name": "I open the actions menu for the payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 35,
+            "name": "I click update payment details",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 36,
+            "name": "I change the amount to \"6000\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:100"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 37,
+            "name": "I change the payment method to \"Bank Transfer\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:104"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "I submit the update",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:108"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 39,
+            "name": "the payment details should be updated",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:178"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 40,
+            "name": "the payment status should remain \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:182"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20457
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "payment-processing;confirm-payment-and-activate-land-title",
+        "keyword": "Scenario",
+        "line": 42,
+        "name": "Confirm payment and activate land title",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3249
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2291
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2375
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 66083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 43,
+            "name": "a payment exists with transaction ID \"TXN-2024-003\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:37"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 20250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "the payment status is \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 45,
+            "name": "the associated land title status is \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:59"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 46,
+            "name": "I open the actions menu for the payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 47,
+            "name": "I click confirm payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:115"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 48,
+            "name": "the payment status should change to \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:174"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 49,
+            "name": "the associated land title status should change to \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:186"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "a blockchain hash should be recorded",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:190"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15790
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "payment-processing;cancel-paid-payment-and-revert-land-title",
+        "keyword": "Scenario",
+        "line": 52,
+        "name": "Cancel paid payment and revert land title",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2916
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2417
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2416
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 21667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 53,
+            "name": "a payment exists with transaction ID \"TXN-2024-004\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:37"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 54,
+            "name": "the payment status is \"PAID\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "the associated land title status is \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:59"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 56,
+            "name": "I open the actions menu for the payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 57,
+            "name": "I click cancel payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:124"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 58,
+            "name": "the payment status should change to \"CANCELLED\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:174"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 59,
+            "name": "the associated land title status should change to \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:186"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6666
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "payment-processing;cancel-pending-payment",
+        "keyword": "Scenario",
+        "line": 61,
+        "name": "Cancel pending payment",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3082
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2291
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2250
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the Terraflow system is running",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:27"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the user is authenticated",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "a land title exists with status \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/land-title-steps.js:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 94124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 62,
+            "name": "a payment exists with transaction ID \"TXN-2024-005\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:37"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 63,
+            "name": "the payment status is \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 64,
+            "name": "I open the actions menu for the payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 65,
+            "name": "I click cancel payment",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:124"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 66,
+            "name": "the payment status should change to \"CANCELLED\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:174"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7790
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "the associated land title status should remain \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/payment-steps.js:202"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13374
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "payment-processing",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Payment Processing",
+    "tags": [],
+    "uri": "features/payment-processing.feature"
+  },
+  {
+    "description": "  As a new user\n  I want to register and login to the system\n  So that I can access land title registration features",
+    "elements": [
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;successful-user-registration",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Successful user registration",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3375
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2250
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2290
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "I am on the registration page",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:119"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12249
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "field",
+                      "value"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "username",
+                      "juan_delacruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "email",
+                      "juan@example.com"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "password",
+                      "SecurePass123!"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "first_name",
+                      "Juan"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "last_name",
+                      "Dela Cruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "contact_number",
+                      "09123456789"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "When ",
+            "line": 12,
+            "name": "I register with the following details:",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:191"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 86792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the registration should be successful",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:276"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "I should receive a user ID",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:281"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "the user status should be \"PENDING\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:285"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 18916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "an activation email should be sent",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:291"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9375
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;registration-with-duplicate-email",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "Registration with duplicate email",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2833
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2416
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2457
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 26,
+            "name": "a user exists with email \"existing@example.com\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:123"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 27,
+            "name": "I register with email \"existing@example.com\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:201"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 61332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 28,
+            "name": "the registration should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:338"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "I should see error \"Email already registered\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13666
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;registration-with-invalid-email-format",
+        "keyword": "Scenario",
+        "line": 31,
+        "name": "Registration with invalid email format",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2457
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2416
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2291
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 32,
+            "name": "I register with email \"invalid-email\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:201"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22834
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "the registration should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:338"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 34,
+            "name": "I should see error \"Invalid email format\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7999
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;registration-with-weak-password",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "Registration with weak password",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2541
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2416
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 1915
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4625
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 37,
+            "name": "I register with password \"123\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:216"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 38,
+            "name": "the registration should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:338"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 39,
+            "name": "I should see error \"Password must be at least 8 characters\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9124
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;user-account-activation",
+        "keyword": "Scenario",
+        "line": 41,
+        "name": "User account activation",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2124
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2041
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2000
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4457
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 42,
+            "name": "I have registered with email \"juan@example.com\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:170"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 43,
+            "name": "I received an activation token",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:183"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 44,
+            "name": "I activate my account with the token",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:247"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 46875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 45,
+            "name": "my account should be activated",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:299"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 46,
+            "name": "the user status should be \"ACTIVE\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:285"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 47,
+            "name": "I should be able to login",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:303"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 53249
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;successful-login-with-valid-credentials",
+        "keyword": "Scenario",
+        "line": 49,
+        "name": "Successful login with valid credentials",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2791
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2375
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4625
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "username",
+                      "juan_delacruz"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "password",
+                      "SecurePass123!"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Given ",
+            "line": 50,
+            "name": "an active user exists with:",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:134"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 53,
+            "name": "I login with username \"juan_delacruz\" and password \"SecurePass123!\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:261"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 54,
+            "name": "the login should be successful",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:308"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 10999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "I should receive an authentication token",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:317"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "I should see my user profile",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:321"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11958
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;login-with-incorrect-password",
+        "keyword": "Scenario",
+        "line": 58,
+        "name": "Login with incorrect password",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2666
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 3208
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2250
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4874
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 59,
+            "name": "an active user exists with username \"juan_delacruz\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:147"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 60,
+            "name": "I login with username \"juan_delacruz\" and password \"WrongPassword\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:261"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 61,
+            "name": "the login should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:313"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 62,
+            "name": "I should see error \"Invalid credentials\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7791
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;login-with-non-existent-user",
+        "keyword": "Scenario",
+        "line": 64,
+        "name": "Login with non-existent user",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2582
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2207
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2333
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 65,
+            "name": "I login with username \"nonexistent\" and password \"AnyPassword\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:261"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 66,
+            "name": "the login should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:313"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "I should see error \"User not found\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7375
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;login-with-inactive-account",
+        "keyword": "Scenario",
+        "line": 69,
+        "name": "Login with inactive account",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2499
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2207
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2375
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5125
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4875
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 70,
+            "name": "a pending user exists with username \"inactive_user\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:159"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 71,
+            "name": "I login with username \"inactive_user\" and password \"ValidPass123!\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:261"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 72,
+            "name": "the login should fail",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:313"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 73,
+            "name": "I should see error \"Account not activated\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:295"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 7792
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "user-registration-and-authentication;complete-user-journey---register,-activate,-and-login",
+        "keyword": "Scenario",
+        "line": 75,
+        "name": "Complete user journey - Register, Activate, and Login",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2582
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2332
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 2250
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 1791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "the user service is running",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "the database is clean",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 5500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 76,
+            "name": "I am a new user",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:187"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 9709
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 77,
+            "name": "I register with username \"maria_santos\" and email \"maria@example.com\"",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:231"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 78,
+            "name": "I activate my account",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:256"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17665
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 79,
+            "name": "I login with my credentials",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:269"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 80,
+            "name": "I should be authenticated",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:327"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 11583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 81,
+            "name": "I should be able to access land title registration",
+            "match": {
+              "location": "features/step_definitions/user-authentication-steps.js:332"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 12083
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "user-registration-and-authentication",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "User Registration and Authentication",
+    "tags": [],
+    "uri": "features/user-authentication.feature"
+  }
+]

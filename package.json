@@ -9,15 +9,18 @@
     "bdd:landtitle": "cucumber-js features/land-title-registration.feature",
     "bdd:auth": "cucumber-js features/user-authentication.feature",
     "bdd:payment": "cucumber-js features/payment-processing.feature",
+    "bdd:transfer": "cucumber-js features/land-transfer.feature",
     "bdd:all": "cucumber-js",
-    "bdd:report": "open bdd-reports/bdd-report.html",
-    "automate": "node playwright/automate-registration.js",
-    "automate:transfer": "node playwright/automate-transfer.js"
+    "bdd:report": "node generate-report.js && open bdd-reports/html/index.html",
+    "bdd:full": "npm run bdd:all && npm run bdd:report",
+    "automate": "node playwright/automate-registration.js && npm run bdd:report",
+    "automate:transfer": "node playwright/automate-transfer.js && npm run bdd:report"
   },
   "private": true,
   "devDependencies": {
     "@cucumber/cucumber": "^12.6.0",
     "@playwright/test": "^1.58.0",
-    "jest": "^30.2.0"
+    "jest": "^30.2.0",
+    "multiple-cucumber-html-reporter": "^3.9.3"
   }
 }

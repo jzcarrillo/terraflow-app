@@ -3,8 +3,7 @@ module.exports = {
     require: ['features/step_definitions/**/*.js'],
     format: [
       'progress',
-      'html:bdd-reports/bdd-report.html',
-      'json:bdd-reports/bdd-report.json'
+      'json:bdd-reports/cucumber-report.json'
     ],
     publishQuiet: true
   }

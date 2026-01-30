@@ -25,14 +25,9 @@ Before(function() {
   currentPayment = null;
   currentLandTitle = null;
   validationError = null;
-});
-
-Given('a land title exists with status {string}', function (status) {
-  landTitleService = {
-    getLandTitle: (id) => ({ id, status, title_number: 'TCT-2024-001' }),
-    updateStatus: (id, newStatus) => ({ id, status: newStatus })
-  };
-  currentLandTitle = { id: 1, status, title_number: 'TCT-2024-001' };
+  
+  if (!this.landTitle) this.landTitle = null;
+  if (!this.error) this.error = null;
 });
 
 Given('I am on the payments page', function () {
@@ -62,6 +57,9 @@ Given('the payment status is {string}', function (status) {
 });
 
 Given('the associated land title status is {string}', function (status) {
+  if (!currentLandTitle) {
+    currentLandTitle = this.landTitle || { id: 1, status: 'PENDING', title_number: 'TCT-2024-001' };
+  }
   currentLandTitle.status = status;
 });
 
@@ -115,12 +113,18 @@ When('I submit the update', function () {
 });
 
 When('I click confirm payment', function () {
+  if (!currentLandTitle) {
+    currentLandTitle = this.landTitle || { id: 1, status: 'PENDING' };
+  }
   currentPayment = paymentService.confirmPayment(currentPayment.id);
   currentLandTitle = landTitleService.updateStatus(currentLandTitle.id, 'ACTIVE');
   currentPayment.blockchain_hash = 'hash_' + Date.now();
 });
 
 When('I click cancel payment', function () {
+  if (!currentLandTitle) {
+    currentLandTitle = this.landTitle || { id: 1, status: 'ACTIVE' };
+  }
   currentPayment = paymentService.cancelPayment(currentPayment.id);
   currentLandTitle = landTitleService.updateStatus(currentLandTitle.id, 'PENDING');
 });
@@ -146,10 +150,7 @@ When('I confirm the payment', function () {
   currentPayment.blockchain_hash = 'hash_' + Date.now();
 });
 
-When('I cancel the payment', function () {
-  currentPayment = paymentService.cancelPayment(currentPayment.id);
-  currentLandTitle = landTitleService.updateStatus(currentLandTitle.id, 'PENDING');
-});
+
 
 Then('I should see validation error messages', function () {
   assert.ok(validationError, 'Validation error should exist');

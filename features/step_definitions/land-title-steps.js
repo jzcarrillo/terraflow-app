@@ -18,6 +18,9 @@ Before(function() {
   error = null;
   blockchainCalled = false;
   blockchainHash = null;
+  
+  if (!this.landTitle) this.landTitle = null;
+  if (!this.error) this.error = null;
 });
 
 // Background
@@ -66,6 +69,18 @@ Given('the blockchain service is down', function() {
 
 Given('a land title exists with title number {string}', function(titleNumber) {
   landTitle = { title_number: titleNumber, status: 'ACTIVE', owner_name: 'Test Owner' };
+});
+
+Given(/^a land title exists with status "([^"]*)"$/, function(status, dataTable) {
+  if (!dataTable || typeof dataTable === 'function') {
+    landTitle = { id: 1, status, title_number: 'TCT-2024-001' };
+    this.landTitle = landTitle;
+    if (typeof dataTable === 'function') dataTable();
+    return;
+  }
+  const data = dataTable.rowsHash();
+  landTitle = { id: 1, status, title_number: data.title_number || 'TCT-2024-001', ...data };
+  this.landTitle = landTitle;
 });
 
 Given('multiple land titles exist in the system', function(dataTable) {
@@ -175,11 +190,13 @@ Then('a blockchain hash should be stored', function() {
 });
 
 Then('I should see error message {string}', function(message) {
-  assert.strictEqual(error, message);
+  const err = this.error || error;
+  assert.strictEqual(err, message);
 });
 
 Then('the land title should remain {string}', function(status) {
-  assert.strictEqual(landTitle.status, status);
+  const title = this.landTitle || landTitle;
+  assert.strictEqual(title.status, status);
 });
 
 Then('no blockchain recording should occur', function() {
