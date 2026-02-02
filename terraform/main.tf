@@ -16,9 +16,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
+  # Uses the kubernetes provider configuration automatically
 }
 
 resource "helm_release" "terraflow_app" {
