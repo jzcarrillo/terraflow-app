@@ -22,13 +22,13 @@ spec:
           cat > /tmp/crypto-config.yaml << EOF
           OrdererOrgs:
             - Name: Orderer
-              Domain: terraflow.com
+              Domain: example.com
               Specs:
                 - Hostname: orderer
           
           PeerOrgs:
-            - Name: LandRegistry
-              Domain: landregistry.terraflow.com
+            - Name: Org1
+              Domain: org1.example.com
               EnableNodeOUs: false
               Template:
                 Count: 1
@@ -42,30 +42,8 @@ spec:
           cryptogen generate --config=/tmp/crypto-config.yaml --output=/crypto-config
           
           # Verify peer MSP structure was created
-          if [ ! -d "/crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts" ]; then
-            echo "Creating missing peer MSP directories..."
-            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts
-            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/cacerts
-            mkdir -p /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/tlscacerts
-            
-            # Copy CA certificates
-            cp /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/ca.landregistry.terraflow.com-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/cacerts/
-            cp /crypto-config/peerOrganizations/landregistry.terraflow.com/tlsca/tlsca.landregistry.terraflow.com-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/tlscacerts/
-            
-            # Generate proper peer certificate
-            openssl ecparam -name prime256v1 -genkey -noout -out /tmp/peer-key.pem
-            openssl req -new -key /tmp/peer-key.pem -out /tmp/peer.csr -subj "/C=US/ST=CA/L=San Francisco/O=landregistry.terraflow.com/CN=peer0.landregistry.terraflow.com"
-            openssl x509 -req -in /tmp/peer.csr -CA /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/ca.landregistry.terraflow.com-cert.pem -CAkey /crypto-config/peerOrganizations/landregistry.terraflow.com/ca/*_sk -CAcreateserial -out /tmp/peer-cert.pem -days 365 -extensions v3_req
-            
-            # Copy peer certificate and key
-            cp /tmp/peer-cert.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts/
-            cp /tmp/peer-key.pem /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/keystore/
-            
-            # Create MSP config for peer
-            cat > /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/config.yaml << EOF2
-          NodeOUs:
-            Enable: false
-          EOF2
+          if [ ! -d "/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts" ]; then
+            echo "Peer MSP structure already created by cryptogen"
           fi
           
           # Generate genesis block
@@ -75,7 +53,7 @@ spec:
             - &OrdererOrg
                 Name: OrdererOrg
                 ID: OrdererMSP
-                MSPDir: /crypto-config/ordererOrganizations/terraflow.com/msp
+                MSPDir: /crypto-config/ordererOrganizations/example.com/msp
                 Policies:
                     Readers:
                         Type: Signature
@@ -86,23 +64,23 @@ spec:
                     Admins:
                         Type: Signature
                         Rule: "OR('OrdererMSP.admin')"
-            - &LandRegistryOrg
-                Name: LandRegistryOrg
-                ID: LandRegistryMSP
-                MSPDir: /crypto-config/peerOrganizations/landregistry.terraflow.com/msp
+            - &Org1
+                Name: Org1MSP
+                ID: Org1MSP
+                MSPDir: /crypto-config/peerOrganizations/org1.example.com/msp
                 Policies:
                     Readers:
                         Type: Signature
-                        Rule: "OR('LandRegistryMSP.admin', 'LandRegistryMSP.peer', 'LandRegistryMSP.client')"
+                        Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"
                     Writers:
                         Type: Signature
-                        Rule: "OR('LandRegistryMSP.admin', 'LandRegistryMSP.client')"
+                        Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"
                     Admins:
                         Type: Signature
-                        Rule: "OR('LandRegistryMSP.admin')"
+                        Rule: "OR('Org1MSP.admin')"
                     Endorsement:
                         Type: Signature
-                        Rule: "OR('LandRegistryMSP.peer')"
+                        Rule: "OR('Org1MSP.peer')"
           
           Capabilities:
               Channel: &ChannelCapabilities
@@ -115,7 +93,7 @@ spec:
           Orderer: &OrdererDefaults
             OrdererType: solo
             Addresses:
-              - orderer.terraflow.com:7050
+              - orderer.example.com:7050
             BatchTimeout: 2s
             BatchSize:
               MaxMessageCount: 10
@@ -181,9 +159,9 @@ spec:
                 Capabilities:
                   <<: *OrdererCapabilities
               Consortiums:
-                TerraflowConsortium:
+                ExampleConsortium:
                   Organizations:
-                    - *LandRegistryOrg
+                    - *Org1
           EOF
           
           export FABRIC_CFG_PATH=/tmp
@@ -191,8 +169,8 @@ spec:
           configtxgen -profile TerraflowOrdererGenesis -channelID system-channel -outputBlock /channel-artifacts/genesis.block
           
           echo "✅ Crypto materials and genesis block generated successfully"
-          ls -la /crypto-config/ordererOrganizations/terraflow.com/orderers/orderer.terraflow.com/msp/signcerts/
-          ls -la /crypto-config/peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp/signcerts/
+          ls -la /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/signcerts/
+          ls -la /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/
           ls -la /channel-artifacts/
         volumeMounts:
         - name: crypto-storage

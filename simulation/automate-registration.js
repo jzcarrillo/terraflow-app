@@ -32,10 +32,10 @@ async function automateLandRegistration() {
     
     // Step 2: First attempt - incomplete details
     console.log('❌ Step 2: First attempt with incomplete details...');
-    await page.fill('[name="username"]', username);
+    await page.fill('[name="email"]', email);
     await page.waitForTimeout(500);
     
-    await page.fill('[name="email"]', email);
+    await page.fill('[name="username"]', username);
     await page.waitForTimeout(500);
     
     // Try to submit with incomplete fields

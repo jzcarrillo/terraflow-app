@@ -49,6 +49,8 @@ spec:
           value: "{{ .Values.fabric.peer.env.CORE_PEER_ID }}:{{ .Values.fabric.peer.service.port }}"
         - name: CORE_PEER_LOCALMSPID
           value: {{ .Values.fabric.peer.env.CORE_PEER_LOCALMSPID | quote }}
+        - name: CORE_PEER_MSPCONFIGPATH
+          value: "/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp"
         - name: CORE_OPERATIONS_LISTENADDRESS
           value: "0.0.0.0:{{ .Values.fabric.peer.service.operationsPort }}"
         - name: CORE_LEDGER_STATE_STATEDATABASE
@@ -70,8 +72,7 @@ spec:
         - name: docker-sock
           mountPath: /host/var/run/docker.sock
         - name: crypto-storage
-          mountPath: /etc/hyperledger/fabric/msp
-          subPath: peerOrganizations/landregistry.terraflow.com/peers/peer0.landregistry.terraflow.com/msp
+          mountPath: /crypto-config
         - name: peer-storage
           mountPath: /var/hyperledger/production
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer

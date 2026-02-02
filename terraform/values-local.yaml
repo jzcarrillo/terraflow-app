@@ -1,0 +1,75 @@
+namespace: terraflow-app
+
+api-gateway:
+  replicaCount: 1
+  image:
+    repository: terraflow/api-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8081
+
+backend-landregistry:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-landregistry
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+
+backendDocuments:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-documents
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3002
+
+backend-users:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-users
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3001
+
+backend-payments:
+  replicaCount: 1
+  image:
+    repository: terraflow/backend-payments
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3003
+
+postgresql:
+  enabled: true
+
+postgresDocuments:
+  enabled: true
+
+postgresUsers:
+  enabled: true
+
+postgresPayments:
+  enabled: true
+
+rabbitmq:
+  enabled: true
+
+redis:
+  enabled: true
+
+fabric:
+  enabled: true
+
+backend-blockchain:
+  enabled: true

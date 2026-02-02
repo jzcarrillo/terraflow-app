@@ -31,11 +31,11 @@ spec:
         - name: ORDERER_GENERAL_GENESISMETHOD
           value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_GENESISMETHOD | quote }}
         - name: ORDERER_GENERAL_GENESISFILE
-          value: "/var/hyperledger/orderer/orderer.genesis.block"
+          value: "/var/hyperledger/orderer/genesis.block"
         - name: ORDERER_GENERAL_LOCALMSPID
           value: {{ .Values.fabric.orderer.env.ORDERER_GENERAL_LOCALMSPID | quote }}
         - name: ORDERER_GENERAL_LOCALMSPDIR
-          value: "/var/hyperledger/orderer/msp"
+          value: "/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp"
         - name: ORDERER_OPERATIONS_LISTENADDRESS
           value: "0.0.0.0:{{ .Values.fabric.orderer.service.operationsPort }}"
         - name: ORDERER_GENERAL_TLS_ENABLED
@@ -51,11 +51,9 @@ spec:
         - name: orderer-storage
           mountPath: /var/hyperledger/production/orderer
         - name: crypto-storage
-          mountPath: /var/hyperledger/orderer/msp
-          subPath: ordererOrganizations/terraflow.com/orderers/orderer.terraflow.com/msp
+          mountPath: /crypto-config
         - name: channel-artifacts
-          mountPath: /var/hyperledger/orderer/orderer.genesis.block
-          subPath: genesis.block
+          mountPath: /var/hyperledger/orderer
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric
         command: ["orderer"]
       volumes:
