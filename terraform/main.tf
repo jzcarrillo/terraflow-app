@@ -12,11 +12,13 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path = "~/.kube/config"
+  config_path = pathexpand("~/.kube/config")
 }
 
 provider "helm" {
-  # Uses the kubernetes provider configuration automatically
+  kubernetes {
+    config_path = pathexpand("~/.kube/config")
+  }
 }
 
 resource "helm_release" "terraflow_app" {
