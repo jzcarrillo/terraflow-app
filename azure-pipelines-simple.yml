@@ -8,16 +8,12 @@ pool:
 
 stages:
   - stage: Build
-    displayName: 'Build Images Locally'
+    displayName: 'Build and Deploy'
     jobs:
       - job: BuildAll
-        displayName: 'Build All Services'
+        displayName: 'Run Deploy Script'
         steps:
           - script: |
-              docker build -t terraflow/api-gateway:latest ./api-gateway
-              docker build -t terraflow/backend-landregistry:latest ./backend-landregistry
-              docker build -t terraflow/backend-documents:latest ./backend-documents
-              docker build -t terraflow/backend-users:latest ./backend-users
-              docker build -t terraflow/backend-payments:latest ./backend-payments
-              docker build -t terraflow/backend-blockchain:latest ./backend-blockchain
-            displayName: 'Build Docker Images'
+              chmod +x deploy-build.sh
+              ./deploy-build.sh
+            displayName: 'Execute deploy-build.sh'
