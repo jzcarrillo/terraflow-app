@@ -6,9 +6,6 @@ trigger:
 pool:
   name: 'Default'
 
-variables:
-  - group: terraform-vars
-
 stages:
   - stage: Build
     displayName: 'Build Images Locally'
@@ -24,23 +21,3 @@ stages:
               docker build -t terraflow/backend-payments:latest ./backend-payments
               docker build -t terraflow/backend-blockchain:latest ./backend-blockchain
             displayName: 'Build Docker Images'
-
-  - stage: Deploy
-    displayName: 'Deploy with Terraform'
-    dependsOn: Build
-    jobs:
-      - job: TerraformDeploy
-        displayName: 'Terraform Apply'
-        steps:
-          - task: TerraformInstaller@0
-            inputs:
-              terraformVersion: '1.14.4'
-
-          - script: |
-              cd terraform
-              terraform init
-              terraform plan
-              terraform apply -auto-approve
-            displayName: 'Deploy to Kubernetes'
-            env:
-              KUBECONFIG: $(KUBE_CONFIG)
