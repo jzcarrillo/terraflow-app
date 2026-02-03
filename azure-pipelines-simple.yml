@@ -11,32 +11,19 @@ variables:
 
 stages:
   - stage: Build
-    displayName: 'Build & Push Images'
+    displayName: 'Build Images Locally'
     jobs:
       - job: BuildAll
         displayName: 'Build All Services'
         steps:
-          - task: Docker@2
-            displayName: 'Login to Docker Hub'
-            inputs:
-              command: login
-              containerRegistry: 'dockerhub-connection'
-
           - script: |
-              docker build -t terraflow/api-gateway:$(Build.BuildId) ./api-gateway
-              docker build -t terraflow/backend-landregistry:$(Build.BuildId) ./backend-landregistry
-              docker build -t terraflow/backend-documents:$(Build.BuildId) ./backend-documents
-              docker build -t terraflow/backend-users:$(Build.BuildId) ./backend-users
-              docker build -t terraflow/backend-payments:$(Build.BuildId) ./backend-payments
-              docker build -t terraflow/backend-blockchain:$(Build.BuildId) ./backend-blockchain
-              
-              docker push terraflow/api-gateway:$(Build.BuildId)
-              docker push terraflow/backend-landregistry:$(Build.BuildId)
-              docker push terraflow/backend-documents:$(Build.BuildId)
-              docker push terraflow/backend-users:$(Build.BuildId)
-              docker push terraflow/backend-payments:$(Build.BuildId)
-              docker push terraflow/backend-blockchain:$(Build.BuildId)
-            displayName: 'Build and Push All Images'
+              docker build -t terraflow/api-gateway:latest ./api-gateway
+              docker build -t terraflow/backend-landregistry:latest ./backend-landregistry
+              docker build -t terraflow/backend-documents:latest ./backend-documents
+              docker build -t terraflow/backend-users:latest ./backend-users
+              docker build -t terraflow/backend-payments:latest ./backend-payments
+              docker build -t terraflow/backend-blockchain:latest ./backend-blockchain
+            displayName: 'Build Docker Images'
 
   - stage: Deploy
     displayName: 'Deploy with Terraform'
