@@ -9,6 +9,6 @@ module.exports = {
   ],
   collectCoverage: true,
   coverageDirectory: '<rootDir>/coverage',
-  coverageReporters: ['text', 'lcov'],
+  coverageReporters: ['text', 'text-summary'],
   testTimeout: 10000
 };
