@@ -18,6 +18,11 @@ stages:
               echo "Installing dependencies..."
               npm install --silent
               
+              # Install frontend dependencies
+              cd frontend
+              npm install --silent
+              cd ..
+              
               # Build all services
               SERVICES=("backend-landregistry" "api-gateway" "backend-documents" "backend-users" "backend-payments" "backend-blockchain")
               for service in "${SERVICES[@]}"; do
