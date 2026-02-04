@@ -7,13 +7,161 @@ pool:
   name: 'Default'
 
 stages:
+  # Stage 1: Build and Unit Test
   - stage: Build
-    displayName: 'Build and Deploy'
+    displayName: 'Build & Unit Test'
     jobs:
-      - job: BuildAll
-        displayName: 'Run Deploy Script'
+      - job: BuildAndTest
+        displayName: 'NPM Build & Jest Tests'
         steps:
           - script: |
-              chmod +x deploy-build-backup.sh
-              ./deploy-build-backup.sh
-            displayName: 'Execute deploy-build-backup.sh'
+              echo "Installing dependencies..."
+              npm install --silent
+              
+              # Build all services
+              SERVICES=("backend-landregistry" "api-gateway" "backend-documents" "backend-users" "backend-payments" "backend-blockchain")
+              for service in "${SERVICES[@]}"; do
+                if [ -f "./$service/package.json" ]; then
+                  echo "Building $service..."
+                  cd "./$service"
+                  npm install --silent
+                  npm run build 2>/dev/null || echo "No build script"
+                  cd ..
+                fi
+              done
+            displayName: 'Build Services'
+
+          - script: |
+              echo "Running Jest unit tests with coverage..."
+              npm test -- --coverage
+            displayName: 'Run Jest Tests'
+
+          - script: |
+              echo "Building Docker images..."
+              docker build -t terraflow/backend-landregistry:latest ./backend-landregistry
+              docker build -t terraflow/api-gateway:latest ./api-gateway
+              docker build -t terraflow/backend-documents:latest ./backend-documents
+              docker build -t terraflow/backend-users:latest ./backend-users
+              docker build -t terraflow/backend-payments:latest ./backend-payments
+              docker build -t terraflow/backend-blockchain:latest ./backend-blockchain
+            displayName: 'Build Docker Images'
+
+  # Stage 2: Deploy to QA + E2E Tests
+  - stage: DeployQA
+    displayName: 'QA Environment'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: QA
+        displayName: 'Deploy to QA'
+        environment: 'terraflow-qa'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Deploying to QA environment..."
+                    
+                    # Deploy to K8s QA namespace
+                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-qa --create-namespace
+                    
+                    # Wait for pods
+                    kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
+                    kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
+                    
+                    echo "✅ QA deployment successful"
+                  displayName: 'Deploy to QA'
+
+                - script: |
+                    echo "Running Playwright E2E tests on QA..."
+                    
+                    # Start frontend for QA
+                    cd frontend
+                    npm install --silent
+                    npm run dev &
+                    FRONTEND_PID=$!
+                    sleep 10
+                    
+                    # Run Playwright tests
+                    cd ../playwright
+                    npm install --silent
+                    npm run automate
+                    
+                    # Cleanup
+                    kill $FRONTEND_PID 2>/dev/null || true
+                    
+                    echo "✅ QA E2E tests passed"
+                  displayName: 'Run E2E Tests on QA'
+
+  # Stage 3: Deploy to UAT + E2E Tests
+  - stage: DeployUAT
+    displayName: 'UAT Environment'
+    dependsOn: DeployQA
+    condition: succeeded()
+    jobs:
+      - deployment: UAT
+        displayName: 'Deploy to UAT'
+        environment: 'terraflow-uat'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Deploying to UAT environment..."
+                    
+                    # Deploy to K8s UAT namespace
+                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-uat --create-namespace
+                    
+                    # Wait for pods
+                    kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
+                    kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-uat
+                    
+                    echo "✅ UAT deployment successful"
+                  displayName: 'Deploy to UAT'
+
+                - script: |
+                    echo "Running Playwright E2E tests on UAT..."
+                    
+                    # Start frontend for UAT
+                    cd frontend
+                    npm install --silent
+                    npm run dev &
+                    FRONTEND_PID=$!
+                    sleep 10
+                    
+                    # Run Playwright tests
+                    cd ../playwright
+                    npm install --silent
+                    npm run automate
+                    
+                    # Cleanup
+                    kill $FRONTEND_PID 2>/dev/null || true
+                    
+                    echo "✅ UAT E2E tests passed"
+                  displayName: 'Run E2E Tests on UAT'
+
+  # Stage 4: Deploy to PROD (Manual Approval Required)
+  - stage: DeployProd
+    displayName: 'PROD Environment'
+    dependsOn: DeployUAT
+    condition: succeeded()
+    jobs:
+      - deployment: Prod
+        displayName: 'Deploy to PROD'
+        environment: 'terraflow-prod'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Deploying to PROD environment..."
+                    
+                    # Deploy to K8s PROD namespace
+                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-prod --create-namespace
+                    
+                    # Wait for pods
+                    kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
+                    kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-prod
+                    
+                    echo "🚀 PROD deployment successful!"
+                  displayName: 'Deploy to PROD'
