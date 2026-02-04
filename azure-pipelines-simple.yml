@@ -69,7 +69,13 @@ stages:
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
                     
+                    # Setup port forwarding for QA
+                    pkill -f "kubectl port-forward.*terraflow-qa" 2>/dev/null || true
+                    kubectl port-forward service/terraflow-api-gateway-service 30082:8081 --namespace=terraflow-qa &
+                    sleep 3
+                    
                     echo "✅ QA deployment successful"
+                    echo "🌐 QA Environment: http://localhost:30082"
                   displayName: 'Deploy to QA'
 
                 - script: |
@@ -116,7 +122,13 @@ stages:
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-uat
                     
+                    # Setup port forwarding for UAT
+                    pkill -f "kubectl port-forward.*terraflow-uat" 2>/dev/null || true
+                    kubectl port-forward service/terraflow-api-gateway-service 30083:8081 --namespace=terraflow-uat &
+                    sleep 3
+                    
                     echo "✅ UAT deployment successful"
+                    echo "🌐 UAT Environment: http://localhost:30083"
                   displayName: 'Deploy to UAT'
 
                 - script: |
@@ -163,5 +175,11 @@ stages:
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-prod
                     
+                    # Setup port forwarding for PROD
+                    pkill -f "kubectl port-forward.*terraflow-prod" 2>/dev/null || true
+                    kubectl port-forward service/terraflow-api-gateway-service 30081:8081 --namespace=terraflow-prod &
+                    sleep 3
+                    
                     echo "🚀 PROD deployment successful!"
+                    echo "🌐 PROD Environment: http://localhost:30081"
                   displayName: 'Deploy to PROD'
