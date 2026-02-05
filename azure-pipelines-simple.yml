@@ -105,6 +105,11 @@ stages:
                       --set image.tag=$(imageTag) \
                       --set image.repository=$(registry)/terraflow
                     
+                    if [ $? -ne 0 ]; then
+                      echo "❌ Helm deployment failed!"
+                      exit 1
+                    fi
+                    
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
