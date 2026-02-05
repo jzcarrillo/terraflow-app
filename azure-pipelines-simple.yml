@@ -88,7 +88,7 @@ stages:
                     echo "Deploying to QA environment with image tag: $(imageTag)"
                     
                     # Deploy to K8s QA namespace using images from registry
-                    helm upgrade terraflow ./helm --install --timeout=10m \
+                    helm upgrade terraflow-qa ./helm --install --timeout=10m \
                       --namespace=terraflow-qa --create-namespace \
                       --set image.tag=$(imageTag) \
                       --set image.repository=$(registry)/terraflow
@@ -134,7 +134,7 @@ stages:
                     echo "Deploying to UAT environment with image tag: $(imageTag)"
                     
                     # Deploy to K8s UAT namespace using images from registry
-                    helm upgrade terraflow ./helm --install --timeout=10m \
+                    helm upgrade terraflow-uat ./helm --install --timeout=10m \
                       --namespace=terraflow-uat --create-namespace \
                       --set image.tag=$(imageTag) \
                       --set image.repository=$(registry)/terraflow
@@ -180,7 +180,7 @@ stages:
                     echo "Deploying to PROD environment with image tag: $(imageTag)"
                     
                     # Deploy to K8s PROD namespace using images from registry
-                    helm upgrade terraflow ./helm --install --timeout=10m \
+                    helm upgrade terraflow-prod ./helm --install --timeout=10m \
                       --namespace=terraflow-prod --create-namespace \
                       --set image.tag=$(imageTag) \
                       --set image.repository=$(registry)/terraflow
