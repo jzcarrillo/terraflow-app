@@ -6,6 +6,10 @@ trigger:
 pool:
   name: 'Default'
 
+variables:
+  imageTag: '$(Build.BuildId)'
+  registry: 'localhost:5001'
+
 stages:
   # Stage 1: Build and Unit Test
   - stage: Build
@@ -42,14 +46,30 @@ stages:
             displayName: 'Run Jest Tests'
 
           - script: |
-              echo "Building Docker images..."
-              docker build -t terraflow/backend-landregistry:latest ./backend-landregistry
-              docker build -t terraflow/api-gateway:latest ./api-gateway
-              docker build -t terraflow/backend-documents:latest ./backend-documents
-              docker build -t terraflow/backend-users:latest ./backend-users
-              docker build -t terraflow/backend-payments:latest ./backend-payments
-              docker build -t terraflow/backend-blockchain:latest ./backend-blockchain
-            displayName: 'Build Docker Images'
+              echo "Building and pushing Docker images to registry..."
+              echo "Image tag: $(imageTag)"
+              
+              # Build and push all services
+              docker build -t $(registry)/terraflow/backend-landregistry:$(imageTag) ./backend-landregistry
+              docker push $(registry)/terraflow/backend-landregistry:$(imageTag)
+              
+              docker build -t $(registry)/terraflow/api-gateway:$(imageTag) ./api-gateway
+              docker push $(registry)/terraflow/api-gateway:$(imageTag)
+              
+              docker build -t $(registry)/terraflow/backend-documents:$(imageTag) ./backend-documents
+              docker push $(registry)/terraflow/backend-documents:$(imageTag)
+              
+              docker build -t $(registry)/terraflow/backend-users:$(imageTag) ./backend-users
+              docker push $(registry)/terraflow/backend-users:$(imageTag)
+              
+              docker build -t $(registry)/terraflow/backend-payments:$(imageTag) ./backend-payments
+              docker push $(registry)/terraflow/backend-payments:$(imageTag)
+              
+              docker build -t $(registry)/terraflow/backend-blockchain:$(imageTag) ./backend-blockchain
+              docker push $(registry)/terraflow/backend-blockchain:$(imageTag)
+              
+              echo "✅ All images pushed to registry with tag: $(imageTag)"
+            displayName: 'Build & Push Docker Images'
 
   # Stage 2: Deploy to QA + E2E Tests
   - stage: DeployQA
@@ -65,10 +85,13 @@ stages:
             deploy:
               steps:
                 - script: |
-                    echo "Deploying to QA environment..."
+                    echo "Deploying to QA environment with image tag: $(imageTag)"
                     
-                    # Deploy to K8s QA namespace
-                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-qa --create-namespace
+                    # Deploy to K8s QA namespace using images from registry
+                    helm upgrade terraflow ./helm --install --timeout=10m \
+                      --namespace=terraflow-qa --create-namespace \
+                      --set image.tag=$(imageTag) \
+                      --set image.repository=$(registry)/terraflow
                     
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
@@ -80,26 +103,16 @@ stages:
                     sleep 3
                     
                     echo "✅ QA deployment successful"
-                    echo "🌐 QA Environment: http://localhost:30082"
+                    echo "🌐 QA Environment: http://localhost:30082/qa"
                   displayName: 'Deploy to QA'
 
                 - script: |
                     echo "Running Playwright E2E tests on QA..."
                     
-                    # Start frontend for QA
-                    cd frontend
+                    # Run Playwright tests pointing to QA environment
+                    cd playwright
                     npm install --silent
-                    npm run dev &
-                    FRONTEND_PID=$!
-                    sleep 10
-                    
-                    # Run Playwright tests
-                    cd ../playwright
-                    npm install --silent
-                    npm run automate
-                    
-                    # Cleanup
-                    kill $FRONTEND_PID 2>/dev/null || true
+                    BASE_URL=http://localhost:30082 npm run automate
                     
                     echo "✅ QA E2E tests passed"
                   displayName: 'Run E2E Tests on QA'
@@ -118,10 +131,13 @@ stages:
             deploy:
               steps:
                 - script: |
-                    echo "Deploying to UAT environment..."
+                    echo "Deploying to UAT environment with image tag: $(imageTag)"
                     
-                    # Deploy to K8s UAT namespace
-                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-uat --create-namespace
+                    # Deploy to K8s UAT namespace using images from registry
+                    helm upgrade terraflow ./helm --install --timeout=10m \
+                      --namespace=terraflow-uat --create-namespace \
+                      --set image.tag=$(imageTag) \
+                      --set image.repository=$(registry)/terraflow
                     
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
@@ -133,26 +149,16 @@ stages:
                     sleep 3
                     
                     echo "✅ UAT deployment successful"
-                    echo "🌐 UAT Environment: http://localhost:30083"
+                    echo "🌐 UAT Environment: http://localhost:30083/uat"
                   displayName: 'Deploy to UAT'
 
                 - script: |
                     echo "Running Playwright E2E tests on UAT..."
                     
-                    # Start frontend for UAT
-                    cd frontend
+                    # Run Playwright tests pointing to UAT environment
+                    cd playwright
                     npm install --silent
-                    npm run dev &
-                    FRONTEND_PID=$!
-                    sleep 10
-                    
-                    # Run Playwright tests
-                    cd ../playwright
-                    npm install --silent
-                    npm run automate
-                    
-                    # Cleanup
-                    kill $FRONTEND_PID 2>/dev/null || true
+                    BASE_URL=http://localhost:30083 npm run automate
                     
                     echo "✅ UAT E2E tests passed"
                   displayName: 'Run E2E Tests on UAT'
@@ -171,10 +177,13 @@ stages:
             deploy:
               steps:
                 - script: |
-                    echo "Deploying to PROD environment..."
+                    echo "Deploying to PROD environment with image tag: $(imageTag)"
                     
-                    # Deploy to K8s PROD namespace
-                    helm upgrade terraflow ./helm --install --timeout=10m --namespace=terraflow-prod --create-namespace
+                    # Deploy to K8s PROD namespace using images from registry
+                    helm upgrade terraflow ./helm --install --timeout=10m \
+                      --namespace=terraflow-prod --create-namespace \
+                      --set image.tag=$(imageTag) \
+                      --set image.repository=$(registry)/terraflow
                     
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
@@ -186,5 +195,6 @@ stages:
                     sleep 3
                     
                     echo "🚀 PROD deployment successful!"
-                    echo "🌐 PROD Environment: http://localhost:30081"
+                    echo "🌐 PROD Environment: http://localhost:30081/prod"
+                    echo "📦 Deployed artifact version: $(imageTag)"
                   displayName: 'Deploy to PROD'
