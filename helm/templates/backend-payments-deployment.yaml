@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-payments
-  namespace: {{ .Values.namespace | default "terraflow-app" }}
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ index .Values "backend-payments" "replicaCount" | default 1 }}
   selector:

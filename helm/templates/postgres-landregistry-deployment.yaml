@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres-landregistry
-  namespace: {{ .Values.namespace | default "terraflow-app" }}
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: 1
   selector:

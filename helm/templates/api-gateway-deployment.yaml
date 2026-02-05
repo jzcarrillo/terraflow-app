@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "api-gateway.fullname" . }}
-  namespace: {{ .Values.namespace | default "terraflow-app" }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "api-gateway.name" . }}
 spec:
