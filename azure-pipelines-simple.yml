@@ -46,6 +46,18 @@ stages:
             displayName: 'Run Jest Tests'
 
           - script: |
+              echo "Cleaning up ALL old images from registry..."
+              
+              # Delete all images from registry
+              docker exec registry sh -c "rm -rf /var/lib/registry/docker/registry/v2/repositories/terraflow/*" 2>/dev/null || true
+              
+              # Run garbage collection
+              docker exec registry registry garbage-collect /etc/docker/registry/config.yml 2>/dev/null || true
+              
+              echo "✅ Registry cleaned (all old images deleted)"
+            displayName: 'Clean Registry (Delete All)'
+
+          - script: |
               echo "Building and pushing Docker images to registry..."
               echo "Image tag: $(imageTag)"
               
