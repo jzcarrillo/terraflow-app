@@ -112,19 +112,21 @@ stages:
                     # Setup port forwarding for QA
                     pkill -f "kubectl port-forward.*terraflow-qa" 2>/dev/null || true
                     kubectl port-forward service/terraflow-api-gateway-service 30082:8081 --namespace=terraflow-qa &
-                    sleep 3
+                    sleep 5
                     
                     echo "✅ QA deployment successful"
-                    echo "🌐 QA Environment: http://localhost:30082/qa"
+                    echo "🌐 QA Environment: http://localhost:30082"
                   displayName: 'Deploy to QA'
 
                 - script: |
                     echo "Running Playwright E2E tests on QA..."
+                    echo "Target URL: http://localhost:30082"
                     
                     # Run Playwright tests pointing to QA environment
                     cd playwright
                     npm install --silent
-                    BASE_URL=http://localhost:30082 npm run automate
+                    export BASE_URL=http://localhost:30082
+                    npm run automate
                     
                     echo "✅ QA E2E tests passed"
                   displayName: 'Run E2E Tests on QA'
@@ -166,11 +168,13 @@ stages:
 
                 - script: |
                     echo "Running Playwright E2E tests on UAT..."
+                    echo "Target URL: http://localhost:30083"
                     
                     # Run Playwright tests pointing to UAT environment
                     cd playwright
                     npm install --silent
-                    BASE_URL=http://localhost:30083 npm run automate
+                    export BASE_URL=http://localhost:30083
+                    npm run automate
                     
                     echo "✅ UAT E2E tests passed"
                   displayName: 'Run E2E Tests on UAT'
