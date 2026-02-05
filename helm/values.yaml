@@ -1,4 +1,5 @@
-namespace: terraflow-app
+# Namespace is automatically set via --namespace flag during helm install/upgrade
+# No need to specify here - Helm will use the namespace from the command
 
 api-gateway:
   replicaCount: 1
