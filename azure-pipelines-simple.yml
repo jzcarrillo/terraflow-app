@@ -28,7 +28,7 @@ stages:
               cd ..
               
               # Build all services
-              SERVICES=("backend-landregistry" "api-gateway" "backend-documents" "backend-users" "backend-payments" "backend-blockchain")
+              SERVICES=("backend-landregistry" "api-gateway" "backend-documents" "backend-users" "backend-payments" "backend-blockchain" "frontend")
               for service in "${SERVICES[@]}"; do
                 if [ -f "./$service/package.json" ]; then
                   echo "Building $service..."
@@ -80,6 +80,9 @@ stages:
               docker build -t $(registry)/terraflow/backend-blockchain:$(imageTag) ./backend-blockchain
               docker push $(registry)/terraflow/backend-blockchain:$(imageTag)
               
+              docker build -t $(registry)/terraflow/frontend:$(imageTag) ./frontend
+              docker push $(registry)/terraflow/frontend:$(imageTag)
+              
               echo "✅ All images pushed to registry with tag: $(imageTag)"
             displayName: 'Build & Push Docker Images'
 
@@ -113,10 +116,11 @@ stages:
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
+                    kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-qa
                     
                     # Setup port forwarding for QA
                     pkill -f "kubectl port-forward.*terraflow-qa" 2>/dev/null || true
-                    kubectl port-forward service/api-gateway-service 30082:8081 --namespace=terraflow-qa &
+                    kubectl port-forward service/frontend-service 30082:4005 --namespace=terraflow-qa &
                     sleep 5
                     
                     echo "✅ QA deployment successful"
@@ -161,10 +165,11 @@ stages:
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-uat
+                    kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-uat
                     
                     # Setup port forwarding for UAT
                     pkill -f "kubectl port-forward.*terraflow-uat" 2>/dev/null || true
-                    kubectl port-forward service/api-gateway-service 30083:8081 --namespace=terraflow-uat &
+                    kubectl port-forward service/frontend-service 30083:4005 --namespace=terraflow-uat &
                     sleep 3
                     
                     echo "✅ UAT deployment successful"
