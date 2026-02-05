@@ -21,11 +21,10 @@ metadata:
   name: rabbitmq-management
   namespace: {{ .Release.Namespace }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: management
     port: 15672
     targetPort: 15672
-    nodePort: 30672
   selector:
     app: rabbitmq
