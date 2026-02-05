@@ -5,183 +5,49 @@ metadata:
   name: fabric-crypto-generator
   namespace: {{ .Release.Namespace }}
 spec:
+  backoffLimit: 2
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       containers:
       - name: crypto-generator
         image: hyperledger/fabric-tools:2.4
-        command:
-        - /bin/bash
-        - -c
+        command: ["/bin/bash", "-c"]
+        args:
         - |
-          set -e
-          echo "🔐 Generating crypto materials using cryptogen..."
+          set -ex
+          echo "🔐 Generating minimal crypto materials..."
           
-          # Create crypto-config.yaml
-          cat > /tmp/crypto-config.yaml << EOF
-          OrdererOrgs:
-            - Name: Orderer
-              Domain: example.com
-              Specs:
-                - Hostname: orderer
+          # Create minimal MSP structure for orderer
+          mkdir -p /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/signcerts
+          mkdir -p /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/keystore
+          mkdir -p /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/cacerts
+          mkdir -p /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/admincerts
           
-          PeerOrgs:
-            - Name: Org1
-              Domain: org1.example.com
-              EnableNodeOUs: false
-              Template:
-                Count: 1
-                Start: 0
-                Hostname: peer{{.Index}}
-              Users:
-                Count: 1
-          EOF
+          # Create minimal MSP structure for peer
+          mkdir -p /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts
+          mkdir -p /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/keystore
+          mkdir -p /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/cacerts
+          mkdir -p /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/admincerts
           
-          # Generate crypto materials
-          cryptogen generate --config=/tmp/crypto-config.yaml --output=/crypto-config
+          # Generate dummy certificates (for POC only)
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem -days 365 -nodes -subj "/CN=orderer.example.com"
+          cp /tmp/cert.pem /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/signcerts/cert.pem
+          cp /tmp/key.pem /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/keystore/key.pem
+          cp /tmp/cert.pem /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/cacerts/ca.pem
           
-          # Verify peer MSP structure was created
-          if [ ! -d "/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts" ]; then
-            echo "Peer MSP structure already created by cryptogen"
-          fi
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/peer-key.pem -out /tmp/peer-cert.pem -days 365 -nodes -subj "/CN=peer0.org1.example.com"
+          cp /tmp/peer-cert.pem /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/cert.pem
+          cp /tmp/peer-key.pem /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/keystore/key.pem
+          cp /tmp/peer-cert.pem /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/cacerts/ca.pem
           
-          # Generate genesis block
-          mkdir -p /channel-artifacts
-          cat > /tmp/configtx.yaml << EOF
-          Organizations:
-            - &OrdererOrg
-                Name: OrdererOrg
-                ID: OrdererMSP
-                MSPDir: /crypto-config/ordererOrganizations/example.com/msp
-                Policies:
-                    Readers:
-                        Type: Signature
-                        Rule: "OR('OrdererMSP.member')"
-                    Writers:
-                        Type: Signature
-                        Rule: "OR('OrdererMSP.member')"
-                    Admins:
-                        Type: Signature
-                        Rule: "OR('OrdererMSP.admin')"
-            - &Org1
-                Name: Org1MSP
-                ID: Org1MSP
-                MSPDir: /crypto-config/peerOrganizations/org1.example.com/msp
-                Policies:
-                    Readers:
-                        Type: Signature
-                        Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"
-                    Writers:
-                        Type: Signature
-                        Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"
-                    Admins:
-                        Type: Signature
-                        Rule: "OR('Org1MSP.admin')"
-                    Endorsement:
-                        Type: Signature
-                        Rule: "OR('Org1MSP.peer')"
-          
-          Capabilities:
-              Channel: &ChannelCapabilities
-                  V2_0: true
-              Orderer: &OrdererCapabilities
-                  V2_0: true
-              Application: &ApplicationCapabilities
-                  V2_0: true
-          
-          Orderer: &OrdererDefaults
-            OrdererType: solo
-            Addresses:
-              - orderer.example.com:7050
-            BatchTimeout: 2s
-            BatchSize:
-              MaxMessageCount: 10
-              AbsoluteMaxBytes: 99 MB
-              PreferredMaxBytes: 512 KB
-            Organizations:
-            Policies:
-                Readers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Readers"
-                Writers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Writers"
-                Admins:
-                    Type: ImplicitMeta
-                    Rule: "MAJORITY Admins"
-                BlockValidation:
-                    Type: ImplicitMeta
-                    Rule: "ANY Writers"
-          
-          Channel: &ChannelDefaults
-            Policies:
-                Readers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Readers"
-                Writers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Writers"
-                Admins:
-                    Type: ImplicitMeta
-                    Rule: "MAJORITY Admins"
-            Capabilities:
-                <<: *ChannelCapabilities
-          
-          Application: &ApplicationDefaults
-            Organizations:
-            Policies:
-                Readers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Readers"
-                Writers:
-                    Type: ImplicitMeta
-                    Rule: "ANY Writers"
-                Admins:
-                    Type: ImplicitMeta
-                    Rule: "MAJORITY Admins"
-                LifecycleEndorsement:
-                    Type: ImplicitMeta
-                    Rule: "MAJORITY Endorsement"
-                Endorsement:
-                    Type: ImplicitMeta
-                    Rule: "MAJORITY Endorsement"
-            Capabilities:
-                <<: *ApplicationCapabilities
-          
-          Profiles:
-            TerraflowOrdererGenesis:
-              <<: *ChannelDefaults
-              Orderer:
-                <<: *OrdererDefaults
-                Organizations:
-                  - *OrdererOrg
-                Capabilities:
-                  <<: *OrdererCapabilities
-              Consortiums:
-                ExampleConsortium:
-                  Organizations:
-                    - *Org1
-          EOF
-          
-          export FABRIC_CFG_PATH=/tmp
-          rm -rf /channel-artifacts/genesis.block
-          configtxgen -profile TerraflowOrdererGenesis -channelID system-channel -outputBlock /channel-artifacts/genesis.block
-          
-          echo "✅ Crypto materials and genesis block generated successfully"
-          ls -la /crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/signcerts/
-          ls -la /crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/
-          ls -la /channel-artifacts/
+          echo "✅ Crypto materials generated"
+          ls -laR /crypto-config/
         volumeMounts:
         - name: crypto-storage
           mountPath: /crypto-config
-        - name: channel-artifacts
-          mountPath: /channel-artifacts
       volumes:
       - name: crypto-storage
         persistentVolumeClaim:
           claimName: fabric-crypto-pvc
-      - name: channel-artifacts
-        persistentVolumeClaim:
-          claimName: fabric-channel-pvc
 {{- end }}
