@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: fabric-orderer-pv
+  name: {{ .Release.Name }}-fabric-orderer-pv
 spec:
   capacity:
     storage: {{ .Values.fabric.orderer.storage.size }}
@@ -10,12 +10,12 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /tmp/fabric-orderer
+    path: /tmp/{{ .Release.Name }}-fabric-orderer
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: fabric-peer-pv
+  name: {{ .Release.Name }}-fabric-peer-pv
 spec:
   capacity:
     storage: {{ .Values.fabric.peer.storage.size }}
@@ -23,12 +23,12 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /tmp/fabric-peer
+    path: /tmp/{{ .Release.Name }}-fabric-peer
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: fabric-couchdb-pv
+  name: {{ .Release.Name }}-fabric-couchdb-pv
 spec:
   capacity:
     storage: {{ .Values.fabric.couchdb.storage.size }}
@@ -36,7 +36,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /tmp/fabric-couchdb
+    path: /tmp/{{ .Release.Name }}-fabric-couchdb
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -77,7 +77,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: fabric-crypto-pv
+  name: {{ .Release.Name }}-fabric-crypto-pv
 spec:
   capacity:
     storage: 1Gi
@@ -85,7 +85,7 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /tmp/fabric-crypto
+    path: /tmp/{{ .Release.Name }}-fabric-crypto
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -102,7 +102,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: fabric-channel-pv
+  name: {{ .Release.Name }}-fabric-channel-pv
 spec:
   capacity:
     storage: 1Gi
@@ -110,7 +110,7 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: /tmp/fabric-channel
+    path: /tmp/{{ .Release.Name }}-fabric-channel
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

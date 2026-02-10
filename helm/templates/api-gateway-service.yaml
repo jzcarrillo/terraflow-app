@@ -6,9 +6,12 @@ metadata:
   labels:
     app: {{ include "api-gateway.name" . }}
 spec:
-  type: ClusterIP
+  type: {{ index .Values "api-gateway" "service" "type" | default "ClusterIP" }}
   ports:
-  - port: 8081
+  - port: {{ index .Values "api-gateway" "service" "port" | default 8081 }}
     targetPort: 8081
+    {{- if and (eq (index .Values "api-gateway" "service" "type" | default "ClusterIP") "NodePort") (index .Values "api-gateway" "service" "nodePort") }}
+    nodePort: {{ index .Values "api-gateway" "service" "nodePort" }}
+    {{- end }}
   selector:
     app: {{ include "api-gateway.name" . }}

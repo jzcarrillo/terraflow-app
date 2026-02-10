@@ -1,0 +1,66 @@
+# QA Environment Configuration
+environment: qa
+
+# Frontend configuration for QA
+frontend:
+  replicaCount: 1
+  image:
+    repository: terraflow/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 4005
+    nodePort: 30082
+  env:
+    NEXT_PUBLIC_API_URL: "http://localhost:30092/api"
+    NEXT_PUBLIC_ENVIRONMENT: "qa"
+
+# API Gateway for QA
+api-gateway:
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 8081
+    nodePort: 30092
+  env:
+    NODE_ENV: "qa"
+    PORT: "8081"
+
+# Backend services for QA
+backend-landregistry:
+  env:
+    DB_HOST: postgres-service
+    DB_NAME: terraflow_landregistry_qa
+
+backendDocuments:
+  env:
+    DB_HOST: postgres-documents-service
+    DB_NAME: terraflow_documents_qa
+
+backend-users:
+  env:
+    DB_HOST: postgres-users-service
+    DB_NAME: terraflow_users_qa
+
+backend-payments:
+  env:
+    DB_HOST: postgres-payments-service
+    DB_NAME: terraflow_payments_qa
+
+# PostgreSQL databases for QA
+postgresql:
+  auth:
+    database: terraflow_landregistry_qa
+
+postgresDocuments:
+  auth:
+    database: terraflow_documents_qa
+
+postgresUsers:
+  auth:
+    database: terraflow_users_qa
+
+postgresPayments:
+  auth:
+    database: terraflow_payments_qa

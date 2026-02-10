@@ -46,6 +46,48 @@ stages:
             displayName: 'Run Jest Tests'
 
           - script: |
+              echo "Deploying to Local Dev for E2E testing..."
+              
+              # Deploy to local dev namespace
+              helm upgrade terraflow ./helm --install --timeout=10m \
+                --namespace=terraflow-app --create-namespace
+              
+              # Wait for pods
+              kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-app
+              kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-app
+              
+              # Setup port forwarding for API Gateway
+              kubectl port-forward -n terraflow-app svc/terraflow-api-gateway-service 30081:8081 &
+              sleep 5
+              
+              echo "✅ Local dev deployed"
+            displayName: 'Deploy to Local Dev'
+
+          - script: |
+              echo "Starting frontend on localhost:4005..."
+              cd frontend
+              npm install --silent
+              npm run dev &
+              FRONTEND_PID=$!
+              
+              # Wait for frontend
+              sleep 10
+              
+              echo "✅ Frontend running on http://localhost:4005"
+            displayName: 'Start Frontend'
+
+          - script: |
+              echo "Running Playwright E2E tests on Local Dev..."
+              echo "Target URL: http://localhost:4005"
+              
+              cd playwright
+              npm install --silent
+              npm run automate
+              
+              echo "✅ Local Dev E2E tests passed"
+            displayName: 'Run E2E Tests on Local Dev'
+
+          - script: |
               echo "Cleaning up ALL old images from registry..."
               
               # Delete all images from registry
@@ -102,11 +144,19 @@ stages:
                 - script: |
                     echo "Deploying to QA environment with image tag: $(imageTag)"
                     
+                    # Clean QA databases
+                    echo "🗑️  Cleaning QA databases..."
+                    kubectl exec -n terraflow-qa deployment/postgres-landregistry -- psql -U postgres -d terraflow_landregistry_qa -c "TRUNCATE TABLE land_titles, attachments CASCADE;" 2>/dev/null || true
+                    kubectl exec -n terraflow-qa deployment/postgres-users -- psql -U postgres -d terraflow_users_qa -c "TRUNCATE TABLE users CASCADE;" 2>/dev/null || true
+                    kubectl exec -n terraflow-qa deployment/postgres-payments -- psql -U postgres -d terraflow_payments_qa -c "TRUNCATE TABLE payments CASCADE;" 2>/dev/null || true
+                    echo "✅ QA databases cleaned"
+                    
                     # Deploy to K8s QA namespace using images from registry
                     helm upgrade terraflow-qa ./helm --install --timeout=10m \
                       --namespace=terraflow-qa --create-namespace \
                       --set image.tag=$(imageTag) \
-                      --set image.repository=$(registry)/terraflow
+                      --set image.repository=$(registry)/terraflow \
+                      --values=./helm/values-qa.yaml
                     
                     if [ $? -ne 0 ]; then
                       echo "❌ Helm deployment failed!"
@@ -118,13 +168,9 @@ stages:
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-qa
                     
-                    # Setup port forwarding for QA
-                    pkill -f "kubectl port-forward.*terraflow-qa" 2>/dev/null || true
-                    kubectl port-forward service/frontend-service 30082:4005 --namespace=terraflow-qa &
-                    sleep 5
-                    
                     echo "✅ QA deployment successful"
-                    echo "🌐 QA Environment: http://localhost:30082"
+                    echo "🌐 QA Frontend: http://localhost:30082"
+                    echo "🌐 QA API Gateway: http://api-gateway-service.terraflow-qa.svc.cluster.local:8081"
                   displayName: 'Deploy to QA'
 
                 - script: |
@@ -160,20 +206,17 @@ stages:
                     helm upgrade terraflow-uat ./helm --install --timeout=10m \
                       --namespace=terraflow-uat --create-namespace \
                       --set image.tag=$(imageTag) \
-                      --set image.repository=$(registry)/terraflow
+                      --set image.repository=$(registry)/terraflow \
+                      --values=./helm/values-uat.yaml
                     
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-uat
                     
-                    # Setup port forwarding for UAT
-                    pkill -f "kubectl port-forward.*terraflow-uat" 2>/dev/null || true
-                    kubectl port-forward service/frontend-service 30083:4005 --namespace=terraflow-uat &
-                    sleep 3
-                    
                     echo "✅ UAT deployment successful"
-                    echo "🌐 UAT Environment: http://localhost:30083/uat"
+                    echo "🌐 UAT Frontend: http://localhost:30083"
+                    echo "🌐 UAT API Gateway: http://api-gateway-service.terraflow-uat.svc.cluster.local:8081"
                   displayName: 'Deploy to UAT'
 
                 - script: |
@@ -209,18 +252,16 @@ stages:
                     helm upgrade terraflow-prod ./helm --install --timeout=10m \
                       --namespace=terraflow-prod --create-namespace \
                       --set image.tag=$(imageTag) \
-                      --set image.repository=$(registry)/terraflow
+                      --set image.repository=$(registry)/terraflow \
+                      --values=./helm/values-prod.yaml
                     
                     # Wait for pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-prod
-                    
-                    # Setup port forwarding for PROD
-                    pkill -f "kubectl port-forward.*terraflow-prod" 2>/dev/null || true
-                    kubectl port-forward service/terraflow-api-gateway-service 30081:8081 --namespace=terraflow-prod &
-                    sleep 3
+                    kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-prod
                     
                     echo "🚀 PROD deployment successful!"
-                    echo "🌐 PROD Environment: http://localhost:30081/prod"
+                    echo "🌐 PROD Frontend: http://localhost:30081"
+                    echo "🌐 PROD API Gateway: http://api-gateway-service.terraflow-prod.svc.cluster.local:8081"
                     echo "📦 Deployed artifact version: $(imageTag)"
                   displayName: 'Deploy to PROD'

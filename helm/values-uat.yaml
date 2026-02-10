@@ -1,0 +1,66 @@
+# UAT Environment Configuration
+environment: uat
+
+# Frontend configuration for UAT
+frontend:
+  replicaCount: 1
+  image:
+    repository: terraflow/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 4005
+    nodePort: 30083
+  env:
+    NEXT_PUBLIC_API_URL: "http://localhost:30093/api"
+    NEXT_PUBLIC_ENVIRONMENT: "uat"
+
+# API Gateway for UAT
+api-gateway:
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 8081
+    nodePort: 30093
+  env:
+    NODE_ENV: "uat"
+    PORT: "8081"
+
+# Backend services for UAT
+backend-landregistry:
+  env:
+    DB_HOST: postgres-service
+    DB_NAME: terraflow_landregistry_uat
+
+backendDocuments:
+  env:
+    DB_HOST: postgres-documents-service
+    DB_NAME: terraflow_documents_uat
+
+backend-users:
+  env:
+    DB_HOST: postgres-users-service
+    DB_NAME: terraflow_users_uat
+
+backend-payments:
+  env:
+    DB_HOST: postgres-payments-service
+    DB_NAME: terraflow_payments_uat
+
+# PostgreSQL databases for UAT
+postgresql:
+  auth:
+    database: terraflow_landregistry_uat
+
+postgresDocuments:
+  auth:
+    database: terraflow_documents_uat
+
+postgresUsers:
+  auth:
+    database: terraflow_users_uat
+
+postgresPayments:
+  auth:
+    database: terraflow_payments_uat

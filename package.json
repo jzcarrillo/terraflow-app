@@ -13,8 +13,11 @@
     "bdd:all": "cucumber-js",
     "bdd:report": "node generate-report.js && open bdd-reports/html/index.html",
     "bdd:full": "npm run bdd:all && npm run bdd:report",
-    "automate": "node playwright/automate-registration.js && npm run bdd:report",
-    "automate:transfer": "node playwright/automate-transfer.js && npm run bdd:report"
+    "automate:dev": "node playwright/automate-registration-local.js; npm run bdd:report",
+    "automate:qa": "./scripts/test-qa-e2e.sh",
+    "automate": "npm run automate:dev && npm run automate:qa",
+    "automate:transfer": "node playwright/automate-transfer.js; npm run bdd:report",
+    "automate:report": "npm run automate && npm run bdd:report"
   },
   "private": true,
   "devDependencies": {

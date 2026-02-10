@@ -1,6 +1,10 @@
 # Namespace is automatically set via --namespace flag during helm install/upgrade
 # No need to specify here - Helm will use the namespace from the command
 
+image:
+  repository: localhost:5001/terraflow
+  tag: latest
+
 api-gateway:
   replicaCount: 1
   image:
@@ -10,6 +14,19 @@ api-gateway:
   service:
     type: NodePort
     port: 8081
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: terraflow/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 4005
+  env:
+    NEXT_PUBLIC_API_URL: "http://api-gateway-service:8081/api"
+    NEXT_PUBLIC_ENVIRONMENT: "dev"
 
 backend-landregistry:
   replicaCount: 1

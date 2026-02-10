@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-db-cleanup
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: cleanup
+        image: postgres:15-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "🗑️  Cleaning QA databases..."
+          
+          # Wait for postgres to be ready
+          sleep 10
+          
+          # Clean landregistry database
+          PGPASSWORD=password psql -h postgres-service -U postgres -d {{ index .Values "postgresql" "auth" "database" }} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          
+          # Clean users database
+          PGPASSWORD=password psql -h postgres-users-service -U postgres -d {{ index .Values "postgresUsers" "auth" "database" }} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          
+          # Clean documents database
+          PGPASSWORD=password psql -h postgres-documents-service -U postgres -d {{ index .Values "postgresDocuments" "auth" "database" }} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          
+          # Clean payments database
+          PGPASSWORD=password psql -h postgres-payments-service -U postgres -d {{ index .Values "postgresPayments" "auth" "database" }} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          
+          echo "✅ QA databases cleaned!"

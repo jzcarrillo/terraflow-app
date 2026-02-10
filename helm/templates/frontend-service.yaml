@@ -6,9 +6,12 @@ metadata:
   labels:
     app: frontend
 spec:
-  type: ClusterIP
+  type: {{ index .Values "frontend" "service" "type" | default "ClusterIP" }}
   ports:
-  - port: 4005
+  - port: {{ index .Values "frontend" "service" "port" | default 4005 }}
     targetPort: 4005
+    {{- if and (eq (index .Values "frontend" "service" "type" | default "ClusterIP") "NodePort") (index .Values "frontend" "service" "nodePort") }}
+    nodePort: {{ index .Values "frontend" "service" "nodePort" }}
+    {{- end }}
   selector:
     app: frontend

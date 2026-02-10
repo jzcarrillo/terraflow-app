@@ -1,0 +1,70 @@
+# PROD Environment Configuration
+environment: prod
+
+# Frontend configuration for PROD
+frontend:
+  replicaCount: 2
+  image:
+    repository: terraflow/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 4005
+    nodePort: 30081
+  env:
+    NEXT_PUBLIC_API_URL: "http://localhost:30091/api"
+    NEXT_PUBLIC_ENVIRONMENT: "prod"
+
+# API Gateway for PROD
+api-gateway:
+  replicaCount: 2
+  service:
+    type: NodePort
+    port: 8081
+    nodePort: 30091
+  env:
+    NODE_ENV: "production"
+    PORT: "8081"
+
+# Backend services for PROD
+backend-landregistry:
+  replicaCount: 2
+  env:
+    DB_HOST: postgres-service
+    DB_NAME: terraflow_landregistry_prod
+
+backendDocuments:
+  replicaCount: 2
+  env:
+    DB_HOST: postgres-documents-service
+    DB_NAME: terraflow_documents_prod
+
+backend-users:
+  replicaCount: 2
+  env:
+    DB_HOST: postgres-users-service
+    DB_NAME: terraflow_users_prod
+
+backend-payments:
+  replicaCount: 2
+  env:
+    DB_HOST: postgres-payments-service
+    DB_NAME: terraflow_payments_prod
+
+# PostgreSQL databases for PROD
+postgresql:
+  auth:
+    database: terraflow_landregistry_prod
+
+postgresDocuments:
+  auth:
+    database: terraflow_documents_prod
+
+postgresUsers:
+  auth:
+    database: terraflow_users_prod
+
+postgresPayments:
+  auth:
+    database: terraflow_payments_prod
