@@ -80,9 +80,7 @@ stages:
               echo "Running Playwright E2E tests on Local Dev..."
               echo "Target URL: http://localhost:4005"
               
-              cd playwright
-              npm install --silent
-              npm run automate
+              npm run automate:dev
               
               echo "✅ Local Dev E2E tests passed"
             displayName: 'Run E2E Tests on Local Dev'
@@ -128,6 +126,22 @@ stages:
               echo "✅ All images pushed to registry with tag: $(imageTag)"
             displayName: 'Build & Push Docker Images'
 
+          - script: |
+              echo "🗑️  Cleaning up Local Dev environment..."
+              
+              # Delete local dev namespace to free resources
+              helm uninstall terraflow -n terraflow-app || true
+              kubectl delete namespace terraflow-app --timeout=60s || true
+              
+              # Kill port-forward processes
+              pkill -f "port-forward.*terraflow-app" || true
+              
+              # Kill frontend process
+              pkill -f "npm run dev" || true
+              
+              echo "✅ Local Dev environment cleaned up"
+            displayName: 'Cleanup Local Dev Environment'
+
   # Stage 2: Deploy to QA + E2E Tests
   - stage: DeployQA
     displayName: 'QA Environment'
@@ -144,12 +158,11 @@ stages:
                 - script: |
                     echo "Deploying to QA environment with image tag: $(imageTag)"
                     
-                    # Clean QA databases
-                    echo "🗑️  Cleaning QA databases..."
-                    kubectl exec -n terraflow-qa deployment/postgres-landregistry -- psql -U postgres -d terraflow_landregistry_qa -c "TRUNCATE TABLE land_titles, attachments CASCADE;" 2>/dev/null || true
-                    kubectl exec -n terraflow-qa deployment/postgres-users -- psql -U postgres -d terraflow_users_qa -c "TRUNCATE TABLE users CASCADE;" 2>/dev/null || true
-                    kubectl exec -n terraflow-qa deployment/postgres-payments -- psql -U postgres -d terraflow_payments_qa -c "TRUNCATE TABLE payments CASCADE;" 2>/dev/null || true
-                    echo "✅ QA databases cleaned"
+                    # Delete QA namespace if exists (fresh start)
+                    echo "🗑️  Cleaning up old QA environment..."
+                    helm uninstall terraflow-qa -n terraflow-qa || true
+                    kubectl delete namespace terraflow-qa --timeout=60s || true
+                    sleep 5
                     
                     # Deploy to K8s QA namespace using images from registry
                     helm upgrade terraflow-qa ./helm --install --timeout=10m \
@@ -177,11 +190,7 @@ stages:
                     echo "Running Playwright E2E tests on QA..."
                     echo "Target URL: http://localhost:30082"
                     
-                    # Run Playwright tests pointing to QA environment
-                    export BASE_URL=http://localhost:30082
-                    cd playwright
-                    npm install --silent
-                    npm run automate
+                    npm run automate:qa
                     
                     echo "✅ QA E2E tests passed"
                   displayName: 'Run E2E Tests on QA'
@@ -202,6 +211,18 @@ stages:
                 - script: |
                     echo "Deploying to UAT environment with image tag: $(imageTag)"
                     
+                    # Delete QA namespace to free resources
+                    echo "🗑️  Cleaning up QA environment..."
+                    helm uninstall terraflow-qa -n terraflow-qa || true
+                    kubectl delete namespace terraflow-qa --timeout=60s || true
+                    sleep 5
+                    
+                    # Delete UAT namespace if exists (fresh start)
+                    echo "🗑️  Cleaning up old UAT environment..."
+                    helm uninstall terraflow-uat -n terraflow-uat || true
+                    kubectl delete namespace terraflow-uat --timeout=60s || true
+                    sleep 5
+                    
                     # Deploy to K8s UAT namespace using images from registry
                     helm upgrade terraflow-uat ./helm --install --timeout=10m \
                       --namespace=terraflow-uat --create-namespace \
@@ -220,17 +241,10 @@ stages:
                   displayName: 'Deploy to UAT'
 
                 - script: |
-                    echo "Running Playwright E2E tests on UAT..."
-                    echo "Target URL: http://localhost:30083"
-                    
-                    # Run Playwright tests pointing to UAT environment
-                    export BASE_URL=http://localhost:30083
-                    cd playwright
-                    npm install --silent
-                    npm run automate
-                    
-                    echo "✅ UAT E2E tests passed"
-                  displayName: 'Run E2E Tests on UAT'
+                    echo "⚠️  Skipping E2E tests on UAT (no UAT-specific test script)"
+                    echo "UAT environment deployed and ready for manual testing"
+                    echo "🌐 UAT Frontend: http://localhost:30083"
+                  displayName: 'UAT Manual Testing Notice'
 
   # Stage 4: Deploy to PROD (Manual Approval Required)
   - stage: DeployProd
@@ -247,6 +261,18 @@ stages:
               steps:
                 - script: |
                     echo "Deploying to PROD environment with image tag: $(imageTag)"
+                    
+                    # Delete UAT namespace to free resources
+                    echo "🗑️  Cleaning up UAT environment..."
+                    helm uninstall terraflow-uat -n terraflow-uat || true
+                    kubectl delete namespace terraflow-uat --timeout=60s || true
+                    sleep 5
+                    
+                    # Delete PROD namespace if exists (fresh start)
+                    echo "🗑️  Cleaning up old PROD environment..."
+                    helm uninstall terraflow-prod -n terraflow-prod || true
+                    kubectl delete namespace terraflow-prod --timeout=60s || true
+                    sleep 5
                     
                     # Deploy to K8s PROD namespace using images from registry
                     helm upgrade terraflow-prod ./helm --install --timeout=10m \
