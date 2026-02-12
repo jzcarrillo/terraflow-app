@@ -13,8 +13,8 @@ frontend:
     port: 4005
     nodePort: 30081
   env:
-    NEXT_PUBLIC_API_URL: "http://localhost:30091/api"
-    NEXT_PUBLIC_ENVIRONMENT: "prod"
+    API_URL: "http://localhost:30091/api"
+    DASHBOARD_URL: "http://localhost:30081/"
 
 # API Gateway for PROD
 api-gateway:

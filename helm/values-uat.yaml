@@ -13,8 +13,8 @@ frontend:
     port: 4005
     nodePort: 30083
   env:
-    NEXT_PUBLIC_API_URL: "http://localhost:30093/api"
-    NEXT_PUBLIC_ENVIRONMENT: "uat"
+    API_URL: "http://localhost:30093/api"
+    DASHBOARD_URL: "http://localhost:30083/"
 
 # API Gateway for UAT
 api-gateway:
@@ -31,21 +31,25 @@ api-gateway:
 backend-landregistry:
   env:
     DB_HOST: postgres-service
+    DB_PORT: "5432"
     DB_NAME: terraflow_landregistry_uat
 
 backendDocuments:
   env:
     DB_HOST: postgres-documents-service
+    DB_PORT: "5433"
     DB_NAME: terraflow_documents_uat
 
 backend-users:
   env:
     DB_HOST: postgres-users-service
+    DB_PORT: "5434"
     DB_NAME: terraflow_users_uat
 
 backend-payments:
   env:
     DB_HOST: postgres-payments-service
+    DB_PORT: "5435"
     DB_NAME: terraflow_payments_uat
 
 # PostgreSQL databases for UAT

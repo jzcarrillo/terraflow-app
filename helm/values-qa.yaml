@@ -13,8 +13,8 @@ frontend:
     port: 4005
     nodePort: 30082
   env:
-    NEXT_PUBLIC_API_URL: "http://localhost:30092/api"
-    NEXT_PUBLIC_ENVIRONMENT: "qa"
+    API_URL: "http://localhost:30092/api"
+    DASHBOARD_URL: "http://localhost:30082/"
 
 # API Gateway for QA
 api-gateway:

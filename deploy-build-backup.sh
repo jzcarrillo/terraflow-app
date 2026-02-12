@@ -231,13 +231,7 @@ if ! helm upgrade $RELEASE_NAME $HELM_CHART --install --timeout=10m --namespace=
     exit 1
 fi
 
-# Restart deployments
-kubectl rollout restart deployment/$SERVICE_NAME --namespace=$NAMESPACE
-kubectl rollout restart deployment/$API_SERVICE_NAME --namespace=$NAMESPACE
-kubectl rollout restart deployment/$DOCUMENTS_SERVICE_NAME --namespace=$NAMESPACE
-kubectl rollout restart deployment/$USERS_SERVICE_NAME --namespace=$NAMESPACE
-kubectl rollout restart deployment/$PAYMENTS_SERVICE_NAME --namespace=$NAMESPACE
-kubectl rollout restart deployment/$BLOCKCHAIN_SERVICE_NAME --namespace=$NAMESPACE
+# Wait for pods (no restart needed, Helm handles updates)
 
 # Wait for pods
 echo -e "\033[0;33mWaiting for pods to be ready...\033[0m"
@@ -261,7 +255,22 @@ kubectl port-forward service/postgres-documents-service 15433:5433 --namespace=$
 kubectl port-forward service/postgres-users-service 15434:5434 --namespace=$NAMESPACE &
 kubectl port-forward service/postgres-payments-service 15435:5435 --namespace=$NAMESPACE &
 kubectl port-forward service/rabbitmq-management 15672:15672 --namespace=$NAMESPACE &
-kubectl port-forward service/terraflow-api-gateway-service 30081:8081 --namespace=$NAMESPACE &
+kubectl port-forward service/api-gateway-service 30081:8081 --namespace=$NAMESPACE &
+
+# Wait for services to stabilize
+echo -e "\033[0;33mWaiting for services to stabilize...\033[0m"
+sleep 20
+
+# Verify port-forwards are working
+echo -e "\033[0;33mVerifying API Gateway connection...\033[0m"
+for i in {1..10}; do
+  if curl -s http://localhost:30081/health > /dev/null 2>&1; then
+    echo -e "\033[0;32m✓ API Gateway is ready\033[0m"
+    break
+  fi
+  echo -e "\033[0;33mWaiting for API Gateway... (attempt $i/10)\033[0m"
+  sleep 2
+done
 
 # ===================================================================
 # STEP 6: PLAYWRIGHT E2E TESTS
@@ -272,12 +281,28 @@ echo -e "\n\033[0;36m[7/7] Running Playwright E2E tests...\033[0m"
 cd frontend
 if [ -f "package.json" ]; then
     npm install --silent
+    
+    # Create .env.local for local dev environment
+    echo "NEXT_PUBLIC_API_URL=http://localhost:30081/api" > .env.local
+    echo "NEXT_PUBLIC_DASHBOARD_URL=http://localhost:4005/" >> .env.local
+    echo -e "\033[0;32m✓ Created .env.local with local dev config\033[0m"
+    
     npm run dev &
     FRONTEND_PID=$!
     
-    # Wait for frontend to start
+    # Wait for frontend to start and load env vars
     echo -e "\033[0;33mWaiting for frontend to start...\033[0m"
-    sleep 10
+    sleep 15
+    
+    # Verify frontend is running
+    for i in {1..10}; do
+      if curl -s http://localhost:4005 > /dev/null 2>&1; then
+        echo -e "\033[0;32m✓ Frontend is ready\033[0m"
+        break
+      fi
+      echo -e "\033[0;33mWaiting for frontend... (attempt $i/10)\033[0m"
+      sleep 2
+    done
     
     cd ..
     
@@ -291,8 +316,8 @@ if [ -f "package.json" ]; then
             npm install --silent
         fi
         
-        # Run npm run automate
-        if npm run automate 2>/dev/null; then
+        # Run npm run automate:dev (local dev E2E tests)
+        if npm run automate:dev 2>/dev/null; then
             echo -e "\033[0;32m✓ Playwright tests passed!\033[0m"
         else
             echo -e "\033[0;33m⚠ Playwright tests failed or not configured\033[0m"

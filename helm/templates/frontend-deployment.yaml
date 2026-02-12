@@ -23,7 +23,9 @@ spec:
         ports:
         - containerPort: 4005
         env:
-        - name: NEXT_PUBLIC_API_URL
-          value: {{ index .Values "frontend" "env" "NEXT_PUBLIC_API_URL" | default "http://api-gateway-service:8081/api" | quote }}
-        - name: NEXT_PUBLIC_ENVIRONMENT
+        - name: API_URL
+          value: {{ index .Values "frontend" "env" "API_URL" | default "http://api-gateway-service:8081/api" | quote }}
+        - name: DASHBOARD_URL
+          value: {{ index .Values "frontend" "env" "DASHBOARD_URL" | default "http://localhost:4005/" | quote }}
+        - name: NODE_ENV
           value: {{ .Values.environment | default "dev" | quote }}

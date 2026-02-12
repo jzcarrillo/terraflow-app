@@ -100,6 +100,7 @@ stages:
           - script: |
               echo "Building and pushing Docker images to registry..."
               echo "Image tag: $(imageTag)"
+              echo "Note: Single universal image for all environments (runtime config)"
               
               # Build and push all services
               docker build -t $(registry)/terraflow/backend-landregistry:$(imageTag) ./backend-landregistry
@@ -120,6 +121,7 @@ stages:
               docker build -t $(registry)/terraflow/backend-blockchain:$(imageTag) ./backend-blockchain
               docker push $(registry)/terraflow/backend-blockchain:$(imageTag)
               
+              # Frontend: Universal image (no build args, runtime config via /api/config)
               docker build -t $(registry)/terraflow/frontend:$(imageTag) ./frontend
               docker push $(registry)/terraflow/frontend:$(imageTag)
               
@@ -241,10 +243,13 @@ stages:
                   displayName: 'Deploy to UAT'
 
                 - script: |
-                    echo "⚠️  Skipping E2E tests on UAT (no UAT-specific test script)"
-                    echo "UAT environment deployed and ready for manual testing"
-                    echo "🌐 UAT Frontend: http://localhost:30083"
-                  displayName: 'UAT Manual Testing Notice'
+                    echo "Running Playwright E2E tests on UAT..."
+                    echo "Target URL: http://localhost:30083"
+                    
+                    npm run automate:uat
+                    
+                    echo "✅ UAT E2E tests passed"
+                  displayName: 'Run E2E Tests on UAT'
 
   # Stage 4: Deploy to PROD (Manual Approval Required)
   - stage: DeployProd
