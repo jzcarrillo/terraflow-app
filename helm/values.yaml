@@ -14,6 +14,7 @@ api-gateway:
   service:
     type: NodePort
     port: 8081
+    nodePort: 30081
 
 frontend:
   replicaCount: 1
@@ -25,8 +26,9 @@ frontend:
     type: ClusterIP
     port: 4005
   env:
-    NEXT_PUBLIC_API_URL: "http://api-gateway-service:8081/api"
-    NEXT_PUBLIC_ENVIRONMENT: "dev"
+    API_URL: "http://localhost:30081/api"
+    DASHBOARD_URL: "http://localhost:4005"
+    NODE_ENV: "development"
 
 backend-landregistry:
   replicaCount: 1

@@ -96,9 +96,17 @@ export default function LandTitles() {
       }
       
       setLandTitles(titles)
+      setError('')
     } catch (error) {
-      setError('Failed to fetch land titles')
-      console.error('Error:', error)
+      console.error('❌ Failed to fetch land titles:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.error('Authentication error - redirecting to login')
+      } else {
+        setError('Failed to fetch land titles')
+      }
     } finally {
       setLoading(false)
     }
@@ -181,12 +189,13 @@ export default function LandTitles() {
       console.log('API Response:', response)
       
       setSuccess('Land title created successfully!')
+      setError('')
       setOpen(false)
       reset()
       setTitleNumber('')
       setSurveyNumber('')
       setAttachments([{ id: 1 }])
-      fetchLandTitles()
+      await fetchLandTitles()
       console.log('=== FORM SUBMIT SUCCESS ===')
     } catch (error) {
       console.log('=== FORM SUBMIT ERROR ===')

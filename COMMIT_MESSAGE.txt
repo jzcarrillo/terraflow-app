@@ -1,0 +1,32 @@
+refactor: Implement single universal Docker image across all environments
+
+BREAKING CHANGE: Frontend now uses runtime configuration instead of build-time variables
+
+Changes:
+- Frontend: Removed NEXT_PUBLIC build args, added /api/config runtime endpoint
+- Helm: Changed to runtime env vars (API_URL, DASHBOARD_URL, NODE_ENV)
+- Pipeline: Updated to build single universal image for all environments
+- Added test script to verify single image works across environments
+
+Benefits:
+- Build once, deploy everywhere (immutable artifacts)
+- Same tested image deployed to QA, UAT, and PROD
+- Faster deployments (no rebuild per environment)
+- Follows 12-Factor App best practices
+
+Files changed:
+- frontend/Dockerfile
+- frontend/src/app/api/config/route.js (new)
+- frontend/src/utils/config.js
+- helm/templates/frontend-deployment.yaml
+- helm/values-qa.yaml
+- helm/values-uat.yaml
+- helm/values-prod.yaml
+- azure-pipelines-simple.yml
+- scripts/test-single-image.sh (new)
+- scripts/deploy-uat-auto.sh (new)
+
+Tested:
+✅ Single image verification across QA and UAT
+✅ Runtime config API working
+✅ E2E tests passing (registration, login, navigation)

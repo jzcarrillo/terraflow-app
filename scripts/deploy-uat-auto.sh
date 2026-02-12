@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e  # Exit immediately if any command fails
+
 # Deploy directly to UAT (skip Dev and QA)
 # Uses latest images from registry
 

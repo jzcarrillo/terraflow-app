@@ -31,21 +31,25 @@ api-gateway:
 backend-landregistry:
   env:
     DB_HOST: postgres-service
+    DB_PORT: "5432"
     DB_NAME: terraflow_landregistry_qa
 
 backendDocuments:
   env:
     DB_HOST: postgres-documents-service
+    DB_PORT: "5433"
     DB_NAME: terraflow_documents_qa
 
 backend-users:
   env:
     DB_HOST: postgres-users-service
+    DB_PORT: "5434"
     DB_NAME: terraflow_users_qa
 
 backend-payments:
   env:
     DB_HOST: postgres-payments-service
+    DB_PORT: "5435"
     DB_NAME: terraflow_payments_qa
 
 # PostgreSQL databases for QA

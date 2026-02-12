@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e  # Exit immediately if any command fails
+
 echo "🧪 Running E2E Tests on QA Environment"
 echo ""
 

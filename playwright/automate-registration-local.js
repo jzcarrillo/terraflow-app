@@ -976,4 +976,7 @@ async function automateLandRegistration() {
 }
 
 // Run automation
-automateLandRegistration().catch(console.error);
+automateLandRegistration().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
