@@ -56,9 +56,8 @@ stages:
               kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-app
               kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-app
               
-              # Setup port forwarding for API Gateway
-              kubectl port-forward -n terraflow-app svc/terraflow-api-gateway-service 30081:8081 &
-              sleep 5
+              # API Gateway is now NodePort 30081, no port-forward needed
+              echo "API Gateway accessible at http://localhost:30081"
               
               echo "✅ Local dev deployed"
             displayName: 'Deploy to Local Dev'
@@ -166,6 +165,9 @@ stages:
                     kubectl delete namespace terraflow-qa --timeout=60s || true
                     sleep 5
                     
+                    echo "📦 Creating QA namespace..."
+                    kubectl create namespace terraflow-qa || true
+                    
                     # Deploy to K8s QA namespace using images from registry
                     helm upgrade terraflow-qa ./helm --install --timeout=10m \
                       --namespace=terraflow-qa --create-namespace \
@@ -178,14 +180,24 @@ stages:
                       exit 1
                     fi
                     
-                    # Wait for pods
+                    # Wait for postgres pods first
+                    kubectl wait --for=condition=ready pod -l app=postgres-landregistry --timeout=120s --namespace=terraflow-qa || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=terraflow-qa || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=terraflow-qa || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=terraflow-qa || true
+                    
+                    # Create QA databases
+                    echo "🔧 Creating QA databases..."
+                    ./scripts/create-qa-databases.sh || echo "Database creation failed, continuing..."
+                    
+                    # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-qa
                     kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-qa
                     
                     echo "✅ QA deployment successful"
                     echo "🌐 QA Frontend: http://localhost:30082"
-                    echo "🌐 QA API Gateway: http://api-gateway-service.terraflow-qa.svc.cluster.local:8081"
+                    echo "🌐 QA API Gateway: http://localhost:30092"
                   displayName: 'Deploy to QA'
 
                 - script: |
@@ -225,6 +237,9 @@ stages:
                     kubectl delete namespace terraflow-uat --timeout=60s || true
                     sleep 5
                     
+                    echo "📦 Creating UAT namespace..."
+                    kubectl create namespace terraflow-uat || true
+                    
                     # Deploy to K8s UAT namespace using images from registry
                     helm upgrade terraflow-uat ./helm --install --timeout=10m \
                       --namespace=terraflow-uat --create-namespace \
@@ -232,14 +247,24 @@ stages:
                       --set image.repository=$(registry)/terraflow \
                       --values=./helm/values-uat.yaml
                     
-                    # Wait for pods
+                    # Wait for postgres pods first
+                    kubectl wait --for=condition=ready pod -l app=postgres-landregistry --timeout=120s --namespace=terraflow-uat || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=terraflow-uat || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=terraflow-uat || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=terraflow-uat || true
+                    
+                    # Create UAT databases
+                    echo "🔧 Creating UAT databases..."
+                    ./scripts/create-uat-databases.sh || echo "Database creation failed, continuing..."
+                    
+                    # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-uat
                     kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-uat
                     
                     echo "✅ UAT deployment successful"
                     echo "🌐 UAT Frontend: http://localhost:30083"
-                    echo "🌐 UAT API Gateway: http://api-gateway-service.terraflow-uat.svc.cluster.local:8081"
+                    echo "🌐 UAT API Gateway: http://localhost:30093"
                   displayName: 'Deploy to UAT'
 
                 - script: |
@@ -279,6 +304,9 @@ stages:
                     kubectl delete namespace terraflow-prod --timeout=60s || true
                     sleep 5
                     
+                    echo "📦 Creating PROD namespace..."
+                    kubectl create namespace terraflow-prod || true
+                    
                     # Deploy to K8s PROD namespace using images from registry
                     helm upgrade terraflow-prod ./helm --install --timeout=10m \
                       --namespace=terraflow-prod --create-namespace \
@@ -286,13 +314,26 @@ stages:
                       --set image.repository=$(registry)/terraflow \
                       --values=./helm/values-prod.yaml
                     
-                    # Wait for pods
+                    # Wait for postgres pods first
+                    kubectl wait --for=condition=ready pod -l app=postgres-landregistry --timeout=120s --namespace=terraflow-prod || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=terraflow-prod || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=terraflow-prod || true
+                    kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=terraflow-prod || true
+                    
+                    # Create PROD databases (with _prod suffix)
+                    echo "🔧 Creating PROD databases..."
+                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-landregistry -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_landregistry_prod;" || true
+                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-documents -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_documents_prod;" || true
+                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-users -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_users_prod;" || true
+                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-payments -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_payments_prod;" || true
+                    
+                    # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
                     kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-prod
                     kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s --namespace=terraflow-prod
                     
                     echo "🚀 PROD deployment successful!"
                     echo "🌐 PROD Frontend: http://localhost:30081"
-                    echo "🌐 PROD API Gateway: http://api-gateway-service.terraflow-prod.svc.cluster.local:8081"
+                    echo "🌐 PROD API Gateway: http://localhost:30091"
                     echo "📦 Deployed artifact version: $(imageTag)"
                   displayName: 'Deploy to PROD'
