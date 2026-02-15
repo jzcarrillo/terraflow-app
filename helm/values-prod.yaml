@@ -13,7 +13,7 @@ frontend:
     port: 4005
     nodePort: 30081
   env:
-    API_URL: "http://localhost:30081/api"
+    API_URL: "http://localhost:30091/api"
     DASHBOARD_URL: "http://localhost:30081/"
     
 # API Gateway for PROD
