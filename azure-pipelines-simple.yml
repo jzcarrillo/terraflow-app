@@ -46,55 +46,6 @@ stages:
             displayName: 'Run Jest Tests'
 
           - script: |
-              echo "Deploying to Local Dev for E2E testing..."
-              
-              # Deploy to local dev namespace
-              helm upgrade terraflow ./helm --install --timeout=10m \
-                --namespace=terraflow-app --create-namespace
-              
-              # Wait for postgres pods first
-              kubectl wait --for=condition=ready pod -l app=postgres-landregistry --timeout=120s --namespace=terraflow-app || true
-              kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=terraflow-app || true
-              kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=terraflow-app || true
-              kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=terraflow-app || true
-              
-              # Create local dev databases (no suffix)
-              echo "🔧 Creating local dev databases..."
-              ./scripts/create-dev-databases.sh || echo "Database creation failed, continuing..."
-              
-              # Wait for backend pods
-              kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-app
-              kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-app
-              
-              # API Gateway is now NodePort 30081, no port-forward needed
-              echo "API Gateway accessible at http://localhost:30081"
-              
-              echo "✅ Local dev deployed"
-            displayName: 'Deploy to Local Dev'
-
-          - script: |
-              echo "Starting frontend on localhost:4005..."
-              cd frontend
-              npm install --silent
-              npm run dev &
-              FRONTEND_PID=$!
-              
-              # Wait for frontend
-              sleep 10
-              
-              echo "✅ Frontend running on http://localhost:4005"
-            displayName: 'Start Frontend'
-
-          - script: |
-              echo "Running Playwright E2E tests on Local Dev..."
-              echo "Target URL: http://localhost:4005"
-              
-              npm run automate:dev
-              
-              echo "✅ Local Dev E2E tests passed"
-            displayName: 'Run E2E Tests on Local Dev'
-
-          - script: |
               echo "Cleaning up ALL old images from registry..."
               
               # Delete all images from registry
@@ -136,22 +87,6 @@ stages:
               
               echo "✅ All images pushed to registry with tag: $(imageTag)"
             displayName: 'Build & Push Docker Images'
-
-          - script: |
-              echo "🗑️  Cleaning up Local Dev environment..."
-              
-              # Delete local dev namespace to free resources
-              helm uninstall terraflow -n terraflow-app || true
-              kubectl delete namespace terraflow-app --timeout=60s || true
-              
-              # Kill port-forward processes
-              pkill -f "port-forward.*terraflow-app" || true
-              
-              # Kill frontend process
-              pkill -f "npm run dev" || true
-              
-              echo "✅ Local Dev environment cleaned up"
-            displayName: 'Cleanup Local Dev Environment'
 
   # Stage 2: Deploy to QA + E2E Tests
   - stage: DeployQA
