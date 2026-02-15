@@ -143,6 +143,10 @@ stages:
                     echo "✅ QA deployment successful"
                     echo "🌐 QA Frontend: http://localhost:30082"
                     echo "🌐 QA API Gateway: http://localhost:30092"
+                    
+                    # Additional wait for services to be fully ready
+                    echo "⏳ Waiting 15 seconds for services to stabilize..."
+                    sleep 15
                   displayName: 'Deploy to QA'
 
                 - script: |
@@ -210,6 +214,10 @@ stages:
                     echo "✅ UAT deployment successful"
                     echo "🌐 UAT Frontend: http://localhost:30083"
                     echo "🌐 UAT API Gateway: http://localhost:30093"
+                    
+                    # Additional wait for services to be fully ready
+                    echo "⏳ Waiting 15 seconds for services to stabilize..."
+                    sleep 15
                   displayName: 'Deploy to UAT'
 
                 - script: |
@@ -278,4 +286,10 @@ stages:
                     echo "🌐 PROD Frontend: http://localhost:30081"
                     echo "🌐 PROD API Gateway: http://localhost:30091"
                     echo "📦 Deployed artifact version: $(imageTag)"
+                    
+                    # Additional wait for services to be fully ready
+                    echo "⏳ Waiting 15 seconds for services to stabilize..."
+                    sleep 15
+                    
+                    echo "✅ PROD environment is fully ready!"
                   displayName: 'Deploy to PROD'
