@@ -3,7 +3,7 @@ environment: prod
 
 # Frontend configuration for PROD
 frontend:
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: terraflow/frontend
     tag: latest
@@ -13,12 +13,12 @@ frontend:
     port: 4005
     nodePort: 30081
   env:
-    API_URL: "http://localhost:30091/api"
+    API_URL: "http://localhost:30081/api"
     DASHBOARD_URL: "http://localhost:30081/"
-
+    
 # API Gateway for PROD
 api-gateway:
-  replicaCount: 2
+  replicaCount: 1
   service:
     type: NodePort
     port: 8081
@@ -29,42 +29,59 @@ api-gateway:
 
 # Backend services for PROD
 backend-landregistry:
-  replicaCount: 2
+  replicaCount: 1
   env:
     DB_HOST: postgres-service
+    DB_PORT: "5432"
     DB_NAME: terraflow_landregistry_prod
 
 backendDocuments:
-  replicaCount: 2
+  replicaCount: 1
   env:
     DB_HOST: postgres-documents-service
+    DB_PORT: "5433"
     DB_NAME: terraflow_documents_prod
 
 backend-users:
-  replicaCount: 2
+  replicaCount: 1
   env:
     DB_HOST: postgres-users-service
+    DB_PORT: "5434"
     DB_NAME: terraflow_users_prod
+    JWT_EXPIRES_IN: "7d"
 
 backend-payments:
   replicaCount: 2
   env:
     DB_HOST: postgres-payments-service
+    DB_PORT: "5435"
     DB_NAME: terraflow_payments_prod
 
 # PostgreSQL databases for PROD
 postgresql:
+  service:
+    type: NodePort
+    nodePort: 31432
   auth:
     database: terraflow_landregistry_prod
 
 postgresDocuments:
+  service:
+    type: NodePort
+    nodePort: 31433
   auth:
     database: terraflow_documents_prod
 
 postgresUsers:
+  service:
+    type: NodePort
+    nodePort: 31434
   auth:
     database: terraflow_users_prod
 
 postgresPayments:
+  service:
+    type: NodePort
+    nodePort: 31435
   auth:
     database: terraflow_payments_prod

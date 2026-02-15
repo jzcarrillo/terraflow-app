@@ -643,8 +643,8 @@ async function automateLandRegistration() {
     if (paymentRow) {
       console.log('  🔍 PAID payment row found');
       
-      // Open actions menu using getByRole
-      await page.getByRole('button').filter({ hasText: /^$/ }).click();
+      // Open actions menu - click the last button in the payment row
+      await paymentRow.locator('button').last().click();
       console.log('  ✅ Actions button clicked');
       await page.waitForTimeout(1000);
       

@@ -54,17 +54,29 @@ backend-payments:
 
 # PostgreSQL databases for QA
 postgresql:
+  service:
+    type: NodePort
+    nodePort: 32432
   auth:
     database: terraflow_landregistry_qa
 
 postgresDocuments:
+  service:
+    type: NodePort
+    nodePort: 32433
   auth:
     database: terraflow_documents_qa
 
 postgresUsers:
+  service:
+    type: NodePort
+    nodePort: 32434
   auth:
     database: terraflow_users_qa
 
 postgresPayments:
+  service:
+    type: NodePort
+    nodePort: 32435
   auth:
     database: terraflow_payments_qa

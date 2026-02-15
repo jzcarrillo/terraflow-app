@@ -195,7 +195,12 @@ export default function LandTitles() {
       setTitleNumber('')
       setSurveyNumber('')
       setAttachments([{ id: 1 }])
-      await fetchLandTitles()
+      
+      // Auto refresh after create
+      setTimeout(() => {
+        fetchLandTitles()
+      }, 1000)
+      
       console.log('=== FORM SUBMIT SUCCESS ===')
     } catch (error) {
       console.log('=== FORM SUBMIT ERROR ===')

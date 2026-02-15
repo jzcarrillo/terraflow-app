@@ -21,16 +21,36 @@ export async function loadConfig() {
 
 export const API_CONFIG = {
   get BASE_URL() {
-    if (typeof window !== 'undefined' && window.__RUNTIME_CONFIG__) {
-      return window.__RUNTIME_CONFIG__.apiUrl;
+    if (typeof window !== 'undefined') {
+      // Check window first
+      if (window.__RUNTIME_CONFIG__) {
+        return window.__RUNTIME_CONFIG__.apiUrl;
+      }
+      // Fallback to localStorage
+      const cached = localStorage.getItem('__APP_CONFIG__');
+      if (cached) {
+        const config = JSON.parse(cached);
+        window.__RUNTIME_CONFIG__ = config; // Restore to window
+        return config.apiUrl;
+      }
     }
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:30081/api';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:30091/api';
   },
   get DASHBOARD_URL() {
-    if (typeof window !== 'undefined' && window.__RUNTIME_CONFIG__) {
-      return window.__RUNTIME_CONFIG__.dashboardUrl;
+    if (typeof window !== 'undefined') {
+      // Check window first
+      if (window.__RUNTIME_CONFIG__) {
+        return window.__RUNTIME_CONFIG__.dashboardUrl;
+      }
+      // Fallback to localStorage
+      const cached = localStorage.getItem('__APP_CONFIG__');
+      if (cached) {
+        const config = JSON.parse(cached);
+        window.__RUNTIME_CONFIG__ = config; // Restore to window
+        return config.dashboardUrl;
+      }
     }
-    return process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:4005/';
+    return process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:30081/';
   }
 }
 

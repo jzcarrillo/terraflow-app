@@ -223,7 +223,11 @@ export default function Payments() {
       setPaymentId('')
       setIsEditMode(false)
       setEditingPaymentId(null)
-      fetchPayments()
+      
+      // Auto refresh after create
+      setTimeout(() => {
+        fetchPayments()
+      }, 1000)
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to save payment')
     }
