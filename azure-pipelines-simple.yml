@@ -293,3 +293,12 @@ stages:
                     
                     echo "✅ PROD environment is fully ready!"
                   displayName: 'Deploy to PROD'
+
+                - script: |
+                    echo "Running Playwright E2E tests on PROD..."
+                    echo "Target URL: http://localhost:30081"
+                    
+                    npm run automate:prod
+                    
+                    echo "✅ PROD E2E tests passed"
+                  displayName: 'Run E2E Tests on PROD'
