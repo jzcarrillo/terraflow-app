@@ -52,7 +52,17 @@ stages:
               helm upgrade terraflow ./helm --install --timeout=10m \
                 --namespace=terraflow-app --create-namespace
               
-              # Wait for pods
+              # Wait for postgres pods first
+              kubectl wait --for=condition=ready pod -l app=postgres-landregistry --timeout=120s --namespace=terraflow-app || true
+              kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=terraflow-app || true
+              kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=terraflow-app || true
+              kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=terraflow-app || true
+              
+              # Create local dev databases (no suffix)
+              echo "🔧 Creating local dev databases..."
+              ./scripts/create-dev-databases.sh || echo "Database creation failed, continuing..."
+              
+              # Wait for backend pods
               kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-app
               kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=terraflow-app
               
@@ -322,10 +332,7 @@ stages:
                     
                     # Create PROD databases (with _prod suffix)
                     echo "🔧 Creating PROD databases..."
-                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-landregistry -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_landregistry_prod;" || true
-                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-documents -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_documents_prod;" || true
-                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-users -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_users_prod;" || true
-                    kubectl exec -n terraflow-prod $(kubectl get pods -n terraflow-prod -l app=postgres-payments -o jsonpath='{.items[0].metadata.name}') -- psql -U postgres -c "CREATE DATABASE terraflow_payments_prod;" || true
+                    ./scripts/create-prod-databases.sh || echo "Database creation failed, continuing..."
                     
                     # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
