@@ -133,7 +133,7 @@ stages:
                     
                     # Create QA databases
                     echo "🔧 Creating QA databases..."
-                    ./scripts/create-qa-databases.sh || echo "Database creation failed, continuing..."
+                    ./scripts/databases/create-qa-databases.sh || echo "Database creation failed, continuing..."
                     
                     # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-qa
@@ -204,7 +204,7 @@ stages:
                     
                     # Create UAT databases
                     echo "🔧 Creating UAT databases..."
-                    ./scripts/create-uat-databases.sh || echo "Database creation failed, continuing..."
+                    ./scripts/databases/create-uat-databases.sh || echo "Database creation failed, continuing..."
                     
                     # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-uat
@@ -275,7 +275,7 @@ stages:
                     
                     # Create PROD databases (with _prod suffix)
                     echo "🔧 Creating PROD databases..."
-                    ./scripts/create-prod-databases.sh || echo "Database creation failed, continuing..."
+                    ./scripts/databases/create-prod-databases.sh || echo "Database creation failed, continuing..."
                     
                     # Wait for backend pods
                     kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=terraflow-prod
