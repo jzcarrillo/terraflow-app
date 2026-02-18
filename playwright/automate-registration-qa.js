@@ -4,7 +4,7 @@ async function automateLandRegistration() {
   console.log('🚀 Starting automated user registration and land title registration...\n');
   
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     slowMo: 500
   });
   
