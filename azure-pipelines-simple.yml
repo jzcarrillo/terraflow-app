@@ -106,8 +106,8 @@ stages:
 
                     # Delete local dev namespace if exists (free up port 30081)
                     echo "🗑️  Cleaning up local dev environment..."
-                    helm uninstall terraflow -n terraflow || true
-                    kubectl delete namespace terraflow --timeout=60s || true
+                    helm uninstall terraflow -n terraflow-app || true
+                    kubectl delete namespace terraflow-app --timeout=60s || true
                     sleep 3
                     
                     # Delete QA namespace if exists (fresh start)
