@@ -103,6 +103,12 @@ stages:
               steps:
                 - script: |
                     echo "Deploying to QA environment with image tag: $(imageTag)"
+
+                    # Delete local dev namespace if exists (free up port 30081)
+                    echo "🗑️  Cleaning up local dev environment..."
+                    helm uninstall terraflow -n terraflow || true
+                    kubectl delete namespace terraflow --timeout=60s || true
+                    sleep 3
                     
                     # Delete QA namespace if exists (fresh start)
                     echo "🗑️  Cleaning up old QA environment..."
