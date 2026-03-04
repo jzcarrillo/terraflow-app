@@ -284,6 +284,102 @@ class ChaincodeService {
     }
   }
 
+  async recordMortgage(mortgageData) {
+    try {
+      const {
+        mortgage_id,
+        land_title_id,
+        bank_name,
+        amount,
+        status,
+        timestamp,
+        transaction_id
+      } = mortgageData;
+
+      console.log(`🏦 Recording mortgage on blockchain: ${mortgage_id}`);
+
+      // Submit transaction to chaincode
+      const result = await this.fabricClient.submitTransaction(
+        'CreateMortgage',
+        mortgage_id.toString(),
+        land_title_id.toString(),
+        bank_name,
+        amount.toString(),
+        status,
+        timestamp.toString(),
+        transaction_id
+      );
+
+      console.log(`✅ Mortgage recorded on blockchain: ${mortgage_id}`);
+      
+      return {
+        success: true,
+        transaction_id: result.transaction_id || transaction_id,
+        block_number: result.block_number || '1',
+        message: 'Mortgage successfully recorded on blockchain',
+        blockchainHash: result.blockchain_hash
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to record mortgage:', error.message);
+      
+      return {
+        success: false,
+        transaction_id: mortgageData.transaction_id || '',
+        block_number: '',
+        message: `Failed to record mortgage: ${error.message}`,
+        blockchain_hash: ''
+      };
+    }
+  }
+
+  async recordMortgageRelease(releaseData) {
+    try {
+      const {
+        mortgage_id,
+        land_title_id,
+        previous_status,
+        new_status,
+        timestamp,
+        transaction_id
+      } = releaseData;
+
+      console.log(`🔓 Recording mortgage release on blockchain: ${mortgage_id}`);
+
+      // Submit transaction to chaincode
+      const result = await this.fabricClient.submitTransaction(
+        'ReleaseMortgage',
+        mortgage_id.toString(),
+        land_title_id.toString(),
+        previous_status,
+        new_status,
+        timestamp.toString(),
+        transaction_id
+      );
+
+      console.log(`✅ Mortgage release recorded on blockchain: ${mortgage_id}`);
+      
+      return {
+        success: true,
+        transaction_id: result.transaction_id || transaction_id,
+        block_number: result.block_number || '1',
+        message: 'Mortgage release successfully recorded on blockchain',
+        blockchainHash: result.blockchain_hash
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to record mortgage release:', error.message);
+      
+      return {
+        success: false,
+        transaction_id: releaseData.transaction_id || '',
+        block_number: '',
+        message: `Failed to record mortgage release: ${error.message}`,
+        blockchain_hash: ''
+      };
+    }
+  }
+
   async disconnect() {
     await this.fabricClient.disconnect();
   }

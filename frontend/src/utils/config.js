@@ -66,5 +66,6 @@ export const STATUS_COLORS = {
   COMPLETED: 'success',
   PAID: 'success',
   CANCELLED: 'error',
-  FAILED: 'error'
+  FAILED: 'error',
+  RELEASED: 'success'
 }

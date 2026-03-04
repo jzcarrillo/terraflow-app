@@ -4,7 +4,18 @@ const { validateWithSchema, generatePaymentId } = require('../utils/validation')
 const { QUEUES } = require('../config/constants');
 
 const messageHandler = async (messageData) => {
-  if (messageData.action === 'UPDATE_PAYMENT') {
+  if (messageData.event_type === 'CREATE_RELEASE_PAYMENT') {
+    await handlePaymentCreate({
+      ...messageData,
+      payment_data: {
+        mortgage_id: messageData.mortgage_id,
+        reference_type: 'mortgage_release',
+        amount: messageData.amount,
+        payer_name: messageData.description || 'Mortgage Release',
+        payment_method: 'Cash'
+      }
+    });
+  } else if (messageData.action === 'UPDATE_PAYMENT') {
     await handlePaymentUpdate(messageData);
   } else if (messageData.payment_data && !messageData.action) {
     await handlePaymentCreate(messageData);
@@ -89,16 +100,21 @@ const handlePaymentCreate = async (messageData) => {
   }
   
   // Map field names to match database schema
+  // Use transaction ID as reference_id for consistency:
+  // - Transfer: transfer_id (TRF-2026-xxx)
+  // - Mortgage: mortgage_id (MTG-2026-xxx)  
+  // - Land Title: land_title_id (TCT-xxx)
   const paymentData = {
     payment_id: messageData.payment_id || paymentId,
     reference_type: messageData.reference_type,
-    reference_id: validatedData.land_title_id,
+    reference_id: validatedData.transfer_id || validatedData.mortgage_id || validatedData.land_title_id || messageData.reference_id,
     amount: validatedData.amount,
     payer_name: validatedData.payer_name,
     payment_method: validatedData.payment_method,
     status: 'PENDING',
     created_by: messageData.username || messageData.user_id || 'system',
-    transfer_id: validatedData.transfer_id || messageData.transfer_id || null
+    transfer_id: validatedData.transfer_id || messageData.transfer_id || null,
+    mortgage_id: validatedData.mortgage_id || messageData.mortgage_id || null
   };
   
   await paymentService.createPayment(paymentData);
@@ -119,11 +135,22 @@ const handlePaymentUpdate = async (messageData) => {
   console.log('\n✅ Zod validation successful for Edit Payment');
   
   // Map field names to match database schema
-  const updateData = { ...validatedData };
-  if (updateData.land_title_id) {
-    updateData.reference_id = updateData.land_title_id;
-    delete updateData.land_title_id;
+  const updateData = {};
+  
+  // Only include fields that exist in database
+  if (validatedData.amount !== undefined) updateData.amount = validatedData.amount;
+  if (validatedData.payment_method !== undefined) updateData.payment_method = validatedData.payment_method;
+  if (validatedData.payer_name !== undefined) updateData.payer_name = validatedData.payer_name;
+  if (validatedData.reference_type !== undefined) updateData.reference_type = validatedData.reference_type;
+  
+  // Map land_title_id to reference_id if provided
+  if (validatedData.land_title_id) {
+    updateData.reference_id = validatedData.land_title_id;
   }
+  
+  // Handle transfer_id and mortgage_id
+  if (validatedData.transfer_id !== undefined) updateData.transfer_id = validatedData.transfer_id;
+  if (validatedData.mortgage_id !== undefined) updateData.mortgage_id = validatedData.mortgage_id;
   
   await paymentService.updatePayment(payment_id, updateData);
   

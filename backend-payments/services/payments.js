@@ -206,6 +206,43 @@ class PaymentService {
       });
       
       console.log(`📤 Transfer payment event published to land registry queue (key: ${messageKey})`);
+    } else if (payment.reference_type === 'mortgage' || payment.reference_type === 'Mortgage') {
+      // Mortgage payment - send to land registry queue
+      if (!payment.mortgage_id && !payment.reference_id) {
+        console.error(`❌ Cannot send mortgage payment event: No mortgage_id in payment record`);
+        return;
+      }
+      
+      await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+        event_type: 'MORTGAGE_PAYMENT_CONFIRMED',
+        transaction_id: transactionId,
+        payment_id: payment.id,
+        mortgage_id: payment.mortgage_id || payment.reference_id,
+        reference_id: payment.reference_id,
+        payment_status: status,
+        message_key: messageKey,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`📤 Mortgage payment event published to land registry queue (key: ${messageKey})`);
+    } else if (payment.reference_type === 'mortgage_release') {
+      // Mortgage release payment - send to land registry queue
+      if (!payment.reference_id) {
+        console.error(`❌ Cannot send mortgage release payment event: No reference_id in payment record`);
+        return;
+      }
+      
+      await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
+        event_type: 'MORTGAGE_RELEASE_PAYMENT_CONFIRMED',
+        transaction_id: transactionId,
+        payment_id: payment.id,
+        mortgage_id: payment.reference_id,
+        payment_status: status,
+        message_key: messageKey,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`📤 Mortgage release payment event published to land registry queue (key: ${messageKey})`);
     } else {
       // Regular land registration payment - send to land registry queue
       const landTitleStatus = status === STATUS.PAID ? 'ACTIVE' : 'PENDING';

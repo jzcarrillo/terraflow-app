@@ -22,6 +22,26 @@ const getDocumentsByLandTitle = async (req, res) => {
   }
 };
 
+const getDocumentsByMortgage = async (req, res) => {
+  try {
+    const { mortgageId } = req.params;
+    const documents = await documentService.getDocumentsByMortgageId(mortgageId);
+    
+    const formattedDocs = documents.map(doc => ({
+      id: doc.id,
+      document_type: doc.document_type,
+      original_name: doc.file_name,
+      size: doc.file_size,
+      mime_type: doc.mime_type,
+      created_at: doc.created_at
+    }));
+    
+    res.json(formattedDocs);
+  } catch (error) {
+    handleError(error, res, 'Get mortgage documents');
+  }
+};
+
 const downloadDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
@@ -54,6 +74,7 @@ const viewDocument = async (req, res) => {
 
 module.exports = {
   getDocumentsByLandTitle,
+  getDocumentsByMortgage,
   downloadDocument,
   viewDocument
 };

@@ -7,6 +7,7 @@ const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
 const transferRoutes = require('./routes/transfers');
+const mortgageRoutes = require('./routes/mortgages');
 const rabbitmq = require('./services/publisher');
 const redis = require('./services/redis');
 
@@ -35,6 +36,7 @@ app.use('/api', userRoutes);
 app.use('/api', authRoutes);
 app.use('/api', paymentRoutes);
 app.use('/api', transferRoutes);
+app.use('/api', mortgageRoutes);
 
 // INITIALIZE SERVICES 
 rabbitmq.initialize();

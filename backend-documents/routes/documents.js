@@ -5,6 +5,7 @@ const { authenticateToken } = require('../utils/auth');
 
 // DOCUMENT ENDPOINTS
 router.get('/land-title/:landTitleId', authenticateToken, documentController.getDocumentsByLandTitle);
+router.get('/mortgage/:mortgageId', authenticateToken, documentController.getDocumentsByMortgage);
 router.get('/download/:documentId', authenticateToken, documentController.downloadDocument);
 router.get('/view/:documentId', documentController.viewDocument);
 

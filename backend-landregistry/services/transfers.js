@@ -15,10 +15,22 @@ const submitTransfer = async (transferData) => {
       throw new Error('Land title not found or not active');
     }
     
-    // Check for existing pending or completed transfers for this title
+    const landTitle = titleCheck.rows[0];
+    
+    // Check for active mortgages
+    const mortgageCheck = await pool.query(
+      'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status = $2',
+      [landTitle.id, 'ACTIVE']
+    );
+    
+    if (parseInt(mortgageCheck.rows[0].count) > 0) {
+      throw new Error('Cannot transfer land title with active mortgages. Please release all mortgages first.');
+    }
+    
+    // Check for existing pending or completed transfers for this land title
     const existingTransfer = await pool.query(
-      'SELECT * FROM land_transfers WHERE title_number = $1 AND status IN ($2, $3)',
-      [transferData.title_number, 'PENDING', 'COMPLETED']
+      'SELECT * FROM land_transfers WHERE land_title_id = $1 AND status IN ($2, $3)',
+      [landTitle.id, 'PENDING', 'COMPLETED']
     );
     
     if (existingTransfer.rows.length > 0) {
@@ -26,31 +38,26 @@ const submitTransfer = async (transferData) => {
       throw new Error(`Transfer already exists for this land title (Transfer ID: ${transfer.transfer_id}, Status: ${transfer.status})`);
     }
     
-    const landTitle = titleCheck.rows[0];
-    
     // Generate transfer ID: TRF-YYYY-TIMESTAMP
     const transferId = `TRF-${new Date().getFullYear()}-${Date.now()}`;
     
-    // Create transfer record with Buyer/Seller terminology
+    // Create transfer record
     const result = await pool.query(
       `INSERT INTO land_transfers (
-        transfer_id, title_number, seller_name, seller_contact, seller_email, seller_address,
-        buyer_name, buyer_contact, buyer_email, buyer_address, 
-        transfer_fee, status, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+        transfer_id, land_title_id, from_owner, to_owner, buyer_contact, buyer_email, buyer_address,
+        transfer_type, consideration_amount, status, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
       RETURNING *`,
       [
         transferId,
-        transferData.title_number,
+        landTitle.id,
         landTitle.owner_name,
-        landTitle.contact_no,
-        landTitle.email_address,
-        landTitle.address,
-        transferData.buyer_name,
+        transferData.buyer_name || transferData.to_owner,
         transferData.buyer_contact,
         transferData.buyer_email,
         transferData.buyer_address,
-        transferData.transfer_fee || 5000,
+        transferData.transfer_type || 'SALE',
+        transferData.transfer_fee || transferData.consideration_amount || 5000,
         'PENDING',
         transferData.created_by
       ]
@@ -58,8 +65,7 @@ const submitTransfer = async (transferData) => {
     
     const transfer = result.rows[0];
     console.log(`🔄 Transfer submitted: ${transfer.transfer_id}`);
-    console.log(`💳 Transfer fee: ${transfer.transfer_fee}`);
-    console.log(`⚠️ Note: Create payment manually with transfer_id: ${transfer.transfer_id}`);
+    console.log(`💳 Transfer fee: ${transfer.consideration_amount}`);
     
     return transfer;
   } catch (error) {
@@ -71,9 +77,9 @@ const submitTransfer = async (transferData) => {
 const getAllTransfers = async () => {
   try {
     const query = `
-      SELECT t.*, lt.property_location, lt.area_size, lt.classification 
+      SELECT t.*, lt.title_number, lt.property_location, lt.area_size, lt.classification 
       FROM land_transfers t
-      LEFT JOIN land_titles lt ON t.title_number = lt.title_number
+      LEFT JOIN land_titles lt ON t.land_title_id = lt.id
       ORDER BY t.created_at DESC
     `;
     const result = await pool.query(query);
@@ -108,9 +114,12 @@ const processPaymentConfirmed = async (paymentData) => {
   try {
     const { payment_id, transfer_id } = paymentData;
     
-    // Get transfer details
+    // Get transfer details with land title info
     const transferResult = await pool.query(
-      'SELECT * FROM land_transfers WHERE transfer_id = $1',
+      `SELECT t.*, lt.title_number, lt.owner_name as current_owner
+       FROM land_transfers t
+       JOIN land_titles lt ON t.land_title_id = lt.id
+       WHERE t.transfer_id = $1`,
       [transfer_id]
     );
     
@@ -120,32 +129,6 @@ const processPaymentConfirmed = async (paymentData) => {
     
     const transfer = transferResult.rows[0];
     
-    // Update transfer status to COMPLETED
-    await pool.query(
-      'UPDATE land_transfers SET status = $1, payment_id = $2, transfer_date = NOW() WHERE transfer_id = $3',
-      ['COMPLETED', payment_id, transfer_id]
-    );
-    
-    // Update land title ownership (Seller -> Buyer)
-    await pool.query(
-      `UPDATE land_titles SET 
-        owner_name = $1, 
-        contact_no = $2, 
-        email_address = $3, 
-        address = $4,
-        updated_at = NOW()
-      WHERE title_number = $5`,
-      [
-        transfer.buyer_name,
-        transfer.buyer_contact,
-        transfer.buyer_email,
-        transfer.buyer_address,
-        transfer.title_number
-      ]
-    );
-    
-    console.log(`🏠 Land title ownership updated: ${transfer.title_number} (${transfer.seller_name} -> ${transfer.buyer_name})`);
-    
     // Record 2 separate blockchain transactions - seller and buyer
     const timestamp = Math.floor(Date.now() / 1000);
     const hashes = [];
@@ -154,28 +137,16 @@ const processPaymentConfirmed = async (paymentData) => {
       // Seller transaction
       const sellerPayload = {
         title_number: transfer.title_number,
-        from_owner: transfer.seller_name,
-        to_owner: transfer.buyer_name,
-        transfer_fee: transfer.transfer_fee.toString(),
+        from_owner: transfer.from_owner,
+        to_owner: transfer.to_owner,
+        transfer_fee: transfer.consideration_amount?.toString() || '0',
         transfer_date: timestamp,
         transaction_type: 'TRANSFER',
         transfer_id: transfer.transfer_id.toString(),
-        owner_name: transfer.seller_name,
-        seller_details: {
-          name: transfer.seller_name,
-          contact: transfer.seller_contact,
-          email: transfer.seller_email,
-          address: transfer.seller_address
-        },
-        buyer_details: {
-          name: transfer.buyer_name,
-          contact: transfer.buyer_contact,
-          email: transfer.buyer_email,
-          address: transfer.buyer_address
-        }
+        owner_name: transfer.from_owner
       };
       
-      console.log(`🔗 Recording seller transaction: ${transfer.seller_name}`);
+      console.log(`🔗 Recording seller transaction: ${transfer.from_owner}`);
       const sellerResponse = await blockchainClient.recordTransfer(sellerPayload);
       if (sellerResponse.success && sellerResponse.blockchainHash) {
         hashes.push(sellerResponse.blockchainHash);
@@ -185,28 +156,16 @@ const processPaymentConfirmed = async (paymentData) => {
       // Buyer transaction
       const buyerPayload = {
         title_number: transfer.title_number,
-        from_owner: transfer.seller_name,
-        to_owner: transfer.buyer_name,
-        transfer_fee: transfer.transfer_fee.toString(),
+        from_owner: transfer.from_owner,
+        to_owner: transfer.to_owner,
+        transfer_fee: transfer.consideration_amount?.toString() || '0',
         transfer_date: timestamp,
         transaction_type: 'TRANSFER',
         transfer_id: transfer.transfer_id.toString(),
-        owner_name: transfer.buyer_name,
-        seller_details: {
-          name: transfer.seller_name,
-          contact: transfer.seller_contact,
-          email: transfer.seller_email,
-          address: transfer.seller_address
-        },
-        buyer_details: {
-          name: transfer.buyer_name,
-          contact: transfer.buyer_contact,
-          email: transfer.buyer_email,
-          address: transfer.buyer_address
-        }
+        owner_name: transfer.to_owner
       };
       
-      console.log(`🔗 Recording buyer transaction: ${transfer.buyer_name}`);
+      console.log(`🔗 Recording buyer transaction: ${transfer.to_owner}`);
       const buyerResponse = await blockchainClient.recordTransfer(buyerPayload);
       if (buyerResponse.success && buyerResponse.blockchainHash) {
         hashes.push(buyerResponse.blockchainHash);
@@ -214,21 +173,47 @@ const processPaymentConfirmed = async (paymentData) => {
       }
       
       if (hashes.length > 0) {
-        // Store in land_transfers table
+        // Update transfer with blockchain hash
         await pool.query(
-          'UPDATE land_transfers SET blockchain_hash = $1 WHERE transfer_id = $2',
-          [hashes.join(','), transfer_id]
+          'UPDATE land_transfers SET blockchain_hash = $1, status = $2, transfer_date = NOW() WHERE transfer_id = $3',
+          [hashes.join(','), 'COMPLETED', transfer_id]
         );
-        // Store in land_titles table
+        console.log(`✅ Stored ${hashes.length} blockchain hashes`);
+      } else {
+        // No hashes, just update status
         await pool.query(
-          'UPDATE land_titles SET transfer_hash = $1, last_transfer_date = NOW(), transfer_count = transfer_count + 1 WHERE title_number = $2',
-          [hashes.join(','), transfer.title_number]
+          'UPDATE land_transfers SET status = $1, transfer_date = NOW() WHERE transfer_id = $2',
+          ['COMPLETED', transfer_id]
         );
-        console.log(`✅ Stored ${hashes.length} blockchain hashes in both tables`);
       }
     } catch (blockchainError) {
-      console.error('❌ Transfer blockchain recording failed:', blockchainError.message);
+      console.error('⚠️ Blockchain recording failed:', blockchainError.message);
+      // Continue with transfer even if blockchain fails
+      await pool.query(
+        'UPDATE land_transfers SET status = $1, transfer_date = NOW() WHERE transfer_id = $2',
+        ['COMPLETED', transfer_id]
+      );
     }
+    
+    // Update land title ownership and contact details
+    await pool.query(
+      `UPDATE land_titles SET 
+        owner_name = $1,
+        contact_no = $2,
+        email_address = $3,
+        address = $4,
+        updated_at = NOW()
+      WHERE id = $5`,
+      [
+        transfer.to_owner,
+        transfer.buyer_contact,
+        transfer.buyer_email,
+        transfer.buyer_address,
+        transfer.land_title_id
+      ]
+    );
+    
+    console.log(`🏠 Land title ownership updated: ${transfer.title_number} (${transfer.from_owner} -> ${transfer.to_owner})`);
     
     return { transfer, message: 'Transfer completed and ownership updated' };
     
@@ -261,9 +246,10 @@ const updateTransfer = async (transferId, updateData) => {
     const values = [];
     let paramCount = 1;
     
-    if (updateData.buyer_name !== undefined) {
-      updates.push(`buyer_name = $${paramCount++}`);
-      values.push(updateData.buyer_name);
+    // Map buyer_name to to_owner
+    if (updateData.buyer_name !== undefined || updateData.to_owner !== undefined) {
+      updates.push(`to_owner = $${paramCount++}`);
+      values.push(updateData.buyer_name || updateData.to_owner);
     }
     if (updateData.buyer_contact !== undefined) {
       updates.push(`buyer_contact = $${paramCount++}`);
@@ -277,9 +263,9 @@ const updateTransfer = async (transferId, updateData) => {
       updates.push(`buyer_address = $${paramCount++}`);
       values.push(updateData.buyer_address);
     }
-    if (updateData.transfer_fee !== undefined) {
-      updates.push(`transfer_fee = $${paramCount++}`);
-      values.push(updateData.transfer_fee);
+    if (updateData.consideration_amount !== undefined) {
+      updates.push(`consideration_amount = $${paramCount++}`);
+      values.push(updateData.consideration_amount);
     }
     
     if (updates.length === 0) {

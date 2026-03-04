@@ -25,7 +25,9 @@ const initializeDatabase = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS ${TABLES.DOCUMENTS} (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        land_title_id INT NOT NULL,
+        land_title_id INT,
+        mortgage_id INT,
+        reference_type VARCHAR(50) DEFAULT 'land_title',
         transaction_id UUID,
         document_type VARCHAR(50) NOT NULL,
         file_name VARCHAR(255) NOT NULL,
@@ -36,6 +38,13 @@ const initializeDatabase = async () => {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+    
+    // Add mortgage_id column if not exists
+    await client.query(`
+      ALTER TABLE ${TABLES.DOCUMENTS}
+      ADD COLUMN IF NOT EXISTS mortgage_id INT,
+      ADD COLUMN IF NOT EXISTS reference_type VARCHAR(50) DEFAULT 'land_title'
     `);
     
     client.release();

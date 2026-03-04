@@ -1,5 +1,6 @@
 const handleError = (error, res, operation) => {
   console.error(`❌ ${operation} failed:`, error.message);
+  console.error(`❌ Error stack:`, error.stack);
   
   if (error.name === 'ZodError') {
     return res.status(400).json({
@@ -24,7 +25,7 @@ const handleError = (error, res, operation) => {
   
   res.status(500).json({
     error: 'Internal server error',
-    message: 'Operation failed'
+    message: error.message
   });
 };
 

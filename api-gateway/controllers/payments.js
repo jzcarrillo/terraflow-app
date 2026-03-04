@@ -39,26 +39,30 @@ const createPayment = async (req, res) => {
     const { paymentSchema } = require('../schemas/payments');
     const validatedData = paymentSchema.parse(req.body);
 
-// VALIDATE LAND TITLE EXISTS
-    const landTitleValidation = await landtitles.validateLandTitleExists(validatedData.land_title_id);
-    
-    if (!landTitleValidation.exists) {
-      console.log('❌ Land title does not exist');
-      return res.status(404).json({ 
-        error: 'Reference ID does not exist',
-        message: `Land title ${validatedData.land_title_id} does not exist`
-      });
+// VALIDATE LAND TITLE EXISTS (skip for mortgage and transfer payments)
+    if (validatedData.land_title_id && validatedData.reference_type !== 'mortgage' && validatedData.reference_type !== 'Transfer Title') {
+      const landTitleValidation = await landtitles.validateLandTitleExists(validatedData.land_title_id);
+      
+      if (!landTitleValidation.exists) {
+        console.log('❌ Land title does not exist');
+        return res.status(404).json({ 
+          error: 'Reference ID does not exist',
+          message: `Land title ${validatedData.land_title_id} does not exist`
+        });
+      }
     }
 
-// VALIDATE LAND TITLE PAYMENT
-    const validation = await payments.validateLandTitlePayment(validatedData.land_title_id, validatedData.reference_type);
-    
-    if (validation.exists) {
-      console.log('❌ Payment already exists for this land title');
-      return res.status(409).json({ 
-        error: 'Payment already exists for this land title',
-        message: `A pending payment already exists for land title ${validatedData.land_title_id}`
-      });
+// VALIDATE LAND TITLE PAYMENT (skip for mortgage and transfer payments)
+    if (validatedData.land_title_id && validatedData.reference_type !== 'mortgage' && validatedData.reference_type !== 'Transfer Title') {
+      const validation = await payments.validateLandTitlePayment(validatedData.land_title_id, validatedData.reference_type);
+      
+      if (validation.exists) {
+        console.log('❌ Payment already exists for this land title');
+        return res.status(409).json({ 
+          error: 'Payment already exists for this land title',
+          message: `A pending payment already exists for land title ${validatedData.land_title_id}`
+        });
+      }
     }
 
 // GENERATE PAYMENT ID
@@ -72,10 +76,11 @@ const createPayment = async (req, res) => {
     const payload = {
       transaction_id: transactionId,
       payment_id: paymentId,
-      reference_id: validatedData.land_title_id,
+      reference_id: validatedData.transfer_id || validatedData.mortgage_id || validatedData.land_title_id || req.body.reference_id,
       reference_type: validatedData.reference_type,
       payment_data: validatedData,
       transfer_id: validatedData.transfer_id || null,
+      mortgage_id: validatedData.mortgage_id || req.body.reference_id || null,
       user_id: req.user.id,
       username: req.user.username || 'CASHIER 1',
       timestamp: new Date().toISOString()

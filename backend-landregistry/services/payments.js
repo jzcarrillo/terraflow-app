@@ -60,55 +60,20 @@ const confirmPayment = async (paymentId) => {
 };
 
 const paymentStatusUpdate = async (messageData) => {
-  const { reference_id, status } = messageData;
+  const { reference_id, reference_type, status } = messageData;
   
   try {
     console.log(`🔄 New status: ${status}`);
+    console.log(`📋 Reference type: ${reference_type || 'land_title'}`);
     
-// GET CURRENT STATUS BEFORE UPDATE
-    const getCurrentQuery = `SELECT * FROM land_titles WHERE title_number = $1`;
-    const currentResult = await pool.query(getCurrentQuery, [reference_id]);
-    
-    if (currentResult.rows.length === 0) {
-      throw new Error(`Land title not found: ${reference_id}`);
-    }
-    
-    const currentLandTitle = currentResult.rows[0];
-    const oldStatus = currentLandTitle.status;
-    
-    console.log(`🔄 Status transition: ${oldStatus} → ${status}`);
-    
-// UPDATE LAND TITLE STATUS WITH TRANSACTION
-    const [result] = await transactionManager.executeWithTransaction([
-      async (client) => {
-        const updateResult = await client.query(
-          'UPDATE land_titles SET status = $1, updated_at = NOW() WHERE title_number = $2 RETURNING *',
-          [status, reference_id]
-        );
-        return updateResult;
-      }
-    ]);
-    
-    if (result.rows.length > 0) {
-      const landTitle = result.rows[0];
-      console.log(`✅ Land title ${landTitle.title_number} status updated to ${status} successfully`);
-      
-      // Process blockchain recording after successful database transaction
-      await processBlockchainRecording(landTitle, status, oldStatus, currentLandTitle, reference_id);
-      
-      return landTitle;
+    // Handle different reference types
+    if (reference_type === 'mortgage') {
+      return await handleMortgagePayment(reference_id, status);
+    } else if (reference_type === 'mortgage_release') {
+      return await handleMortgageReleasePayment(reference_id, status);
     } else {
-      console.log(`⚠️ No land title found for reference: ${reference_id}`);
-      
-      const failureEvent = {
-        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
-        reference_id: reference_id,
-        error: 'Land title not found',
-        timestamp: new Date().toISOString()
-      };
-      
-      await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
-      return null;
+      // Default: land title payment
+      return await handleLandTitlePayment(reference_id, status);
     }
     
   } catch (error) {
@@ -116,8 +81,9 @@ const paymentStatusUpdate = async (messageData) => {
     
     try {
       const failureEvent = {
-        event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
+        event_type: 'PAYMENT_STATUS_UPDATE_FAILED',
         reference_id: reference_id,
+        reference_type: reference_type || 'land_title',
         error: error.message,
         timestamp: new Date().toISOString()
       };
@@ -128,6 +94,312 @@ const paymentStatusUpdate = async (messageData) => {
     }
     
     throw error;
+  }
+};
+
+const handleMortgagePayment = async (mortgageId, status) => {
+  console.log(`🏦 Processing mortgage payment: ${mortgageId}`);
+  
+  // Check if mortgageId is a string (MTG-xxx) or integer (database ID)
+  let getCurrentQuery;
+  let queryParam;
+  
+  if (typeof mortgageId === 'string' && mortgageId.startsWith('MTG-')) {
+    // It's a mortgage_id string, query by mortgage_id column
+    getCurrentQuery = 'SELECT * FROM mortgages WHERE mortgage_id = $1';
+    queryParam = mortgageId;
+  } else {
+    // It's a database ID, query by id column
+    getCurrentQuery = 'SELECT * FROM mortgages WHERE id = $1';
+    queryParam = mortgageId;
+  }
+  
+  const currentResult = await pool.query(getCurrentQuery, [queryParam]);
+  
+  if (currentResult.rows.length === 0) {
+    throw new Error(`Mortgage not found: ${mortgageId}`);
+  }
+  
+  const currentMortgage = currentResult.rows[0];
+  const oldStatus = currentMortgage.status;
+  
+  console.log(`🔄 Mortgage status transition: ${oldStatus} → ${status}`);
+  
+  if (status === 'PAID' || status === 'ACTIVE') {
+    // Check if activating this mortgage would exceed 3 ACTIVE limit
+    const countQuery = 'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status = $2';
+    const countResult = await pool.query(countQuery, [currentMortgage.land_title_id, 'ACTIVE']);
+    
+    if (parseInt(countResult.rows[0].count) >= 3) {
+      throw new Error('Cannot activate mortgage: Maximum 3 active mortgages already reached for this land title');
+    }
+    
+    // Payment confirmed - activate mortgage
+    const [result] = await transactionManager.executeWithTransaction([
+      async (client) => {
+        // Use the correct ID field for update
+        const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+          ? 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE mortgage_id = $2 RETURNING *'
+          : 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *';
+        
+        const updateResult = await client.query(updateQuery, ['ACTIVE', mortgageId]);
+        return updateResult;
+      }
+    ]);
+    
+    const mortgage = result.rows[0];
+    console.log(`✅ Mortgage ${mortgageId} activated successfully`);
+    
+    // Record on blockchain
+    try {
+      console.log(`🔗 Recording mortgage ${mortgage.mortgage_id} to blockchain`);
+      
+      // Fetch land title to get title_number
+      const landTitleQuery = 'SELECT title_number FROM land_titles WHERE id = $1';
+      const landTitleResult = await pool.query(landTitleQuery, [mortgage.land_title_id]);
+      
+      if (landTitleResult.rows.length === 0) {
+        throw new Error(`Land title not found for ID: ${mortgage.land_title_id}`);
+      }
+      
+      const titleNumber = landTitleResult.rows[0].title_number;
+      
+      const blockchainPayload = {
+        mortgage_id: mortgage.mortgage_id,  // Use mortgage_id string instead of id
+        land_title_id: titleNumber,  // Use title_number instead of database ID
+        bank_name: mortgage.bank_name,
+        amount: mortgage.amount,
+        status: 'ACTIVE',
+        timestamp: Math.floor(Date.now() / 1000),
+        transaction_id: mortgage.transaction_id
+      };
+      
+      const blockchainResponse = await blockchainClient.recordMortgage(blockchainPayload);
+      
+      if (blockchainResponse.success) {
+        console.log(`🔗 Blockchain TX: ${blockchainResponse.transaction_id}`);
+        console.log(`🔗 Hash: ${blockchainResponse.blockchainHash}`);
+        
+        const blockchainHash = blockchainResponse.blockchainHash;
+        
+        if (blockchainHash) {
+          // Update using mortgage_id string
+          const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+            ? 'UPDATE mortgages SET blockchain_hash = $1 WHERE mortgage_id = $2'
+            : 'UPDATE mortgages SET blockchain_hash = $1 WHERE id = $2';
+          
+          await pool.query(updateQuery, [blockchainHash, mortgageId]);
+          console.log(`✅ Blockchain hash stored: ${blockchainHash}`);
+        }
+      }
+    } catch (blockchainError) {
+      console.error('❌ Blockchain recording failed:', blockchainError.message);
+    }
+    
+    return mortgage;
+    
+  } else if (status === 'CANCELLED' && oldStatus === 'ACTIVE') {
+    // Payment cancelled - revert to PENDING
+    const [result] = await transactionManager.executeWithTransaction([
+      async (client) => {
+        // Use the correct ID field for update
+        const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+          ? 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE mortgage_id = $2 RETURNING *'
+          : 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *';
+        
+        const updateResult = await client.query(updateQuery, ['PENDING', mortgageId]);
+        return updateResult;
+      }
+    ]);
+    
+    const mortgage = result.rows[0];
+    console.log(`✅ Mortgage ${mortgageId} reverted to PENDING`);
+    
+    // Record cancellation on blockchain
+    try {
+      const cancellationPayload = {
+        mortgage_id: mortgage.mortgage_id,  // Use mortgage_id string
+        previous_status: oldStatus,
+        new_status: 'PENDING',
+        original_hash: currentMortgage.blockchain_hash,
+        reason: 'Payment cancelled',
+        timestamp: Math.floor(Date.now() / 1000)
+      };
+      
+      const cancellationResponse = await blockchainClient.recordCancellation(cancellationPayload);
+      
+      if (cancellationResponse.success && cancellationResponse.blockchainHash) {
+        // Update using mortgage_id string
+        const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+          ? 'UPDATE mortgages SET cancellation_hash = $1 WHERE mortgage_id = $2'
+          : 'UPDATE mortgages SET cancellation_hash = $1 WHERE id = $2';
+        
+        await pool.query(updateQuery, [cancellationResponse.blockchainHash, mortgageId]);
+        console.log(`✅ Cancellation hash stored`);
+      }
+    } catch (cancellationError) {
+      console.error('❌ Cancellation blockchain recording failed:', cancellationError.message);
+    }
+    
+    return mortgage;
+  }
+  
+  return currentMortgage;
+};
+
+const handleMortgageReleasePayment = async (mortgageId, status) => {
+  console.log(`🏦 Processing mortgage release payment: ${mortgageId}`);
+  
+  let getCurrentQuery;
+  let queryParam;
+  
+  if (typeof mortgageId === 'string' && mortgageId.startsWith('MTG-')) {
+    getCurrentQuery = 'SELECT * FROM mortgages WHERE mortgage_id = $1';
+    queryParam = mortgageId;
+  } else {
+    getCurrentQuery = 'SELECT * FROM mortgages WHERE id = $1';
+    queryParam = mortgageId;
+  }
+  
+  const currentResult = await pool.query(getCurrentQuery, [queryParam]);
+  
+  if (currentResult.rows.length === 0) {
+    throw new Error(`Mortgage not found: ${mortgageId}`);
+  }
+  
+  const currentMortgage = currentResult.rows[0];
+  const oldStatus = currentMortgage.status;
+  
+  console.log(`🔄 Mortgage release status transition: ${oldStatus} → RELEASED`);
+  
+  if (status === 'PAID') {
+    const [result] = await transactionManager.executeWithTransaction([
+      async (client) => {
+        const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+          ? 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE mortgage_id = $2 RETURNING *'
+          : 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *';
+        
+        const updateResult = await client.query(updateQuery, ['RELEASED', mortgageId]);
+        return updateResult;
+      }
+    ]);
+    
+    const mortgage = result.rows[0];
+    console.log(`✅ Mortgage ${mortgageId} released successfully`);
+    
+    try {
+      console.log(`🔗 Recording mortgage release ${mortgage.mortgage_id} to blockchain`);
+      
+      const landTitleQuery = 'SELECT title_number FROM land_titles WHERE id = $1';
+      const landTitleResult = await pool.query(landTitleQuery, [mortgage.land_title_id]);
+      
+      if (landTitleResult.rows.length === 0) {
+        throw new Error(`Land title not found for ID: ${mortgage.land_title_id}`);
+      }
+      
+      const titleNumber = landTitleResult.rows[0].title_number;
+      
+      const blockchainPayload = {
+        mortgage_id: mortgage.mortgage_id,
+        land_title_id: titleNumber,
+        bank_name: mortgage.bank_name,
+        amount: mortgage.amount,
+        previous_status: oldStatus,
+        new_status: 'RELEASED',
+        timestamp: Math.floor(Date.now() / 1000),
+        transaction_id: mortgage.transaction_id
+      };
+      
+      const blockchainResponse = await blockchainClient.recordMortgageRelease(blockchainPayload);
+      
+      if (blockchainResponse.success) {
+        console.log(`🔗 Release Blockchain TX: ${blockchainResponse.transaction_id}`);
+        console.log(`🔗 Release Hash: ${blockchainResponse.blockchainHash}`);
+        
+        const releaseHash = blockchainResponse.blockchainHash;
+        
+        if (releaseHash) {
+          const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+            ? 'UPDATE mortgages SET release_blockchain_hash = $1 WHERE mortgage_id = $2'
+            : 'UPDATE mortgages SET release_blockchain_hash = $1 WHERE id = $2';
+          
+          await pool.query(updateQuery, [releaseHash, mortgageId]);
+          console.log(`✅ Release blockchain hash stored: ${releaseHash}`);
+        }
+      }
+    } catch (blockchainError) {
+      console.error('❌ Release blockchain recording failed:', blockchainError.message);
+    }
+    
+    return mortgage;
+    
+  } else if (status === 'CANCELLED') {
+    const [result] = await transactionManager.executeWithTransaction([
+      async (client) => {
+        const updateQuery = typeof mortgageId === 'string' && mortgageId.startsWith('MTG-') 
+          ? 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE mortgage_id = $2 RETURNING *'
+          : 'UPDATE mortgages SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *';
+        
+        const updateResult = await client.query(updateQuery, ['ACTIVE', mortgageId]);
+        return updateResult;
+      }
+    ]);
+    
+    const mortgage = result.rows[0];
+    console.log(`✅ Mortgage ${mortgageId} reverted to ACTIVE`);
+    
+    return mortgage;
+  }
+  
+  return currentMortgage;
+};
+
+const handleLandTitlePayment = async (reference_id, status) => {
+  console.log(`🏘️ Processing land title payment: ${reference_id}`);
+  
+  const getCurrentQuery = `SELECT * FROM land_titles WHERE title_number = $1`;
+  const currentResult = await pool.query(getCurrentQuery, [reference_id]);
+  
+  if (currentResult.rows.length === 0) {
+    throw new Error(`Land title not found: ${reference_id}`);
+  }
+  
+  const currentLandTitle = currentResult.rows[0];
+  const oldStatus = currentLandTitle.status;
+  
+  console.log(`🔄 Status transition: ${oldStatus} → ${status}`);
+  
+  // UPDATE LAND TITLE STATUS WITH TRANSACTION
+  const [result] = await transactionManager.executeWithTransaction([
+    async (client) => {
+      const updateResult = await client.query(
+        'UPDATE land_titles SET status = $1, updated_at = NOW() WHERE title_number = $2 RETURNING *',
+        [status, reference_id]
+      );
+      return updateResult;
+    }
+  ]);
+  
+  if (result.rows.length > 0) {
+    const landTitle = result.rows[0];
+    console.log(`✅ Land title ${landTitle.title_number} status updated to ${status} successfully`);
+    
+    // Process blockchain recording after successful database transaction
+    await processBlockchainRecording(landTitle, status, oldStatus, currentLandTitle, reference_id);
+    
+    return landTitle;
+  } else {
+    console.log(`⚠️ No land title found for reference: ${reference_id}`);
+    
+    const failureEvent = {
+      event_type: 'LAND_TITLE_STATUS_UPDATE_FAILED',
+      reference_id: reference_id,
+      error: 'Land title not found',
+      timestamp: new Date().toISOString()
+    };
+    
+    await rabbitmq.publishToQueue(QUEUES.PAYMENTS, failureEvent);
+    return null;
   }
 };
 
@@ -329,5 +601,42 @@ const processBlockchainRecording = async (landTitle, status, oldStatus, currentL
 module.exports = {
   createPayment,
   confirmPayment,
-  paymentStatusUpdate
+  paymentStatusUpdate,
+  processMortgagePaymentConfirmed: async (messageData) => {
+    const { mortgage_id, reference_id, payment_status } = messageData;
+    
+    console.log(`🏛️ Processing mortgage payment confirmation for: ${mortgage_id || reference_id}`);
+    
+    try {
+      // Use reference_id as mortgage_id if mortgage_id not provided
+      const mortgageIdToUse = mortgage_id || reference_id;
+      
+      if (payment_status === 'PAID') {
+        await handleMortgagePayment(mortgageIdToUse, 'PAID');
+      } else if (payment_status === 'CANCELLED') {
+        await handleMortgagePayment(mortgageIdToUse, 'CANCELLED');
+      }
+    } catch (error) {
+      console.error(`❌ Mortgage payment confirmation failed:`, error.message);
+      throw error;
+    }
+  },
+  processMortgageReleasePaymentConfirmed: async (messageData) => {
+    const { mortgage_id, reference_id, payment_status } = messageData;
+    
+    console.log(`🏛️ Processing mortgage release payment confirmation for: ${mortgage_id || reference_id}`);
+    
+    try {
+      const mortgageIdToUse = mortgage_id || reference_id;
+      
+      if (payment_status === 'PAID') {
+        await handleMortgageReleasePayment(mortgageIdToUse, 'PAID');
+      } else if (payment_status === 'CANCELLED') {
+        await handleMortgageReleasePayment(mortgageIdToUse, 'CANCELLED');
+      }
+    } catch (error) {
+      console.error(`❌ Mortgage release payment confirmation failed:`, error.message);
+      throw error;
+    }
+  }
 };

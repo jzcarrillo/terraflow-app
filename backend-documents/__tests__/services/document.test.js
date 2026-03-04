@@ -33,6 +33,8 @@ describe('Document Service Tests', () => {
       const mockDoc = {
         id: 1,
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'deed.pdf',
@@ -46,6 +48,8 @@ describe('Document Service Tests', () => {
 
       const result = await documentService.createDocument({
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'deed.pdf',
@@ -58,7 +62,7 @@ describe('Document Service Tests', () => {
       expect(result).toEqual(mockDoc);
       expect(executeQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO documents'),
-        [1, 'TXN-001', 'DEED', 'deed.pdf', '/uploads/deed.pdf', 1024, 'application/pdf', 'user1']
+        [1, null, 'land_title', 'TXN-001', 'DEED', 'deed.pdf', '/uploads/deed.pdf', 1024, 'application/pdf', 'user1']
       );
     });
 
@@ -68,6 +72,8 @@ describe('Document Service Tests', () => {
 
       const result = await documentService.createDocument({
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'file.pdf',
@@ -88,6 +94,8 @@ describe('Document Service Tests', () => {
 
       await documentService.createDocument({
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'file.pdf',
@@ -128,6 +136,8 @@ describe('Document Service Tests', () => {
 
       await documentService.createDocument({
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'file.pdf',
@@ -139,7 +149,7 @@ describe('Document Service Tests', () => {
 
       expect(executeQuery).toHaveBeenCalledWith(
         expect.any(String),
-        expect.arrayContaining([1, 'TXN-001', 'DEED'])
+        expect.arrayContaining([1, null, 'land_title', 'TXN-001', 'DEED'])
       );
     });
   });
@@ -276,6 +286,8 @@ describe('Document Service Tests', () => {
 
       await expect(documentService.createDocument({
         land_title_id: 1,
+        mortgage_id: null,
+        reference_type: 'land_title',
         transaction_id: 'TXN-001',
         document_type: 'DEED',
         file_name: 'file.pdf',

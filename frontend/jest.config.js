@@ -11,6 +11,12 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['next/dist/build/swc/jest-transformer', {}],
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(next)/)',
+  ],
   collectCoverageFrom: [
     'src/app/**/*.{js,jsx,ts,tsx}',
     'src/components/**/*.{js,jsx,ts,tsx}',

@@ -163,11 +163,10 @@ export default function TransferLandTitle() {
   const handleEditTransfer = () => {
     const transferToEdit = selectedTransferForAction
     reset({
-      buyer_name: transferToEdit.buyer_name,
+      buyer_name: transferToEdit.to_owner,
       buyer_contact: transferToEdit.buyer_contact,
       buyer_email: transferToEdit.buyer_email,
-      buyer_address: transferToEdit.buyer_address,
-      transfer_fee: transferToEdit.transfer_fee
+      buyer_address: transferToEdit.buyer_address
     })
     setEditOpen(true)
     setAnchorEl(null)
@@ -228,7 +227,6 @@ export default function TransferLandTitle() {
                 <TableCell sx={{ fontWeight: 'bold' }}>Title Number</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Seller</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Buyer</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Transfer Fee</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Created Date</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
@@ -236,9 +234,9 @@ export default function TransferLandTitle() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <LoadingTable colSpan={8} />
+                <LoadingTable colSpan={7} />
               ) : transfers.length === 0 ? (
-                <LoadingTable colSpan={8} message="No transfers found" />
+                <LoadingTable colSpan={7} message="No transfers found" />
               ) : (
                 transfers.map((transfer) => (
                   <TableRow key={transfer.transfer_id}>
@@ -252,9 +250,8 @@ export default function TransferLandTitle() {
                       </Button>
                     </TableCell>
                     <TableCell>{transfer.title_number}</TableCell>
-                    <TableCell>{transfer.seller_name}</TableCell>
-                    <TableCell>{transfer.buyer_name}</TableCell>
-                    <TableCell>₱{transfer.transfer_fee}</TableCell>
+                    <TableCell>{transfer.from_owner}</TableCell>
+                    <TableCell>{transfer.to_owner}</TableCell>
                     <TableCell>
                       <StatusChip status={transfer.status} />
                     </TableCell>
@@ -454,18 +451,6 @@ export default function TransferLandTitle() {
                     {errors.buyer_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_address.message}</Typography>}
                   </Box>
                 </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Transfer Fee:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="number" 
-                      {...register('transfer_fee', { valueAsNumber: true })}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.transfer_fee && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.transfer_fee.message}</Typography>}
-                  </Box>
-                </Box>
               </Box>
             </DialogContent>
             <DialogActions>
@@ -491,11 +476,11 @@ export default function TransferLandTitle() {
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Seller:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.seller_name}</Typography>
+                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.from_owner}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Buyer:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.buyer_name}</Typography>
+                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.to_owner}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Buyer Contact:</Typography>
@@ -508,10 +493,6 @@ export default function TransferLandTitle() {
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Buyer Address:</Typography>
                   <Typography sx={{ p: 2, flex: 1 }}>{selectedTransfer.buyer_address}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
-                  <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Transfer Fee:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>₱{selectedTransfer.transfer_fee}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Status:</Typography>

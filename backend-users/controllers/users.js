@@ -22,7 +22,7 @@ const getUserByUsername = async (req, res) => {
     console.log(`✅ User found: ${username} (ID: ${result.rows[0].id})`);
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(`❌ Get user error for ${username}:`, error.message);
+    console.error(`❌ Get user error for ${req.params.username}:`, error.message);
     handleError(error, res, 'Get user by username');
   }
 };

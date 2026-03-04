@@ -2,8 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const corsMiddleware = require('./middleware/cors');
 const config = require('./config/services');
-const { testConnection } = require('./config/db');
-const { initializeDatabase } = require('./utils/init-database');
+const { testConnection, initializeDatabase } = require('./config/db');
 const { startConsumer } = require('./services/consumer');
 const rabbitmq = require('./utils/rabbitmq');
 
@@ -16,6 +15,7 @@ app.use(express.json());
 
 // ROUTES
 app.use('/api/land-titles', require('./routes/landtitles'));
+app.use('/api/mortgages', require('./routes/mortgages'));
 app.use('/api/blockchain', require('./routes/blockchain'));
 app.use('/api/transfers', require('./routes/transfers'));
 
@@ -32,10 +32,17 @@ app.get('/health', (req, res) => {
 testConnection();
 
 // INITIALIZE DATABASE TABLES
-initializeDatabase();
-
-// START MESSAGE QUEUE CONSUMER
-startConsumer();
+(async () => {
+  try {
+    console.log('🔧 Starting database initialization...');
+    await initializeDatabase();
+    console.log('🎉 Database initialization completed');
+    // START MESSAGE QUEUE CONSUMER AFTER INITIALIZATION
+    startConsumer();
+  } catch (error) {
+    console.error('💥 Database initialization error:', error);
+  }
+})();
 
 // GRACEFUL SHUTDOWN
 process.on('SIGINT', async () => {

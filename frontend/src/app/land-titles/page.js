@@ -26,14 +26,14 @@ import { Add as AddIcon } from '@mui/icons-material'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { landTitlesAPI } from '@/services/api'
+import { landTitlesAPI, mortgagesAPI } from '@/services/api'
 import Layout from '@/components/Layout'
 import StatusChip from '@/components/common/StatusChip'
 import LoadingTable from '@/components/common/LoadingTable'
 import AlertMessage from '@/components/common/AlertMessage'
 import { useApi } from '@/hooks/useApi'
 import { getCurrentUser } from '@/utils/auth'
-import { formatDate, generateId } from '@/utils/formatters'
+import { formatDate, formatCurrency, generateId } from '@/utils/formatters'
 import { API_CONFIG } from '@/utils/config'
 
 const landTitleSchema = z.object({
@@ -47,8 +47,7 @@ const landTitleSchema = z.object({
   classification: z.string().min(1, "Classification is required"),
   registration_date: z.string().min(1, "Registration date is required"),
   registrar_office: z.string().min(1, "Registrar office is required"),
-  previous_title_number: z.string().optional(),
-  encumbrances: z.string().optional()
+  previous_title_number: z.string().optional()
 })
 
 export default function LandTitles() {
@@ -65,6 +64,7 @@ export default function LandTitles() {
   const [attachments, setAttachments] = useState([{ id: 1 }])
   const [blockchainHistory, setBlockchainHistory] = useState([])
   const [loadingBlockchain, setLoadingBlockchain] = useState(false)
+  const [titleMortgages, setTitleMortgages] = useState([])
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(landTitleSchema)
@@ -225,7 +225,15 @@ export default function LandTitles() {
     setSelectedTitle(title)
     setDetailsOpen(true)
     setBlockchainHistory([])
+    setTitleMortgages([])
     await fetchBlockchainHistory(title.title_number)
+    try {
+      const response = await mortgagesAPI.getAll()
+      const allMortgages = Array.isArray(response.data) ? response.data : (response.data?.data || [])
+      setTitleMortgages(allMortgages.filter(m => m.land_title_id === title.id))
+    } catch (e) {
+      setTitleMortgages([])
+    }
   }
 
   const handleViewAttachment = (documentId, fileName) => {
@@ -533,14 +541,6 @@ export default function LandTitles() {
                   />
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Encumbrances:</Typography>
-                  <textarea 
-                    rows={4}
-                    {...register('encumbrances')}
-                    style={{ flex: 1, padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                  />
-                </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Attachments:</Typography>
@@ -650,10 +650,6 @@ export default function LandTitles() {
                   <Typography sx={{ p: 2, flex: 1 }}>{selectedTitle.previous_title_number}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
-                  <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Encumbrances:</Typography>
-                  <Typography sx={{ p: 2, flex: 1 }}>{selectedTitle.encumbrances}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Status:</Typography>
                   <Box sx={{ p: 2, flex: 1 }}>
                     <StatusChip status={selectedTitle.status} />
@@ -704,13 +700,64 @@ export default function LandTitles() {
                   </Box>
                 </Box>
                 
+                {/* MORTGAGE SUMMARY */}
+                <Box sx={{ border: '1px solid #ddd', borderRadius: '4px' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', p: 2, borderBottom: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>
+                    <Typography sx={{ width: 220, fontWeight: 'bold' }}>Mortgage Summary:</Typography>
+                    <Chip
+                      label={titleMortgages.some(m => ['ACTIVE', 'PENDING'].includes(m.status)) ? 'ENCUMBERED' : 'CLEAR'}
+                      color={titleMortgages.some(m => ['ACTIVE', 'PENDING'].includes(m.status)) ? 'error' : 'success'}
+                      size="small"
+                    />
+                  </Box>
+                  <Box sx={{ p: 2 }}>
+                    {titleMortgages.length === 0 ? (
+                      <Typography variant="body2" sx={{ color: 'gray', fontStyle: 'italic' }}>No mortgages found</Typography>
+                    ) : (
+                      <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #ccc' }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Mortgage ID</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Bank</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Lien</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {titleMortgages.map((m) => (
+                              <TableRow key={m.id}>
+                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '12px' }}>{m.mortgage_id}</TableCell>
+                                <TableCell>{m.bank_name}</TableCell>
+                                <TableCell>{formatCurrency(m.amount)}</TableCell>
+                                <TableCell>{m.lien_position}{m.lien_position === 1 ? 'st' : m.lien_position === 2 ? 'nd' : 'rd'}</TableCell>
+                                <TableCell><StatusChip status={m.status} /></TableCell>
+                              </TableRow>
+                            ))}
+                            {titleMortgages.filter(m => m.status === 'ACTIVE').length > 0 && (
+                              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>Total Encumbrance</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>
+                                  {formatCurrency(titleMortgages.filter(m => m.status === 'ACTIVE').reduce((sum, m) => sum + parseFloat(m.amount), 0))}
+                                </TableCell>
+                                <TableCell colSpan={2} />
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Box>
+                </Box>
+
                 {/* BLOCKCHAIN TABLE */}
                 <Box sx={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                   <Typography sx={{ width: 220, fontWeight: 'bold', p: 2, borderRight: '1px solid #ddd', backgroundColor: '#f5f5f5' }}>Blockchain:</Typography>
                   <Box sx={{ p: 2, flex: 1 }}>
                     {loadingBlockchain ? (
                       <Typography>Loading blockchain history...</Typography>
-                    ) : blockchainHistory.length > 0 ? (
+                    ) : blockchainHistory.length > 0 || (selectedTitle.mortgages && selectedTitle.mortgages.length > 0) ? (
                       <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '2px solid #ccc' }}>
                         <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid #ccc' } }}>
                           <TableHead>
@@ -723,7 +770,7 @@ export default function LandTitles() {
                           </TableHead>
                           <TableBody>
                             {blockchainHistory.map((tx, index) => (
-                              <TableRow key={index} sx={{ '&:hover': { backgroundColor: tx.transaction_type === 'CREATED' ? '#f0f8ff' : '#fff8f0' } }}>
+                              <TableRow key={`blockchain-${index}`} sx={{ '&:hover': { backgroundColor: tx.transaction_type === 'CREATED' ? '#f0f8ff' : tx.transaction_type === 'MORTGAGE' ? '#f0fff0' : '#fff8f0' } }}>
                                 <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
                                   {tx.transaction_type === 'TRANSFER' && (
                                     <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
@@ -738,7 +785,8 @@ export default function LandTitles() {
                                       tx.transaction_type === 'CREATED' ? 'Create' : 
                                       tx.transaction_type === 'TRANSFER' ? 'Transfer' :
                                       tx.transaction_type === 'CANCELLED' ? 'Cancelled' :
-                                      tx.transaction_type === 'REACTIVATED' ? 'Reactivated' : 'Other'
+                                      tx.transaction_type === 'REACTIVATED' ? 'Reactivated' :
+                                      tx.transaction_type === 'MORTGAGE' ? 'Mortgage' : 'Other'
                                     } 
                                     size="small" 
                                     color={
@@ -746,6 +794,7 @@ export default function LandTitles() {
                                       tx.transaction_type === 'CANCELLED' ? 'error' :
                                       tx.transaction_type === 'REACTIVATED' ? 'warning' : 'success'
                                     }
+                                    sx={tx.transaction_type === 'MORTGAGE' ? { backgroundColor: '#9c27b0', color: 'white' } : {}}
                                   />
                                 </TableCell>
                                 <TableCell sx={{ border: '1px solid #ccc' }}>
@@ -756,6 +805,15 @@ export default function LandTitles() {
                                     <Typography variant="caption">
                                       {tx.owner_name || 'N/A'}
                                     </Typography>
+                                  ) : tx.transaction_type === 'MORTGAGE' ? (
+                                    <Box>
+                                      <Typography variant="caption" sx={{ display: 'block' }}>
+                                        Bank name: {tx.bank_name || 'N/A'}
+                                      </Typography>
+                                      <Typography variant="caption" sx={{ display: 'block' }}>
+                                        Amount: {tx.amount ? formatCurrency(parseFloat(tx.amount)) : 'N/A'}
+                                      </Typography>
+                                    </Box>
                                   ) : (
                                     <Typography variant="caption">
                                       {tx.owner_name === tx.from_owner ? tx.from_owner : tx.to_owner}
@@ -763,6 +821,56 @@ export default function LandTitles() {
                                   )}
                                 </TableCell>
                               </TableRow>
+                            ))}
+                            {selectedTitle.mortgages && selectedTitle.mortgages.filter(m => m.blockchain_hash || m.release_blockchain_hash).map((mortgage, index) => (
+                              <>
+                                {mortgage.blockchain_hash && (
+                                  <TableRow key={`mortgage-active-${index}`} sx={{ '&:hover': { backgroundColor: '#f0fff0' } }}>
+                                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
+                                      {mortgage.blockchain_hash}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      <Chip label="Mortgage" size="small" sx={{ backgroundColor: '#9c27b0', color: 'white' }} />
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      {formatDate(mortgage.created_at)}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      <Box>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                          Bank name: {mortgage.bank_name}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                          Amount: {formatCurrency(mortgage.amount)}
+                                        </Typography>
+                                      </Box>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                                {mortgage.release_blockchain_hash && (
+                                  <TableRow key={`mortgage-released-${index}`} sx={{ '&:hover': { backgroundColor: '#fff0f5' } }}>
+                                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', wordBreak: 'break-all', border: '1px solid #ccc' }}>
+                                      {mortgage.release_blockchain_hash}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      <Chip label="Mortgage Released" size="small" sx={{ backgroundColor: '#e91e63', color: 'white' }} />
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      {formatDate(mortgage.updated_at)}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid #ccc' }}>
+                                      <Box>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                          Bank name: {mortgage.bank_name}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ display: 'block' }}>
+                                          Amount: {formatCurrency(mortgage.amount)}
+                                        </Typography>
+                                      </Box>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </>
                             ))}
                           </TableBody>
                         </Table>

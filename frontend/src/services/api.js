@@ -153,4 +153,31 @@ export const usersAPI = {
   getProfile: () => api.get('/users/profile'),
 }
 
+// Mortgages API
+export const mortgagesAPI = {
+  getAll: () => api.get('/mortgages'),
+  getById: (id) => api.get(`/mortgages/${id}`),
+  create: (data) => {
+    const formData = new FormData()
+    Object.keys(data).forEach(key => {
+      if (key === 'attachments' && data[key] instanceof File) {
+        formData.append('attachments', data[key])
+      } else if (key !== 'attachments') {
+        formData.append(key, data[key])
+      }
+    })
+    return api.post(`/land-titles/${data.land_title_id}/mortgage`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  update: (id, data) => api.put(`/mortgages/${id}`, data),
+  cancel: (id) => api.delete(`/mortgages/${id}`),
+  createRelease: (id) => api.post(`/mortgages/${id}/release`),
+  updateRelease: (id, data) => api.put(`/mortgages/${id}/release`, data),
+  cancelRelease: (id) => api.delete(`/mortgages/${id}/release`),
+  checkTransferEligibility: (landTitleId) => api.get(`/mortgages/check-transfer/${landTitleId}`),
+  getLandTitlesForMortgage: () => api.get('/mortgages/available-titles'),
+  getAttachments: (mortgageId) => api.get(`/mortgages/${mortgageId}/attachments`),
+}
+
 export default api

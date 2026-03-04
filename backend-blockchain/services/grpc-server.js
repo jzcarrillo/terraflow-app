@@ -33,7 +33,9 @@ class GrpcServer {
         RecordTransfer: this.recordTransfer.bind(this),
         GetLandTitleHistory: this.getLandTitleHistory.bind(this),
         QueryLandTitle: this.queryLandTitle.bind(this),
-        GetTransactionHistory: this.getTransactionHistory.bind(this)
+        GetTransactionHistory: this.getTransactionHistory.bind(this),
+        RecordMortgage: this.recordMortgage.bind(this),
+        RecordMortgageRelease: this.recordMortgageRelease.bind(this)
       });
 
       console.log('✅ gRPC server initialized');
@@ -205,6 +207,59 @@ class GrpcServer {
 
     } catch (error) {
       console.error('❌ gRPC GetTransactionHistory error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async recordMortgage(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC RecordMortgage request:`, JSON.stringify(request, null, 2));
+
+      const result = await this.chaincodeService.recordMortgage({
+        mortgage_id: request.mortgage_id,
+        land_title_id: request.land_title_id,
+        bank_name: request.bank_name,
+        amount: request.amount,
+        status: request.status,
+        timestamp: request.timestamp,
+        transaction_id: request.transaction_id
+      });
+
+      console.log(`📤 gRPC RecordMortgage response:`, result);
+      callback(null, result);
+
+    } catch (error) {
+      console.error('❌ gRPC RecordMortgage error:', error.message);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message
+      });
+    }
+  }
+
+  async recordMortgageRelease(call, callback) {
+    try {
+      const request = call.request;
+      console.log(`📥 gRPC RecordMortgageRelease request:`, JSON.stringify(request, null, 2));
+
+      const result = await this.chaincodeService.recordMortgageRelease({
+        mortgage_id: request.mortgage_id,
+        land_title_id: request.land_title_id,
+        previous_status: request.previous_status,
+        new_status: request.new_status,
+        timestamp: request.timestamp,
+        transaction_id: request.transaction_id
+      });
+
+      console.log(`📤 gRPC RecordMortgageRelease response:`, result);
+      callback(null, result);
+
+    } catch (error) {
+      console.error('❌ gRPC RecordMortgageRelease error:', error.message);
       callback({
         code: grpc.status.INTERNAL,
         message: error.message

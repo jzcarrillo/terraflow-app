@@ -28,9 +28,9 @@ const landTitleCreation = async (messageData) => {
         title_number, owner_name, contact_no, email_address, address, 
         property_location, lot_number, survey_number, area_size, 
         classification, registration_date, registrar_office, 
-        previous_title_number, encumbrances, transaction_id, 
+        previous_title_number, transaction_id, 
         status, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `;
     
@@ -48,7 +48,6 @@ const landTitleCreation = async (messageData) => {
       validatedData.registration_date,
       validatedData.registrar_office,
       validatedData.previous_title_number,
-      validatedData.encumbrances,
       transaction_id,
       STATUS.PENDING,
       user_id
@@ -79,8 +78,21 @@ const getAllLandTitles = async () => {
   try {
     const query = 'SELECT * FROM land_titles ORDER BY created_at DESC';
     const result = await pool.query(query);
-    console.log(`📋 Retrieved ${result.rows.length} land titles`);
-    return result.rows;
+    
+    // Fetch mortgages for each land title
+    const titlesWithMortgages = await Promise.all(
+      result.rows.map(async (title) => {
+        const mortgagesQuery = 'SELECT * FROM mortgages WHERE land_title_id = $1 ORDER BY created_at DESC';
+        const mortgagesResult = await pool.query(mortgagesQuery, [title.id]);
+        return {
+          ...title,
+          mortgages: mortgagesResult.rows
+        };
+      })
+    );
+    
+    console.log(`📋 Retrieved ${titlesWithMortgages.length} land titles with mortgages`);
+    return titlesWithMortgages;
   } catch (error) {
     console.error(`❌ Get all land titles failed:`, error.message);
     throw error;
@@ -92,8 +104,19 @@ const getLandTitleById = async (id) => {
     const query = 'SELECT * FROM land_titles WHERE id = $1';
     const result = await pool.query(query, [id]);
     const title = result.rows[0];
-    console.log(`🔍 Land title ${id}: ${title ? 'FOUND' : 'NOT FOUND'}`);
-    return title || null;
+    
+    if (!title) {
+      console.log(`🔍 Land title ${id}: NOT FOUND`);
+      return null;
+    }
+    
+    // Fetch mortgages for this land title
+    const mortgagesQuery = 'SELECT * FROM mortgages WHERE land_title_id = $1 ORDER BY created_at DESC';
+    const mortgagesResult = await pool.query(mortgagesQuery, [id]);
+    title.mortgages = mortgagesResult.rows;
+    
+    console.log(`🔍 Land title ${id}: FOUND with ${mortgagesResult.rows.length} mortgages`);
+    return title;
   } catch (error) {
     console.error(`❌ Get land title by ID failed:`, error.message);
     throw error;

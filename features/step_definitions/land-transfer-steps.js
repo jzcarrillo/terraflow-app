@@ -109,6 +109,10 @@ Then('the buyer details should reflect the new values', function() {
 
 Then('the land title owner details should be updated', function(dataTable) {
   const expected = dataTable.rowsHash();
+  console.log('  ✅ Owner Name:', this.landTitle.owner_name);
+  console.log('  ✅ Contact:', this.landTitle.contact);
+  console.log('  ✅ Email:', this.landTitle.email);
+  console.log('  ✅ Address:', this.landTitle.address);
   assert.strictEqual(this.landTitle.owner_name, expected.owner_name);
   assert.strictEqual(this.landTitle.contact, expected.contact);
   assert.strictEqual(this.landTitle.email, expected.email);
@@ -125,6 +129,8 @@ Then('the land title status should remain {string}', function(status) {
 });
 
 Then('both seller and buyer hashes should be recorded on blockchain', function() {
+  console.log('  ✅ Seller Hash:', this.landTitle.seller_hash);
+  console.log('  ✅ Buyer Hash:', this.landTitle.buyer_hash);
   assert.ok(this.landTitle.seller_hash);
   assert.ok(this.landTitle.buyer_hash);
 });

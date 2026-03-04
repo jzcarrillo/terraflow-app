@@ -242,13 +242,6 @@ async function automateLandRegistration() {
       }
     }
     
-    // Encumbrances
-    await fillField(
-      ['[name="encumbrances"]', 'textarea[name="encumbrances"]', 'textarea[placeholder*="Encumbrance" i]'],
-      'None',
-      'Encumbrances'
-    );
-    
     // Dropdown fields
     const dropdowns = [
       { selector: '[name="property_location"], [name="propertyLocation"], select[name="property_location"]', label: 'Property Location' },

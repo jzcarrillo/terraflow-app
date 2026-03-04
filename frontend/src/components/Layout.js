@@ -9,7 +9,7 @@ import {
 import {
   Menu as MenuIcon, Home as HomeIcon, Description as LandTitleIcon,
   Payment as PaymentIcon, People as UsersIcon, Logout as LogoutIcon,
-  SwapHoriz as TransferIcon
+  SwapHoriz as TransferIcon, AccountBalance as MortgageIcon
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -30,6 +30,12 @@ const menuItems = [
     text: 'Land Titles',
     icon: <LandTitleIcon />,
     href: '/land-titles',
+    roles: [ROLES.ADMIN, ROLES.LAND_TITLE_PROCESSOR]
+  },
+  {
+    text: 'Mortgages',
+    icon: <MortgageIcon />,
+    href: '/mortgages',
     roles: [ROLES.ADMIN, ROLES.LAND_TITLE_PROCESSOR]
   },
   {

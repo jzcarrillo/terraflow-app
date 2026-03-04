@@ -54,6 +54,7 @@ export default function Payments() {
   const [editingPaymentId, setEditingPaymentId] = useState(null)
   const [landTitles, setLandTitles] = useState([])
   const [pendingTransfers, setPendingTransfers] = useState([])
+  const [pendingMortgages, setPendingMortgages] = useState([])
   const [selectedReferenceType, setSelectedReferenceType] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState(null)
@@ -140,10 +141,23 @@ export default function Payments() {
     }
   }
 
+  const fetchPendingMortgages = async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/mortgages/for-payment?reference_type=mortgage`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      const data = await response.json()
+      setPendingMortgages(data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch pending mortgages:', error)
+    }
+  }
+
   const handleDialogOpen = () => {
     setPaymentId(generateId('PAY'))
     fetchLandTitles()
     fetchPendingTransfers()
+    fetchPendingMortgages()
     setOpen(true)
   }
 
@@ -184,6 +198,8 @@ export default function Payments() {
       
       // Get transfer_id if reference_type is Transfer Title
       let transferId = null
+      let landTitleId = data.reference_id
+      
       if (data.reference_type === 'Transfer Title' && data.reference_id) {
         console.log('Looking for transfer with title_number:', data.reference_id)
         console.log('Available transfers:', pendingTransfers)
@@ -195,14 +211,20 @@ export default function Payments() {
         } else {
           console.warn('No transfer found for title_number:', data.reference_id)
         }
+      } else if (data.reference_type === 'Mortgage') {
+        // For mortgage payments, land_title_id should be null
+        landTitleId = null
       }
       
       const formData = {
-        ...data,
         payment_id: paymentId,
-        land_title_id: data.reference_id, // Always use the selected reference_id (land title string)
+        reference_type: data.reference_type,
+        reference_id: data.reference_id,
+        payer_name: data.payer_name,
         amount: parseFloat(data.amount),
-        transfer_id: transferId // Add transfer_id if available
+        payment_method: data.payment_method,
+        land_title_id: landTitleId,
+        transfer_id: transferId
       }
       
       if (isEditMode) {
@@ -296,6 +318,7 @@ export default function Payments() {
     setPaymentId(selectedPayment.payment_id)
     fetchLandTitles()
     fetchPendingTransfers()
+    fetchPendingMortgages()
     setOpen(true)
     
     // Pre-populate form with existing payment data after dialog opens
@@ -488,12 +511,18 @@ export default function Payments() {
                         style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
                       >
                         <option value="">
-                          {selectedReferenceType === 'Transfer Title' ? 'Select Transfer' : 'Select Land Title'}
+                          {selectedReferenceType === 'Transfer Title' ? 'Select Transfer' : selectedReferenceType === 'Mortgage' ? 'Select Mortgage' : 'Select Land Title'}
                         </option>
                         {selectedReferenceType === 'Transfer Title' ? (
                           pendingTransfers.map((transfer) => (
                             <option key={transfer.transfer_id} value={transfer.title_number}>
                               {transfer.transfer_id} - {transfer.title_number} ({transfer.buyer_name})
+                            </option>
+                          ))
+                        ) : selectedReferenceType === 'Mortgage' ? (
+                          pendingMortgages.map((mortgage) => (
+                            <option key={mortgage.id} value={mortgage.mortgage_id}>
+                              {mortgage.mortgage_id} - {mortgage.bank_name} (₱{mortgage.amount.toLocaleString()})
                             </option>
                           ))
                         ) : (

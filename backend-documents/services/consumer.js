@@ -23,12 +23,13 @@ const messageHandler = async (messageData) => {
 };
 
 const handleDocumentUpload = async (messageData) => {
-  const { transaction_id, land_title_id, attachments, user_id } = messageData;
+  const { transaction_id, land_title_id, mortgage_id, attachments, user_id } = messageData;
   const uploadedDocuments = [];
   
   console.log(`\n📄 ===== DOCUMENT UPLOAD =====`);
   console.log(`🔑 Transaction: ${transaction_id}`);
   console.log(`🏠 Land Title ID: ${land_title_id}`);
+  console.log(`🏦 Mortgage ID: ${mortgage_id || 'N/A'}`);
   console.log(`📎 Processing ${attachments.length} files:`);
   attachments.forEach((file, index) => {
     console.log(`   ${index + 1}. ${file.original_name}`);
@@ -37,11 +38,15 @@ const handleDocumentUpload = async (messageData) => {
   try {
     for (const [index, attachment] of attachments.entries()) {
       const fileBuffer = Buffer.from(attachment.buffer, 'base64');
-      const fileName = `${land_title_id}_${attachment.document_type}_${Date.now()}_${index}.${getFileExtension(attachment.original_name)}`;
+      const prefix = mortgage_id ? `mortgage_${mortgage_id}` : `landtitle_${land_title_id}`;
+      const fileName = `${prefix}_${attachment.document_type}_${Date.now()}_${index}.${getFileExtension(attachment.original_name)}`;
       const filePath = await saveFile(fileBuffer, fileName);
       
       const document = await documentService.createDocument({
-        land_title_id, transaction_id,
+        land_title_id: mortgage_id ? null : land_title_id, 
+        mortgage_id: mortgage_id || null,
+        reference_type: mortgage_id ? 'mortgage' : 'land_title',
+        transaction_id,
         document_type: attachment.document_type,
         file_name: attachment.original_name,
         file_path: filePath,
@@ -55,7 +60,7 @@ const handleDocumentUpload = async (messageData) => {
     
     await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: EVENT_TYPES.DOCUMENT_UPLOADED,
-      transaction_id, land_title_id,
+      transaction_id, land_title_id, mortgage_id,
       uploaded_documents: uploadedDocuments,
       total_documents: uploadedDocuments.length
     });
@@ -71,7 +76,7 @@ const handleDocumentUpload = async (messageData) => {
     
     await rabbitmq.publishToQueue(QUEUES.LAND_REGISTRY, {
       event_type: EVENT_TYPES.DOCUMENT_FAILED,
-      transaction_id, land_title_id,
+      transaction_id, land_title_id, mortgage_id,
       error: error.message
     });
     

@@ -15,8 +15,7 @@ const landTitleSchema = z.object({
   }),
   registration_date: z.string().datetime("Registration date must be a valid ISO datetime"),
   registrar_office: z.string().min(1, "Registrar office is required"),
-  previous_title_number: z.string().min(1, "Previous title number is required"),
-  encumbrances: z.string().min(1, "Encumbrances field is required")
+  previous_title_number: z.string().min(1, "Previous title number is required")
 });
 
 module.exports = {

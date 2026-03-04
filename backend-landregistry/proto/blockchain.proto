@@ -9,6 +9,8 @@ service BlockchainService {
   rpc RecordReactivation(ReactivationRequest) returns (BlockchainResponse);
   rpc RecordTransfer(TransferRequest) returns (BlockchainResponse);
   rpc GetTransactionHistory(TransactionHistoryRequest) returns (TransactionHistoryResponse);
+  rpc RecordMortgage(MortgageRequest) returns (BlockchainResponse);
+  rpc RecordMortgageRelease(MortgageReleaseRequest) returns (BlockchainResponse);
 }
 
 message LandTitleRequest {
@@ -90,4 +92,23 @@ message Transaction {
 
 message TransactionHistoryResponse {
   repeated Transaction transactions = 1;
+}
+
+message MortgageRequest {
+  int32 mortgage_id = 1;
+  int32 land_title_id = 2;
+  string bank_name = 3;
+  string amount = 4;
+  string status = 5;
+  int64 timestamp = 6;
+  string transaction_id = 7;
+}
+
+message MortgageReleaseRequest {
+  int32 mortgage_id = 1;
+  int32 land_title_id = 2;
+  string previous_status = 3;
+  string new_status = 4;
+  int64 timestamp = 5;
+  string transaction_id = 6;
 }

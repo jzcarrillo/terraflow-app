@@ -122,6 +122,44 @@ class BlockchainClient {
       });
     });
   }
+
+  async recordMortgage(mortgageData) {
+    console.log(`🏦 Recording mortgage to blockchain:`, JSON.stringify(mortgageData, null, 2));
+    
+    return new Promise((resolve, reject) => {
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10);
+      
+      client.RecordMortgage(mortgageData, { deadline }, (error, response) => {
+        if (error) {
+          console.error('❌ Mortgage blockchain gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('✅ Mortgage blockchain response:', response);
+          resolve(response);
+        }
+      });
+    });
+  }
+
+  async recordMortgageRelease(releaseData) {
+    console.log(`🔓 Recording mortgage release to blockchain:`, JSON.stringify(releaseData, null, 2));
+    
+    return new Promise((resolve, reject) => {
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10);
+      
+      client.RecordMortgageRelease(releaseData, { deadline }, (error, response) => {
+        if (error) {
+          console.error('❌ Mortgage release blockchain gRPC error:', error);
+          reject(error);
+        } else {
+          console.log('✅ Mortgage release blockchain response:', response);
+          resolve(response);
+        }
+      });
+    });
+  }
 }
 
 module.exports = new BlockchainClient();

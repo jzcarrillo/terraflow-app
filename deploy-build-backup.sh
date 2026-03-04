@@ -88,47 +88,21 @@ echo -e "\n\033[0;36m[3/7] Running Jest unit tests with coverage...\033[0m"
 
 TEST_FAILED=0
 
-# Run tests from root using jest.config.js
-if [ -f "jest.config.js" ]; then
-    echo -e "\033[0;33mRunning all tests from root config...\033[0m"
-    
-    # Install root dependencies if needed
-    if [ ! -d "node_modules" ]; then
-        echo -e "\033[0;33mInstalling root dependencies...\033[0m"
-        npm install --silent
-    fi
-    
-    if npm test -- --coverage 2>&1; then
-        echo -e "\033[0;32m✓ All tests passed!\033[0m"
-    else
-        echo -e "\033[0;31m✗ Tests FAILED!\033[0m"
-        TEST_FAILED=1
-    fi
-else
-    # Fallback to individual service tests
-    for service in "${SERVICES[@]}"; do
-        if [ -f "./$service/package.json" ]; then
-            echo -e "\033[0;33mTesting $service...\033[0m"
-            cd "./$service"
-            
-            if grep -q '"test"' package.json; then
-                if npm test -- --passWithNoTests --coverage 2>/dev/null; then
-                    echo -e "\033[0;32m✓ $service tests passed\033[0m"
-                else
-                    echo -e "\033[0;31m✗ $service tests FAILED!\033[0m"
-                    TEST_FAILED=1
-                fi
-            else
-                echo -e "\033[0;33m⚠ $service has no tests, skipping...\033[0m"
-            fi
-            
-            cd ..
-        fi
-    done
+# Install root dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo -e "\033[0;33mInstalling root dependencies...\033[0m"
+    npm install --silent
 fi
 
-# Exit if tests failed
-if [ $TEST_FAILED -eq 1 ]; then
+echo -e "\033[0;33mRunning all microservice tests...\033[0m"
+
+set +e  # Temporarily disable exit on error
+npm test
+TEST_EXIT_CODE=$?
+set -e  # Re-enable exit on error
+
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo -e "\033[0;31m✗ Tests FAILED!\033[0m"
     echo -e "\n\033[0;31m========================================\033[0m"
     echo -e "\033[0;31m  TESTS FAILED - BUILD ABORTED\033[0m"
     echo -e "\033[0;31m========================================\033[0m"
@@ -142,62 +116,65 @@ echo -e "\033[0;32m✓ All tests passed!\033[0m"
 # ===================================================================
 echo -e "\n\033[0;36m[4/7] Building Docker images...\033[0m"
 
-# Kill existing processes
+# Kill existing processes (with timeout protection)
+echo -e "\033[0;33mCleaning up ports...\033[0m"
 ALL_PORTS=($PORT $API_PORT $DOCUMENTS_PORT $USERS_PORT $PAYMENTS_PORT 15432 15433 15434 15435 15672 30081 4005)
 for port in "${ALL_PORTS[@]}"; do
-    lsof -ti:$port | xargs kill -9 2>/dev/null
+    lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null &
 done
-pkill -f "kubectl port-forward" 2>/dev/null
+wait
+pkill -f "kubectl port-forward" 2>/dev/null || true
+echo -e "\033[0;32m✓ Ports cleaned\033[0m"
 
-# Build images in parallel
-(
-  # Wait for Docker to be fully ready
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $DOCKER_IMAGE ./backend-landregistry && echo -e "\033[0;32m✓ backend-landregistry\033[0m"
-) &
-PID1=$!
+# Build images sequentially with progress
+echo -e "\033[0;33mStarting Docker builds...\033[0m"
+echo -e "\033[0;33mThis may take 5-10 minutes. Please wait...\033[0m"
 
-(
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $API_DOCKER_IMAGE ./api-gateway && echo -e "\033[0;32m✓ api-gateway\033[0m"
-) &
-PID2=$!
+echo -e "\n\033[0;33m[1/6] Building backend-landregistry...\033[0m"
+if docker build -t $DOCKER_IMAGE ./backend-landregistry; then
+    echo -e "\033[0;32m✓ backend-landregistry\033[0m"
+else
+    echo -e "\033[0;31m✗ backend-landregistry failed\033[0m"
+    exit 1
+fi
 
-(
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents && echo -e "\033[0;32m✓ backend-documents\033[0m"
-) &
-PID3=$!
+echo -e "\033[0;33m[2/6] Building api-gateway...\033[0m"
+if docker build -t $API_DOCKER_IMAGE ./api-gateway; then
+    echo -e "\033[0;32m✓ api-gateway\033[0m"
+else
+    echo -e "\033[0;31m✗ api-gateway failed\033[0m"
+    exit 1
+fi
 
-(
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $USERS_DOCKER_IMAGE ./backend-users && echo -e "\033[0;32m✓ backend-users\033[0m"
-) &
-PID4=$!
+echo -e "\033[0;33m[3/6] Building backend-documents...\033[0m"
+if docker build -t $DOCUMENTS_DOCKER_IMAGE ./backend-documents; then
+    echo -e "\033[0;32m✓ backend-documents\033[0m"
+else
+    echo -e "\033[0;31m✗ backend-documents failed\033[0m"
+    exit 1
+fi
 
-(
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $PAYMENTS_DOCKER_IMAGE ./backend-payments && echo -e "\033[0;32m✓ backend-payments\033[0m"
-) &
-PID5=$!
+echo -e "\033[0;33m[4/6] Building backend-users...\033[0m"
+if docker build -t $USERS_DOCKER_IMAGE ./backend-users; then
+    echo -e "\033[0;32m✓ backend-users\033[0m"
+else
+    echo -e "\033[0;31m✗ backend-users failed\033[0m"
+    exit 1
+fi
 
-(
-  while ! docker info &>/dev/null; do sleep 1; done
-  docker build -t $BLOCKCHAIN_DOCKER_IMAGE ./backend-blockchain && echo -e "\033[0;32m✓ backend-blockchain\033[0m"
-) &
-PID6=$!
+echo -e "\033[0;33m[5/6] Building backend-payments...\033[0m"
+if docker build -t $PAYMENTS_DOCKER_IMAGE ./backend-payments; then
+    echo -e "\033[0;32m✓ backend-payments\033[0m"
+else
+    echo -e "\033[0;31m✗ backend-payments failed\033[0m"
+    exit 1
+fi
 
-# Wait for all builds
-DOCKER_FAILED=0
-wait $PID1 || DOCKER_FAILED=1
-wait $PID2 || DOCKER_FAILED=1
-wait $PID3 || DOCKER_FAILED=1
-wait $PID4 || DOCKER_FAILED=1
-wait $PID5 || DOCKER_FAILED=1
-wait $PID6 || DOCKER_FAILED=1
-
-if [ $DOCKER_FAILED -eq 1 ]; then
-    echo -e "\033[0;31m✗ Docker build failed!\033[0m"
+echo -e "\033[0;33m[6/6] Building backend-blockchain...\033[0m"
+if docker build -t $BLOCKCHAIN_DOCKER_IMAGE ./backend-blockchain; then
+    echo -e "\033[0;32m✓ backend-blockchain\033[0m"
+else
+    echo -e "\033[0;31m✗ backend-blockchain failed\033[0m"
     exit 1
 fi
 
@@ -208,16 +185,21 @@ echo -e "\033[0;32m✓ All Docker images built successfully!\033[0m"
 # ===================================================================
 echo -e "\n\033[0;36m[5/7] Cleaning up Kubernetes resources...\033[0m"
 
-kubectl delete pod -l app=$SERVICE_NAME --namespace=$NAMESPACE --force --grace-period=0 2>/dev/null
-helm rollback $RELEASE_NAME 0 --namespace=$NAMESPACE 2>/dev/null
-helm uninstall $RELEASE_NAME --namespace=$NAMESPACE 2>/dev/null
+echo -e "\033[0;33mDeleting old pods...\033[0m"
+kubectl delete pod -l app=$SERVICE_NAME --namespace=$NAMESPACE --force --grace-period=0 2>/dev/null || true
 
-# Clean up Fabric PVCs
-kubectl patch pvc fabric-orderer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null
-kubectl patch pvc fabric-peer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null
-kubectl patch pvc fabric-couchdb-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null
-kubectl delete pvc fabric-orderer-pvc fabric-peer-pvc fabric-couchdb-pvc --namespace=$NAMESPACE --force --grace-period=0 2>/dev/null
-kubectl delete pv fabric-orderer-pv fabric-peer-pv fabric-couchdb-pv --force --grace-period=0 2>/dev/null
+echo -e "\033[0;33mRolling back Helm release...\033[0m"
+helm rollback $RELEASE_NAME 0 --namespace=$NAMESPACE 2>/dev/null || true
+
+echo -e "\033[0;33mUninstalling Helm release...\033[0m"
+helm uninstall $RELEASE_NAME --namespace=$NAMESPACE --wait --timeout=2m 2>/dev/null || true
+
+echo -e "\033[0;33mCleaning up Fabric PVCs...\033[0m"
+kubectl patch pvc fabric-orderer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null || true
+kubectl patch pvc fabric-peer-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null || true
+kubectl patch pvc fabric-couchdb-pvc -p '{"metadata":{"finalizers":null}}' --namespace=$NAMESPACE 2>/dev/null || true
+kubectl delete pvc fabric-orderer-pvc fabric-peer-pvc fabric-couchdb-pvc --namespace=$NAMESPACE --force --grace-period=0 2>/dev/null || true
+kubectl delete pv fabric-orderer-pv fabric-peer-pv fabric-couchdb-pv --force --grace-period=0 2>/dev/null || true
 
 echo -e "\033[0;32m✓ Cleanup completed\033[0m"
 
@@ -235,17 +217,17 @@ fi
 
 # Wait for pods
 echo -e "\033[0;33mWaiting for pods to be ready...\033[0m"
-kubectl wait --for=condition=ready pod -l app=redis --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=rabbitmq --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=backend-documents --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=backend-users --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=backend-payments --timeout=120s --namespace=$NAMESPACE 2>/dev/null
-kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=$NAMESPACE 2>/dev/null
+kubectl wait --for=condition=ready pod -l app=redis --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Redis not ready"
+kubectl wait --for=condition=ready pod -l app=rabbitmq --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ RabbitMQ not ready"
+kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Postgres landregistry not ready"
+kubectl wait --for=condition=ready pod -l app=postgres-documents --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Postgres documents not ready"
+kubectl wait --for=condition=ready pod -l app=postgres-users --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Postgres users not ready"
+kubectl wait --for=condition=ready pod -l app=postgres-payments --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Postgres payments not ready"
+kubectl wait --for=condition=ready pod -l app=backend-landregistry --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Backend landregistry not ready"
+kubectl wait --for=condition=ready pod -l app=backend-documents --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Backend documents not ready"
+kubectl wait --for=condition=ready pod -l app=backend-users --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Backend users not ready"
+kubectl wait --for=condition=ready pod -l app=backend-payments --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ Backend payments not ready"
+kubectl wait --for=condition=ready pod -l app=api-gateway --timeout=120s --namespace=$NAMESPACE 2>/dev/null || echo "⚠ API Gateway not ready"
 
 echo -e "\033[0;32m✓ Deployment completed!\033[0m"
 
