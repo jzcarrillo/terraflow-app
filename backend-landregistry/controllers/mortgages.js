@@ -216,6 +216,20 @@ const getMortgageCount = async (req, res) => {
   }
 };
 
+const checkPendingTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pool } = require('../config/db');
+    const result = await pool.query(
+      'SELECT transfer_id FROM land_transfers WHERE land_title_id = $1 AND status = $2',
+      [parseInt(id), 'PENDING']
+    );
+    res.json({ hasPendingTransfer: result.rows.length > 0, transfer_id: result.rows[0]?.transfer_id || null });
+  } catch (error) {
+    handleError(error, res, 'Check pending transfer');
+  }
+};
+
 module.exports = {
   createMortgage,
   getAllMortgages,
@@ -227,5 +241,6 @@ module.exports = {
   getLandTitlesForMortgage,
   getMortgagesForPayment,
   checkTransferEligibility,
-  getMortgageCount
+  getMortgageCount,
+  checkPendingTransfer
 };

@@ -48,12 +48,15 @@ const createMortgage = async (req, res) => {
     // Pre-validate: check mortgage count before publishing to queue
     const config = require('../config/services');
     const httpClient = require('../utils/httpClient');
-    const countResult = await httpClient.get(
-      `${config.services.landregistry}/api/mortgages/count/${id}`,
-      { headers: { 'Authorization': `Bearer ${token}` } }
-    );
+    const [countResult, transferResult] = await Promise.all([
+      httpClient.get(`${config.services.landregistry}/api/mortgages/count/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      httpClient.get(`${config.services.landregistry}/api/mortgages/check-pending-transfer/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+    ]);
     if (countResult.data.count >= 3) {
       return res.status(400).json({ error: 'Maximum 3 mortgages allowed per land title' });
+    }
+    if (transferResult.data.hasPendingTransfer) {
+      return res.status(400).json({ error: `Cannot create mortgage. Land title has a pending transfer (${transferResult.data.transfer_id}).` });
     }
     
     console.log('✅ Validated data:', validatedData);

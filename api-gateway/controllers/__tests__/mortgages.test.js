@@ -28,7 +28,9 @@ describe('Mortgages Controller', () => {
       const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
-      httpClient.get.mockResolvedValue({ data: { count: 0 } });
+      httpClient.get
+        .mockResolvedValueOnce({ data: { count: 0 } })
+        .mockResolvedValueOnce({ data: { hasPendingTransfer: false } });
 
       await mortgagesController.createMortgage(req, res);
 
@@ -54,12 +56,29 @@ describe('Mortgages Controller', () => {
       const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
-      httpClient.get.mockResolvedValue({ data: { count: 3 } }); // 3 ACTIVE/PENDING
+      httpClient.get
+        .mockResolvedValueOnce({ data: { count: 3 } })
+        .mockResolvedValueOnce({ data: { hasPendingTransfer: false } });
 
       await mortgagesController.createMortgage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: 'Maximum 3 mortgages allowed per land title' });
+      expect(rabbitmq.publishToQueue).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 if land title has a pending transfer', async () => {
+      const httpClient = require('../../utils/httpClient');
+      req.params.id = '1';
+      req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
+      httpClient.get
+        .mockResolvedValueOnce({ data: { count: 0 } })
+        .mockResolvedValueOnce({ data: { hasPendingTransfer: true, transfer_id: 'TRF-2026-001' } });
+
+      await mortgagesController.createMortgage(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Cannot create mortgage. Land title has a pending transfer (TRF-2026-001).' });
       expect(rabbitmq.publishToQueue).not.toHaveBeenCalled();
     });
   });
