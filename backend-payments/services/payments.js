@@ -56,131 +56,54 @@ class PaymentService {
     return result;
   }
 
-  async updatePaymentStatus(id, status, userId = null, transactionId = null) {
-    const currentPayment = await this.getPaymentById(id);
-    if (!currentPayment) {
-      throw new Error(`Payment with ID ${id} not found`);
+  async _buildStatusUpdateQuery(status, userId, whereCol) {
+    if (userId && status === STATUS.PAID) {
+      return {
+        sql: `UPDATE ${TABLES.PAYMENTS} SET status = $1, confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW() WHERE ${whereCol} = $3 RETURNING *`,
+        params: (identifier) => [status, userId, identifier]
+      };
     }
-    
-    // Prevent actions on FAILED payments
+    if (userId && status === 'CANCELLED') {
+      return {
+        sql: `UPDATE ${TABLES.PAYMENTS} SET status = $1, cancelled_by = $2, cancelled_at = NOW(), updated_at = NOW() WHERE ${whereCol} = $3 RETURNING *`,
+        params: (identifier) => [status, userId, identifier]
+      };
+    }
+    return {
+      sql: `UPDATE ${TABLES.PAYMENTS} SET status = $1, updated_at = NOW() WHERE ${whereCol} = $2 RETURNING *`,
+      params: (identifier) => [status, identifier]
+    };
+  }
+
+  async _applyStatusUpdate(currentPayment, identifier, status, userId, transactionId, whereCol) {
     if (currentPayment.status === 'FAILED') {
-      throw new Error(`Cannot update status of a FAILED payment: ${id}`);
+      throw new Error(`Cannot update status of a FAILED payment: ${identifier}`);
     }
-    
-    if (currentPayment.status === status) {
-      return currentPayment;
-    }
-    
-    const updateData = { status };
-    
-    if (status === STATUS.PAID) {
-      updateData.confirmed_by = userId;
-      updateData.confirmed_at = 'NOW()';
-    } else if (status === 'CANCELLED') {
-      updateData.cancelled_by = userId;
-      updateData.cancelled_at = 'NOW()';
-    }
-    
-    const result = await executeQuery(`
-      UPDATE ${TABLES.PAYMENTS} 
-      SET status = $1, ${status === STATUS.PAID ? 'confirmed_by = $2, confirmed_at = NOW(),' : status === 'CANCELLED' ? 'cancelled_by = $2, cancelled_at = NOW(),' : ''} updated_at = NOW()
-      WHERE id = $${userId ? 3 : 2}
-      RETURNING *
-    `, userId ? [status, userId, id] : [status, id]);
-    
+    if (currentPayment.status === status) return currentPayment;
+
+    const { sql, params } = await this._buildStatusUpdateQuery(status, userId, whereCol);
+    const result = await executeQuery(sql, params(identifier));
     const updatedPayment = result.rows[0];
-    
+
     console.log('✅ Payment status updated successfully');
     console.log('💾 Data updated to database successfully');
-    
-    // Only publish for PAID or CANCELLED status, not for FAILED
+
     if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED') && updatedPayment.status !== 'FAILED') {
       await this.publishStatusUpdate(updatedPayment, status, transactionId);
     }
-    
     return updatedPayment;
   }
-  
+
+  async updatePaymentStatus(id, status, userId = null, transactionId = null) {
+    const currentPayment = await this.getPaymentById(id);
+    if (!currentPayment) throw new Error(`Payment with ID ${id} not found`);
+    return this._applyStatusUpdate(currentPayment, id, status, userId, transactionId, 'id');
+  }
+
   async updatePaymentStatusByPaymentId(paymentId, status, userId = null, transactionId = null) {
-    // First get the payment by payment_id to get the database ID
     const result = await executeQuery(`SELECT * FROM ${TABLES.PAYMENTS} WHERE payment_id = $1`, [paymentId]);
-    
-    if (result.rows.length === 0) {
-      throw new Error(`Payment with payment_id ${paymentId} not found`);
-    }
-    
-    const currentPayment = result.rows[0];
-    
-    // Prevent actions on FAILED payments
-    if (currentPayment.status === 'FAILED') {
-      throw new Error(`Cannot update status of a FAILED payment: ${paymentId}`);
-    }
-    
-    if (currentPayment.status === status) {
-      return currentPayment;
-    }
-    
-    const updateData = { status };
-    
-    if (status === STATUS.PAID) {
-      updateData.confirmed_by = userId;
-      updateData.confirmed_at = 'NOW()';
-    } else if (status === 'CANCELLED') {
-      updateData.cancelled_by = userId;
-      updateData.cancelled_at = 'NOW()';
-    }
-    
-    let updateQuery, params;
-    
-    if (userId) {
-      if (status === STATUS.PAID) {
-        updateQuery = `
-          UPDATE ${TABLES.PAYMENTS} 
-          SET status = $1, confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW()
-          WHERE payment_id = $3
-          RETURNING *
-        `;
-        params = [status, userId, paymentId];
-      } else if (status === 'CANCELLED') {
-        updateQuery = `
-          UPDATE ${TABLES.PAYMENTS} 
-          SET status = $1, cancelled_by = $2, cancelled_at = NOW(), updated_at = NOW()
-          WHERE payment_id = $3
-          RETURNING *
-        `;
-        params = [status, userId, paymentId];
-      } else {
-        updateQuery = `
-          UPDATE ${TABLES.PAYMENTS} 
-          SET status = $1, updated_at = NOW()
-          WHERE payment_id = $2
-          RETURNING *
-        `;
-        params = [status, paymentId];
-      }
-    } else {
-      updateQuery = `
-        UPDATE ${TABLES.PAYMENTS} 
-        SET status = $1, updated_at = NOW()
-        WHERE payment_id = $2
-        RETURNING *
-      `;
-      params = [status, paymentId];
-    }
-    
-    const updateResult = await executeQuery(updateQuery, params);
-    
-    const updatedPayment = updateResult.rows[0];
-    
-    console.log('✅ Payment status updated successfully');
-    console.log('💾 Data updated to database successfully');
-    
-    // Only publish for PAID or CANCELLED status, not for FAILED
-    if (updatedPayment && (status === STATUS.PAID || status === 'CANCELLED') && updatedPayment.status !== 'FAILED') {
-      await this.publishStatusUpdate(updatedPayment, status, transactionId);
-    }
-    
-    return updatedPayment;
+    if (result.rows.length === 0) throw new Error(`Payment with payment_id ${paymentId} not found`);
+    return this._applyStatusUpdate(result.rows[0], paymentId, status, userId, transactionId, 'payment_id');
   }
 
   async publishStatusUpdate(payment, status, transactionId = null) {
@@ -260,11 +183,6 @@ class PaymentService {
       
       console.log(`📤 Land registration payment event published to land registry queue (key: ${messageKey})`);
     }
-  }
-  
-  async getTransferIdByTitleNumber(titleNumber) {
-    // No longer needed - transfer_id is now a column
-    return null;
   }
   
   async handleLandTitleResponse(messageData) {

@@ -41,6 +41,10 @@ import AlertMessage from '@/components/common/AlertMessage'
 import { formatDate, formatCurrency, generateId } from '@/utils/formatters'
 import { API_CONFIG } from '@/utils/config'
 
+const authFetch = (path) => fetch(`${API_CONFIG.BASE_URL}${path}`, {
+  headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+})
+
 export default function Payments() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -65,9 +69,7 @@ export default function Payments() {
 
   const fetchLandTitles = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/land-titles`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
+      const response = await authFetch('/land-titles')
       const data = await response.json()
       let titles = []
       if (Array.isArray(data.data)) {
@@ -100,12 +102,8 @@ export default function Payments() {
   const fetchPendingTransfers = async () => {
     try {
       const [transfersResponse, paymentsResponse] = await Promise.all([
-        fetch(`${API_CONFIG.BASE_URL}/transfers`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        }),
-        fetch(`${API_CONFIG.BASE_URL}/payments`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
+        authFetch('/transfers'),
+        authFetch('/payments')
       ])
       
       const transfersData = await transfersResponse.json()
@@ -143,9 +141,7 @@ export default function Payments() {
 
   const fetchPendingMortgages = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/mortgages/for-payment?reference_type=mortgage`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
+      const response = await authFetch('/mortgages/for-payment?reference_type=mortgage')
       const data = await response.json()
       setPendingMortgages(data.data || [])
     } catch (error) {
@@ -276,39 +272,18 @@ export default function Payments() {
     // Don't close menu yet, keep selectedPayment
   }
 
-  const confirmPayment = async () => {
+  const handlePaymentAction = async (action) => {
     try {
-      console.log('=== CONFIRM PAYMENT DEBUG ===')
-      console.log('Selected payment for confirm:', selectedPayment)
-      console.log('Using payment ID:', selectedPayment.id)
-      console.log('API URL will be:', `http://localhost:30081/api/payments/${selectedPayment.id}/confirm`)
-      console.log('Making API call...')
-      
-      const response = await paymentsAPI.confirm(selectedPayment.id)
-      console.log('Confirm payment response:', response)
-      setSuccess('Payment confirmation request submitted successfully!')
+      if (action === 'confirm') {
+        await paymentsAPI.confirm(selectedPayment.id)
+        setSuccess('Payment confirmation request submitted successfully!')
+      } else {
+        await paymentsAPI.cancel(selectedPayment.id)
+        setSuccess('Payment cancellation request submitted successfully!')
+      }
       fetchPayments()
     } catch (error) {
-      console.error('Confirm payment error:', error)
-      console.error('Error details:', error.response)
-      console.error('Error message:', error.message)
-      console.error('Error status:', error.response?.status)
-      setError(error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to confirm payment')
-    }
-  }
-
-  const cancelPayment = async () => {
-    try {
-      console.log('Selected payment for cancel:', selectedPayment)
-      console.log('Using payment ID:', selectedPayment.id)
-      const response = await paymentsAPI.cancel(selectedPayment.id)
-      console.log('Cancel payment response:', response)
-      setSuccess('Payment cancellation request submitted successfully!')
-      fetchPayments()
-    } catch (error) {
-      console.error('Cancel payment error:', error)
-      console.error('Error details:', error.response)
-      setError(error.response?.data?.error || error.response?.data?.message || 'Failed to cancel payment')
+      setError(error.response?.data?.error || error.response?.data?.message || error.message || `Failed to ${action} payment`)
     }
   }
 
@@ -672,7 +647,7 @@ export default function Payments() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => { setConfirmDialogOpen(false); handleMenuClose() }}>No</Button>
-            <Button onClick={() => { confirmPayment(); setConfirmDialogOpen(false); handleMenuClose() }} variant="contained">Yes</Button>
+            <Button onClick={() => { handlePaymentAction('confirm'); setConfirmDialogOpen(false); handleMenuClose() }} variant="contained">Yes</Button>
           </DialogActions>
         </Dialog>
 
@@ -684,7 +659,7 @@ export default function Payments() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => { setCancelDialogOpen(false); handleMenuClose() }}>No</Button>
-            <Button onClick={() => { cancelPayment(); setCancelDialogOpen(false); handleMenuClose() }} variant="contained" color="error">Yes</Button>
+            <Button onClick={() => { handlePaymentAction('cancel'); setCancelDialogOpen(false); handleMenuClose() }} variant="contained" color="error">Yes</Button>
           </DialogActions>
         </Dialog>
       </Container>

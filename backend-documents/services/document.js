@@ -20,24 +20,19 @@ class DocumentService {
     return result.rows[0];
   }
 
-  async getDocumentsByLandTitleId(landTitleId) {
+  async getDocumentsByField(field, value) {
     const result = await executeQuery(`
-      SELECT * FROM ${TABLES.DOCUMENTS}
-      WHERE land_title_id = $1
-      ORDER BY created_at DESC
-    `, [landTitleId]);
-
+      SELECT * FROM ${TABLES.DOCUMENTS} WHERE ${field} = $1 ORDER BY created_at DESC
+    `, [value]);
     return result.rows;
   }
 
-  async getDocumentsByMortgageId(mortgageId) {
-    const result = await executeQuery(`
-      SELECT * FROM ${TABLES.DOCUMENTS}
-      WHERE mortgage_id = $1
-      ORDER BY created_at DESC
-    `, [mortgageId]);
+  async getDocumentsByLandTitleId(landTitleId) {
+    return this.getDocumentsByField('land_title_id', landTitleId);
+  }
 
-    return result.rows;
+  async getDocumentsByMortgageId(mortgageId) {
+    return this.getDocumentsByField('mortgage_id', mortgageId);
   }
 
   async getDocumentById(documentId) {

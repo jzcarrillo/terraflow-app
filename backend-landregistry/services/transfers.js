@@ -241,48 +241,20 @@ const updateTransfer = async (transferId, updateData) => {
       throw new Error('Only PENDING transfers can be updated');
     }
     
-    // Build update query dynamically
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-    
-    // Map buyer_name to to_owner
-    if (updateData.buyer_name !== undefined || updateData.to_owner !== undefined) {
-      updates.push(`to_owner = $${paramCount++}`);
-      values.push(updateData.buyer_name || updateData.to_owner);
-    }
-    if (updateData.buyer_contact !== undefined) {
-      updates.push(`buyer_contact = $${paramCount++}`);
-      values.push(updateData.buyer_contact);
-    }
-    if (updateData.buyer_email !== undefined) {
-      updates.push(`buyer_email = $${paramCount++}`);
-      values.push(updateData.buyer_email);
-    }
-    if (updateData.buyer_address !== undefined) {
-      updates.push(`buyer_address = $${paramCount++}`);
-      values.push(updateData.buyer_address);
-    }
-    if (updateData.consideration_amount !== undefined) {
-      updates.push(`consideration_amount = $${paramCount++}`);
-      values.push(updateData.consideration_amount);
-    }
-    
-    if (updates.length === 0) {
-      throw new Error('No fields to update');
-    }
-    
-    updates.push(`updated_at = NOW()`);
-    values.push(transferId);
-    
-    const query = `
-      UPDATE land_transfers 
-      SET ${updates.join(', ')} 
-      WHERE transfer_id = $${paramCount} 
-      RETURNING *
-    `;
-    
-    const result = await pool.query(query, values);
+    const result = await pool.query(
+      `UPDATE land_transfers SET
+        to_owner = $1, buyer_contact = $2, buyer_email = $3, buyer_address = $4,
+        consideration_amount = $5, updated_at = NOW()
+       WHERE transfer_id = $6 RETURNING *`,
+      [
+        updateData.buyer_name ?? updateData.to_owner ?? transfer.to_owner,
+        updateData.buyer_contact ?? transfer.buyer_contact,
+        updateData.buyer_email ?? transfer.buyer_email,
+        updateData.buyer_address ?? transfer.buyer_address,
+        updateData.consideration_amount ?? transfer.consideration_amount,
+        transferId
+      ]
+    );
     console.log(`✅ Transfer updated: ${transferId}`);
     return result.rows[0];
   } catch (error) {

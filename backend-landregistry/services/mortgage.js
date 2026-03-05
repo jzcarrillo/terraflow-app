@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const rabbitmq = require('../utils/rabbitmq');
 const { validateWithSchema } = require('../utils/validation');
+const { mortgageSchema } = require('../schemas/mortgages');
 
 const createMortgage = async (messageData) => {
   console.log('\n🏦 ===== CREATE MORTGAGE =====');
@@ -12,7 +13,6 @@ const createMortgage = async (messageData) => {
   console.log(`📎 Attachments received:`, attachments ? attachments.length : 0);
   
   try {
-    const { mortgageSchema } = require('../schemas/mortgages');
     const validatedData = validateWithSchema(mortgageSchema, mortgage_data);
   console.log('📦 Validated mortgage data:', JSON.stringify(validatedData, null, 2));
     
@@ -46,16 +46,6 @@ const createMortgage = async (messageData) => {
     
     if (parseInt(countResult.rows[0].count) >= 3) {
       throw new Error('Maximum 3 mortgages allowed per land title');
-    }
-    
-    // Check for pending transfers
-    const transferCheck = await pool.query(
-      'SELECT transfer_id FROM land_transfers WHERE land_title_id = $1 AND status = $2',
-      [validatedData.land_title_id, 'PENDING']
-    );
-    
-    if (transferCheck.rows.length > 0) {
-      throw new Error(`Cannot create mortgage. Land title has a pending transfer (${transferCheck.rows[0].transfer_id}).`);
     }
     
     // Check for duplicate mortgage (same bank and land title with PENDING or ACTIVE status)
@@ -168,26 +158,14 @@ const updateMortgage = async (id, updateData) => {
     }
     
     // Build dynamic update query
-    const allowedFields = ['amount', 'bank_name', 'details', 'attachments'];
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-    
-    for (const field of allowedFields) {
-      if (updateData[field] !== undefined) {
-        updates.push(`${field} = $${paramCount}`);
-        values.push(updateData[field]);
-        paramCount++;
-      }
-    }
-    
-    if (updates.length === 0) {
-      return mortgage;
-    }
-    
-    values.push(id);
-    const updateQuery = `UPDATE mortgages SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-    const result = await pool.query(updateQuery, values);
+    const updateQuery = 'UPDATE mortgages SET amount = $1, bank_name = $2, details = $3, attachments = $4 WHERE id = $5 RETURNING *';
+    const result = await pool.query(updateQuery, [
+      updateData.amount ?? mortgage.amount,
+      updateData.bank_name ?? mortgage.bank_name,
+      updateData.details ?? mortgage.details,
+      updateData.attachments ?? mortgage.attachments,
+      id
+    ]);
     
     console.log(`✅ Mortgage ${id} updated successfully`);
     return result.rows[0];
@@ -286,26 +264,14 @@ const updateReleaseMortgage = async (id, updateData) => {
       throw new Error('Mortgage not found');
     }
     
-    const allowedFields = ['release_fee'];
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-    
-    for (const field of allowedFields) {
-      if (updateData[field] !== undefined) {
-        updates.push(`${field} = $${paramCount}`);
-        values.push(updateData[field]);
-        paramCount++;
-      }
-    }
-    
-    if (updates.length === 0) {
+    if (updateData.release_fee === undefined) {
       return checkResult.rows[0];
     }
     
-    values.push(id);
-    const updateQuery = `UPDATE mortgages SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-    const result = await pool.query(updateQuery, values);
+    const result = await pool.query(
+      'UPDATE mortgages SET release_fee = $1 WHERE id = $2 RETURNING *',
+      [updateData.release_fee, id]
+    );
     
     console.log(`✅ Release mortgage ${id} updated successfully`);
     return result.rows[0];

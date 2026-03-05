@@ -35,6 +35,40 @@ import LoadingTable from '@/components/common/LoadingTable'
 import AlertMessage from '@/components/common/AlertMessage'
 import { getCurrentUser } from '@/utils/auth'
 import { formatDate, generateId } from '@/utils/formatters'
+import { normalizeApiResponse } from '@/utils/apiHelpers'
+
+const BuyerFields = ({ register, errors }) => (
+  <>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Name:</Typography>
+      <Box sx={{ flex: 1 }}>
+        <input type="text" {...register('buyer_name')} style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }} />
+        {errors.buyer_name && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_name.message}</Typography>}
+      </Box>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Contact:</Typography>
+      <Box sx={{ flex: 1 }}>
+        <input type="text" {...register('buyer_contact')} style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }} />
+        {errors.buyer_contact && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_contact.message}</Typography>}
+      </Box>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Email:</Typography>
+      <Box sx={{ flex: 1 }}>
+        <input type="email" {...register('buyer_email')} style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }} />
+        {errors.buyer_email && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_email.message}</Typography>}
+      </Box>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+      <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Buyer Address:</Typography>
+      <Box sx={{ flex: 1 }}>
+        <textarea rows={3} {...register('buyer_address')} style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }} />
+        {errors.buyer_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_address.message}</Typography>}
+      </Box>
+    </Box>
+  </>
+)
 
 const transferSchema = z.object({
   title_number: z.string().min(1, "Please select a land title").optional(),
@@ -66,12 +100,7 @@ export default function TransferLandTitle() {
   const selectedTitleNumber = watch('title_number')
   const selectedTitle = landTitles.find(title => title.title_number === selectedTitleNumber)
 
-  // Helper function to normalize API response
-  const normalizeData = (response) => {
-    if (Array.isArray(response.data)) return response.data
-    if (response.data.data && Array.isArray(response.data.data)) return response.data.data
-    return []
-  }
+  const normalizeData = normalizeApiResponse
 
   const fetchTransfers = async () => {
     try {
@@ -332,53 +361,7 @@ export default function TransferLandTitle() {
                   </Box>
                 )}
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Name:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="text" 
-                      {...register('buyer_name')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_name && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_name.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Contact:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="text" 
-                      {...register('buyer_contact')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_contact && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_contact.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Email:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="email" 
-                      {...register('buyer_email')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_email && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_email.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Buyer Address:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <textarea 
-                      rows={3}
-                      {...register('buyer_address')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_address.message}</Typography>}
-                  </Box>
-                </Box>
+                <BuyerFields register={register} errors={errors} />
               </Box>
             </DialogContent>
             <DialogActions>
@@ -404,53 +387,7 @@ export default function TransferLandTitle() {
                   />
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Name:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="text" 
-                      {...register('buyer_name')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_name && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_name.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Contact:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="text" 
-                      {...register('buyer_contact')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_contact && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_contact.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, fontSize: '16px', fontWeight: 500 }}>Buyer Email:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <input 
-                      type="email" 
-                      {...register('buyer_email')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_email && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_email.message}</Typography>}
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Typography sx={{ minWidth: 180, mt: 1, fontSize: '16px', fontWeight: 500 }}>Buyer Address:</Typography>
-                  <Box sx={{ flex: 1 }}>
-                    <textarea 
-                      rows={3}
-                      {...register('buyer_address')}
-                      style={{ width: '100%', padding: '12px', border: '2px solid #ddd', backgroundColor: 'white', outline: 'none', resize: 'vertical', color: 'black', fontSize: '16px', borderRadius: '4px' }}
-                    />
-                    {errors.buyer_address && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{errors.buyer_address.message}</Typography>}
-                  </Box>
-                </Box>
+                <BuyerFields register={register} errors={errors} />
               </Box>
             </DialogContent>
             <DialogActions>

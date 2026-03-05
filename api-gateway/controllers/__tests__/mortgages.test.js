@@ -28,9 +28,7 @@ describe('Mortgages Controller', () => {
       const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
-      httpClient.get
-        .mockResolvedValueOnce({ data: { count: 0 } })
-        .mockResolvedValueOnce({ data: { hasPendingTransfer: false } });
+      httpClient.get.mockResolvedValue({ data: { count: 0, hasPendingTransfer: false } });
 
       await mortgagesController.createMortgage(req, res);
 
@@ -56,9 +54,7 @@ describe('Mortgages Controller', () => {
       const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
-      httpClient.get
-        .mockResolvedValueOnce({ data: { count: 3 } })
-        .mockResolvedValueOnce({ data: { hasPendingTransfer: false } });
+      httpClient.get.mockResolvedValue({ data: { count: 3, hasPendingTransfer: false } });
 
       await mortgagesController.createMortgage(req, res);
 
@@ -71,9 +67,7 @@ describe('Mortgages Controller', () => {
       const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
-      httpClient.get
-        .mockResolvedValueOnce({ data: { count: 0 } })
-        .mockResolvedValueOnce({ data: { hasPendingTransfer: true, transfer_id: 'TRF-2026-001' } });
+      httpClient.get.mockResolvedValue({ data: { count: 0, hasPendingTransfer: true, transfer_id: 'TRF-2026-001' } });
 
       await mortgagesController.createMortgage(req, res);
 

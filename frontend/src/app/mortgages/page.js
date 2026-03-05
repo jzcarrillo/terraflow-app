@@ -69,21 +69,23 @@ export default function Mortgages() {
 
   const selectedLandTitleId = watch('land_title_id')
 
-  const handleAmountChange = (e) => {
+  const makeAmountChangeHandler = (setFormValue, setDisplay) => (e) => {
     const value = e.target.value.replace(/,/g, '')
     if (value === '' || !isNaN(value)) {
-      setValue('amount', value, { shouldValidate: true })
-      setAmountInput(value ? parseFloat(value).toLocaleString() : '')
+      setFormValue(value, { shouldValidate: true })
+      setDisplay(value ? parseFloat(value).toLocaleString() : '')
     }
   }
 
-  const handleUpdateAmountChange = (e) => {
-    const value = e.target.value.replace(/,/g, '')
-    if (value === '' || !isNaN(value)) {
-      setValueUpdate('amount', value)
-      setUpdateAmountInput(value ? parseFloat(value).toLocaleString() : '')
-    }
-  }
+  const handleAmountChange = makeAmountChangeHandler(
+    (v, opts) => setValue('amount', v, opts),
+    setAmountInput
+  )
+
+  const handleUpdateAmountChange = makeAmountChangeHandler(
+    (v) => setValueUpdate('amount', v),
+    setUpdateAmountInput
+  )
 
   const fetchMortgages = async () => {
     try {
