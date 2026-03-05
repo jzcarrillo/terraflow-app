@@ -10,7 +10,7 @@ const transfersAPI = axios.create({
 const handleError = (error, res, action) => {
   console.error(`❌ ${action} failed:`, error.message);
   res.status(error.response?.status || 500).json({
-    error: error.response?.data?.message || `Failed to ${action.toLowerCase()}`
+    error: error.response?.data?.error || error.response?.data?.message || `Failed to ${action.toLowerCase()}`
   });
 };
 

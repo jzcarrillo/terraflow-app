@@ -25,8 +25,10 @@ describe('Mortgages Controller', () => {
 
   describe('createMortgage', () => {
     it('should create mortgage successfully', async () => {
+      const httpClient = require('../../utils/httpClient');
       req.params.id = '1';
       req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
+      httpClient.get.mockResolvedValue({ data: { count: 0 } });
 
       await mortgagesController.createMortgage(req, res);
 
@@ -46,6 +48,19 @@ describe('Mortgages Controller', () => {
         message: expect.any(String),
         transaction_id: expect.any(String)
       }));
+    });
+
+    it('should return 400 if mortgage count is already 3', async () => {
+      const httpClient = require('../../utils/httpClient');
+      req.params.id = '1';
+      req.body = { bank_name: 'BDO', amount: '50000', owner_name: 'Juan Dela Cruz' };
+      httpClient.get.mockResolvedValue({ data: { count: 3 } }); // 3 ACTIVE/PENDING
+
+      await mortgagesController.createMortgage(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Maximum 3 mortgages allowed per land title' });
+      expect(rabbitmq.publishToQueue).not.toHaveBeenCalled();
     });
   });
 

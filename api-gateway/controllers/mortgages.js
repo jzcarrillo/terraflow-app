@@ -45,6 +45,17 @@ const createMortgage = async (req, res) => {
     const { mortgageSchema } = require('../schemas/mortgages');
     const validatedData = mortgageSchema.parse(processedData);
     
+    // Pre-validate: check mortgage count before publishing to queue
+    const config = require('../config/services');
+    const httpClient = require('../utils/httpClient');
+    const countResult = await httpClient.get(
+      `${config.services.landregistry}/api/mortgages/count/${id}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    if (countResult.data.count >= 3) {
+      return res.status(400).json({ error: 'Maximum 3 mortgages allowed per land title' });
+    }
+    
     console.log('✅ Validated data:', validatedData);
     console.log('📎 Files to process:', req.files?.length || 0);
     

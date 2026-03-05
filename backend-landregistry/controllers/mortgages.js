@@ -202,6 +202,20 @@ const checkTransferEligibility = async (req, res) => {
   }
 };
 
+const getMortgageCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pool } = require('../config/db');
+    const result = await pool.query(
+      "SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status IN ('ACTIVE', 'PENDING')",
+      [parseInt(id)]
+    );
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (error) {
+    handleError(error, res, 'Get mortgage count');
+  }
+};
+
 module.exports = {
   createMortgage,
   getAllMortgages,
@@ -212,5 +226,6 @@ module.exports = {
   releaseMortgage,
   getLandTitlesForMortgage,
   getMortgagesForPayment,
-  checkTransferEligibility
+  checkTransferEligibility,
+  getMortgageCount
 };

@@ -40,12 +40,22 @@ const createMortgage = async (messageData) => {
       throw new Error('Mortgage amount exceeds appraised value');
     }
     
-    // Check maximum 3 ACTIVE mortgages
-    const countQuery = 'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status = $2';
-    const countResult = await pool.query(countQuery, [validatedData.land_title_id, 'ACTIVE']);
+    // Check maximum 3 ACTIVE/PENDING mortgages
+    const countQuery = 'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status IN ($2, $3)';
+    const countResult = await pool.query(countQuery, [validatedData.land_title_id, 'ACTIVE', 'PENDING']);
     
     if (parseInt(countResult.rows[0].count) >= 3) {
       throw new Error('Maximum 3 mortgages allowed per land title');
+    }
+    
+    // Check for pending transfers
+    const transferCheck = await pool.query(
+      'SELECT transfer_id FROM land_transfers WHERE land_title_id = $1 AND status = $2',
+      [validatedData.land_title_id, 'PENDING']
+    );
+    
+    if (transferCheck.rows.length > 0) {
+      throw new Error(`Cannot create mortgage. Land title has a pending transfer (${transferCheck.rows[0].transfer_id}).`);
     }
     
     // Check for duplicate mortgage (same bank and land title with PENDING or ACTIVE status)

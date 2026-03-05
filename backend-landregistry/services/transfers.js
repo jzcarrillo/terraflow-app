@@ -17,14 +17,14 @@ const submitTransfer = async (transferData) => {
     
     const landTitle = titleCheck.rows[0];
     
-    // Check for active mortgages
+    // Check for active or pending mortgages
     const mortgageCheck = await pool.query(
-      'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status = $2',
-      [landTitle.id, 'ACTIVE']
+      'SELECT COUNT(*) FROM mortgages WHERE land_title_id = $1 AND status IN ($2, $3)',
+      [landTitle.id, 'ACTIVE', 'PENDING']
     );
     
     if (parseInt(mortgageCheck.rows[0].count) > 0) {
-      throw new Error('Cannot transfer land title with active mortgages. Please release all mortgages first.');
+      throw new Error('Cannot transfer land title with active or pending mortgages. Please release all mortgages first.');
     }
     
     // Check for existing pending or completed transfers for this land title

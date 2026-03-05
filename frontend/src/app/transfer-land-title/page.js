@@ -141,7 +141,7 @@ export default function TransferLandTitle() {
       
     } catch (error) {
       console.error('Transfer error:', error)
-      setError(error.response?.data?.message || 'Failed to create transfer')
+      setError(error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create transfer')
     }
   }
 

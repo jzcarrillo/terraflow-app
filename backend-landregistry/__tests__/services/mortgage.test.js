@@ -42,6 +42,7 @@ describe('Mortgage Service', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, title_number: 'TCT-001', owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ id: 1, ...messageData.mortgage_data, status: 'PENDING', lien_position: 1 }] });
@@ -81,10 +82,26 @@ describe('Mortgage Service', () => {
       validateWithSchema.mockReturnValue({ land_title_id: 1, owner_name: 'Juan Dela Cruz', amount: 100000 });
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
-        .mockResolvedValueOnce({ rows: [{ count: '3' }] });
+        .mockResolvedValueOnce({ rows: [{ count: '3' }] }); // 3 ACTIVE/PENDING
 
       await expect(mortgageService.createMortgage({ transaction_id: 'TXN-001', mortgage_data: { land_title_id: 1, owner_name: 'Juan Dela Cruz', amount: 100000 }, user_id: 'user1' }))
         .rejects.toThrow('Maximum 3 mortgages allowed per land title');
+    });
+
+    it('should allow new mortgage when existing ones are RELEASED', async () => {
+      validateWithSchema.mockReturnValue({ land_title_id: 1, owner_name: 'Juan Dela Cruz', amount: 100000, bank_name: 'BDO' });
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
+        .mockResolvedValueOnce({ rows: [{ count: '2' }] }) // 2 ACTIVE/PENDING (1 RELEASED not counted)
+        .mockResolvedValueOnce({ rows: [] })               // no pending transfer
+        .mockResolvedValueOnce({ rows: [{ count: '0' }] }) // no duplicate
+        .mockResolvedValueOnce({ rows: [{ count: '2' }] }) // lien position = 3
+        .mockResolvedValueOnce({ rows: [{ id: 4, status: 'PENDING', lien_position: 3 }] });
+      rabbitmq.publishToQueue.mockResolvedValue();
+
+      const result = await mortgageService.createMortgage({ transaction_id: 'TXN-001', mortgage_data: { land_title_id: 1, owner_name: 'Juan Dela Cruz', amount: 100000, bank_name: 'BDO' }, user_id: 'user1' });
+
+      expect(result.status).toBe('PENDING');
     });
 
     it('should reject duplicate mortgage (same owner and land title)', async () => {
@@ -92,6 +109,7 @@ describe('Mortgage Service', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] });
 
       await expect(mortgageService.createMortgage({ transaction_id: 'TXN-001', mortgage_data: { land_title_id: 1, owner_name: 'Juan Dela Cruz', bank_name: 'BDO' }, user_id: 'user1' }))
@@ -118,6 +136,7 @@ describe('Mortgage Service', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ id: 1, ...messageData.mortgage_data, status: 'PENDING' }] });
@@ -133,6 +152,7 @@ describe('Mortgage Service', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 2, lien_position: 2, status: 'PENDING' }] });
@@ -167,6 +187,7 @@ describe('Mortgage Service', () => {
       pool.query
         .mockResolvedValueOnce({ rows: [{ id: 1, owner_name: 'Juan Dela Cruz', status: 'ACTIVE', appraised_value: 1000000 }] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ count: '1' }] })
         .mockResolvedValueOnce({ rows: [{ id: 2, status: 'PENDING' }] });

@@ -17,6 +17,9 @@ router.get('/for-payment', authenticateToken, mortgageController.getMortgagesFor
 // Check if land title can be transferred (no active mortgages)
 router.get('/check-transfer/:id', authenticateToken, mortgageController.checkTransferEligibility);
 
+// Get mortgage count for a land title
+router.get('/count/:id', authenticateToken, mortgageController.getMortgageCount);
+
 // Get specific mortgage by ID
 router.get('/:id', authenticateToken, mortgageController.getMortgageById);
 

@@ -163,7 +163,7 @@ export default function Mortgages() {
       console.error('Full error object:', error)
       console.error('Error response:', error.response)
       console.error('Error message:', error.message)
-      setError(error.response?.data?.message || error.message || 'Failed to create mortgage')
+      setError(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to create mortgage')
     }
   }
 
