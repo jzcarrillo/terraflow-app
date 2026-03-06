@@ -105,6 +105,8 @@ Before(function() {
   mockUserService.tokens.clear();
 });
 
+module.exports = { testContext };
+
 // Background steps
 Given('the user service is running', function() {
   assert.ok(mockUserService, 'User service should be available');
@@ -293,7 +295,8 @@ Then('an activation email should be sent', function() {
 });
 
 Then('I should see error {string}', function(expectedError) {
-  assert.strictEqual(testContext.error, expectedError);
+  const actualError = testContext.error || this.error;
+  assert.strictEqual(actualError, expectedError);
 });
 
 Then('my account should be activated', function() {

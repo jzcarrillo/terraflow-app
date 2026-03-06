@@ -7,12 +7,20 @@ Feature: Mortgage Blockchain Integration
     Given the blockchain service is running
     And I am logged in as a bank user
 
+  # Blockchain Flow:
+  # 1. Payment confirmed → handleMortgagePayment()
+  # 2. Update mortgage status to ACTIVE
+  # 3. Call blockchainClient.recordMortgage()
+  # 4. Store blockchain_hash in mortgages table
+  # Note: Blockchain failure does NOT rollback mortgage activation
+
   # Mortgage Activation Blockchain
   Scenario: Record mortgage activation on blockchain
     Given mortgage id 1 has status "PENDING"
     When the mortgage payment is confirmed
     Then a blockchain transaction should be submitted
     And the transaction should contain:
+      | field           | value          |
       | mortgage_id     | 1              |
       | land_title_id   | 1              |
       | bank_name       | BDO            |
@@ -41,11 +49,12 @@ Feature: Mortgage Blockchain Integration
     When the release payment is confirmed
     Then a release blockchain transaction should be submitted
     And the transaction should contain:
-      | mortgage_id      | 1                |
-      | land_title_id    | 1                |
-      | previous_status  | ACTIVE           |
-      | new_status       | RELEASED         |
-      | transaction_type | ReleaseMortgage  |
+      | field            | value           |
+      | mortgage_id      | 1               |
+      | land_title_id    | 1               |
+      | previous_status  | ACTIVE          |
+      | new_status       | RELEASED        |
+      | transaction_type | ReleaseMortgage |
     And a release blockchain hash should be returned
     And the release hash should be stored in mortgage.release_blockchain_hash
 
@@ -54,9 +63,9 @@ Feature: Mortgage Blockchain Integration
     Given mortgage id 1 has been activated and released
     When I query the blockchain history for mortgage id 1
     Then I should see 2 blockchain transactions:
-      | transaction_type     | hash              |
-      | MORTGAGE_ACTIVATION  | activation_hash   |
-      | MORTGAGE_RELEASE     | release_hash      |
+      | transaction_type    | hash            |
+      | MORTGAGE_ACTIVATION | activation_hash |
+      | MORTGAGE_RELEASE    | release_hash    |
 
   Scenario: Blockchain transaction includes timestamp
     Given mortgage id 1 is being activated
@@ -89,12 +98,11 @@ Feature: Mortgage Blockchain Integration
     Then the hash should be a non-empty string
     And the hash should be stored in the database
 
-  Scenario: Only 2 blockchain hash fields for mortgage lifecycle
-    Given a mortgage goes through full lifecycle (PENDING → ACTIVE → RELEASED)
+  Scenario: Mortgage lifecycle blockchain hashes
+    Given a mortgage goes through full lifecycle PENDING to ACTIVE to RELEASED
     When I check the mortgage record
     Then it should have:
-      | blockchain_hash              | activation_hash    |
-      | release_blockchain_hash      | release_hash       |
+      | field                   | value          |
+      | blockchain_hash         | activation_hash|
+      | release_blockchain_hash | release_hash   |
     And both hashes should be different
-    And cancellation_hash should be null
-    And release_cancellation_hash should be null

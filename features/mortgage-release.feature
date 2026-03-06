@@ -11,6 +11,14 @@ Feature: Mortgage Release
       | 3  | 2             | Metrobank | 100          | 2000000 | PENDING |
     And I am logged in as a bank user with id 100
 
+  # Release Flow:
+  # 1. POST /mortgages/:id/release → createReleaseMortgage()
+  # 2. Publish CREATE_RELEASE_PAYMENT event to queue_payments
+  # 3. Payment service creates payment with reference_type: 'mortgage_release'
+  # 4. User confirms payment → PAYMENT_STATUS_UPDATE event
+  # 5. handleMortgageReleasePayment() → ACTIVE to RELEASED
+  # 6. Record to blockchain → store release_blockchain_hash
+
   Scenario: Successfully create mortgage release
     Given mortgage id 1 has status "ACTIVE"
     And I am the bank user who created mortgage id 1
@@ -23,14 +31,14 @@ Feature: Mortgage Release
     Given mortgage id 3 has status "PENDING"
     When I attempt to create a release for mortgage id 3
     Then the release creation should fail
-    And I should see error "Only ACTIVE mortgages can be released"
+    And I should see mortgage error "Only ACTIVE mortgages can be released"
 
   Scenario: Only creating bank can release mortgage
     Given mortgage id 2 was created by bank user 200
     And I am bank user 100
     When I attempt to create a release for mortgage id 2
     Then the release creation should fail
-    And I should see error "Only the bank that created the mortgage can release it"
+    And I should see mortgage error "Only the bank that created the mortgage can release it"
 
   Scenario: Update mortgage release payment details
     Given mortgage id 1 has a PENDING release payment
@@ -67,7 +75,7 @@ Feature: Mortgage Release
     Then the land title should be eligible for transfer
 
   Scenario: Multiple mortgages can be released independently
-    Given land title 1 has 2 ACTIVE mortgages (id 1 and 2)
+    Given land title 1 has 2 ACTIVE mortgages with id 1 and 2
     When I release mortgage id 1
     Then mortgage id 1 status should be "RELEASED"
     And mortgage id 2 status should remain "ACTIVE"
@@ -84,6 +92,7 @@ Feature: Mortgage Release
     When the release payment is confirmed
     Then a blockchain event should be triggered
     And the event should contain:
+      | field            | value            |
       | mortgage_id      | 1                |
       | previous_status  | ACTIVE           |
       | new_status       | RELEASED         |
@@ -93,4 +102,4 @@ Feature: Mortgage Release
   Scenario: Mortgage not found error on release
     When I attempt to create a release for mortgage id 999
     Then the release creation should fail
-    And I should see error "Mortgage not found"
+    And I should see mortgage error "Mortgage not found"

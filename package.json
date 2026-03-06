@@ -16,6 +16,7 @@
     "bdd:auth": "cucumber-js features/user-authentication.feature",
     "bdd:payment": "cucumber-js features/payment-processing.feature",
     "bdd:transfer": "cucumber-js features/land-transfer.feature",
+    "bdd:mortgage": "cucumber-js features/mortgage-*.feature",
     "bdd:all": "cucumber-js",
     "bdd:report": "node generate-report.js && open bdd-reports/html/index.html",
     "bdd:full": "npm run bdd:all && npm run bdd:report",
