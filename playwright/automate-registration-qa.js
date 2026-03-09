@@ -637,7 +637,7 @@ async function automateLandRegistration() {
       console.log('  🔍 PAID payment row found');
       
       // Open actions menu using getByRole
-      await page.getByRole('button').filter({ hasText: /^$/ }).click();
+      await paymentRow.locator('button').last().click();
       console.log('  ✅ Actions button clicked');
       await page.waitForTimeout(1000);
       
