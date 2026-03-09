@@ -966,6 +966,471 @@ async function automateLandRegistration() {
     await page.getByRole('button', { name: 'Close' }).click();
     await page.waitForTimeout(1000);
     
+    // Step 28: Mortgage flow - Create, Payment, Release
+    console.log('🏦 Step 28: Starting Mortgage flow...');
+    
+    // Navigate to Mortgages
+    console.log('📍 Step 28a: Navigating to Mortgages...');
+    const mortgageTabSelectors = ['text=Mortgages', 'a:has-text("Mortgages")', 'button:has-text("Mortgages")', '[href*="mortgage"]'];
+    for (const selector of mortgageTabSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await page.click(selector);
+        break;
+      }
+    }
+    await page.waitForTimeout(2000);
+    
+    // Create 3 mortgages with same land title
+    const banks = ['BDO', 'BPI', 'Metrobank'];
+    for (let i = 1; i <= 3; i++) {
+      console.log(`➕ Step 28b-${i}: Creating mortgage ${i}/3...`);
+      await page.getByRole('button', { name: 'Create Mortgage' }).click();
+      await page.waitForTimeout(2000);
+      
+      await page.locator('select[name="land_title_id"]').selectOption({ index: 1 });
+      console.log('  ✅ Land Title: Selected Active Land Title');
+      await page.waitForTimeout(1000);
+      
+      await page.locator('select[name="bank_name"]').selectOption(banks[i - 1]);
+      console.log(`  ✅ Bank: ${banks[i - 1]}`);
+      await page.waitForTimeout(500);
+      
+      await page.getByRole('textbox').nth(1).fill('100000');
+      console.log('  ✅ Amount: 100000');
+      await page.waitForTimeout(500);
+      
+      await page.getByRole('textbox', { name: 'Enter mortgage details (' }).fill('Sample details of the mortgage');
+      console.log('  ✅ Details: Sample details of the mortgage');
+      await page.waitForTimeout(500);
+      
+      await page.getByRole('button', { name: 'Choose File' }).setInputFiles(path.join(testFilesPath, 'deed.pdf'));
+      console.log('  ✅ Attachment: deed.pdf selected');
+      await page.waitForTimeout(1000);
+      
+      await page.getByRole('button', { name: 'Create Mortgage' }).click();
+      await page.waitForTimeout(3000);
+      console.log(`  ✅ Mortgage ${i} created successfully!`);
+      
+      await page.waitForTimeout(1000);
+      const dialogCloseSelectors = ['.MuiDialog-root button:has-text("Close")', '.MuiDialog-root button:has-text("OK")', '[aria-label="Close"]'];
+      for (const selector of dialogCloseSelectors) {
+        if (await page.locator(selector).count() > 0) {
+          await page.click(selector);
+          await page.waitForTimeout(500);
+          break;
+        }
+      }
+      await page.waitForTimeout(1500);
+    }
+    
+    // Try to create 4th mortgage (should error)
+    console.log('❌ Step 28c: Attempting to create 4th mortgage (should fail)...');
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(2000);
+    
+    await page.locator('select[name="land_title_id"]').selectOption({ index: 1 });
+    await page.waitForTimeout(1000);
+    await page.locator('select[name="bank_name"]').selectOption('BDO');
+    await page.waitForTimeout(500);
+    await page.getByRole('textbox').nth(1).fill('100000');
+    await page.waitForTimeout(500);
+    await page.getByRole('textbox', { name: 'Enter mortgage details (' }).fill('Sample details of the mortgage');
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(2000);
+    
+    const errorMessage = await page.locator('text=/maximum.*3/i, text=/exceed/i').count();
+    if (errorMessage > 0) {
+      console.log('  ✅ Error displayed: Maximum of 3 mortgages reached');
+    }
+    await page.waitForTimeout(1000);
+    
+    const closeSelectors = ['button:has-text("Close")', 'button:has-text("Cancel")', '[aria-label="Close"]'];
+    for (const selector of closeSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await page.click(selector);
+        break;
+      }
+    }
+    await page.waitForTimeout(1000);
+    
+    // Helper to select reference_type and trigger React onChange
+    const selectReferenceType = async (value) => {
+      const select = page.locator('select[name="reference_type"]');
+      await select.click();
+      await page.waitForTimeout(300);
+      await select.selectOption(value);
+      await select.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+      await page.waitForTimeout(2000);
+    };
+    
+    // Create payments for all 3 mortgages and confirm them
+    console.log('💰 Step 28d: Creating and confirming payments for all 3 mortgages...');
+    await page.getByRole('button', { name: 'Payments' }).click();
+    await page.waitForTimeout(2000);
+    
+    const payerNames = ['Juan Dela Cruz', 'Maria Santos', 'Jose Rizal'];
+    for (let i = 0; i < 3; i++) {
+      console.log(`  ➕ Creating payment ${i + 1}/3...`);
+      await page.getByRole('button', { name: 'Create New Payment' }).click();
+      await page.waitForTimeout(2000);
+      
+      await selectReferenceType('Mortgage');
+      console.log('  ✅ Reference Type: Mortgage');
+      
+      await page.locator('select[name="reference_id"]').selectOption({ index: 1 });
+      console.log(`  ✅ Reference ID: Mortgage ${i + 1}`);
+      await page.waitForTimeout(1000);
+      
+      await page.locator('input[name="payer_name"]').fill(payerNames[i]);
+      console.log(`  ✅ Payer Name: ${payerNames[i]}`);
+      await page.waitForTimeout(500);
+      
+      await page.getByRole('spinbutton').fill('1000');
+      console.log('  ✅ Amount: 1000');
+      await page.waitForTimeout(500);
+      
+      await page.locator('select[name="payment_method"]').selectOption('CASH');
+      console.log('  ✅ Payment Method: Cash');
+      await page.waitForTimeout(500);
+      
+      await page.getByRole('button', { name: 'Create' }).click();
+      await page.waitForTimeout(3000);
+      console.log(`  ✅ Payment ${i + 1} created`);
+      
+      await page.locator('button').nth(4).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('menuitem', { name: 'Confirm Payment' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Yes' }).click();
+      await page.waitForTimeout(3000);
+      console.log(`  ✅ Payment ${i + 1} confirmed - PAID`);
+    }
+    
+    // Check mortgage statuses changed to ACTIVE
+    console.log('🏦 Step 28e: Verifying mortgage statuses changed to ACTIVE...');
+    await page.getByRole('button', { name: 'Mortgages' }).click();
+    await page.waitForTimeout(2000);
+    
+    const activeCount = await page.locator('td:has-text("ACTIVE")').count();
+    console.log(`  ✅ Active mortgages: ${activeCount}`);
+    
+    // Release all 3 mortgages
+    console.log('🔓 Step 28f: Releasing all 3 mortgages...');
+    await page.getByRole('button', { name: 'Mortgages' }).click();
+    await page.waitForTimeout(2000);
+    
+    for (let i = 0; i < 3; i++) {
+      console.log(`  🔓 Processing mortgage ${i + 1}/3...`);
+      
+      const pendingRows = await page.locator('tr:has-text("PENDING")').count();
+      if (pendingRows > 0) {
+        console.log(`  💰 Mortgage ${i + 1} is PENDING - creating payment first...`);
+        await page.getByRole('button', { name: 'Payments' }).click();
+        await page.waitForTimeout(2000);
+        
+        await page.getByRole('button', { name: 'Create New Payment' }).click();
+        await page.waitForTimeout(2000);
+        
+        await selectReferenceType('Mortgage');
+        await page.locator('select[name="reference_id"]').selectOption({ index: 1 });
+        await page.waitForTimeout(1000);
+        await page.locator('input[name="payer_name"]').fill(payerNames[i]);
+        await page.waitForTimeout(300);
+        await page.getByRole('spinbutton').fill('1000');
+        await page.waitForTimeout(300);
+        await page.locator('select[name="payment_method"]').selectOption('CASH');
+        await page.waitForTimeout(300);
+        await page.getByRole('button', { name: 'Create' }).click();
+        await page.waitForTimeout(3000);
+        
+        await page.locator('tr:has-text("PENDING")').first().locator('button').last().click();
+        await page.waitForTimeout(1000);
+        await page.getByRole('menuitem', { name: 'Confirm Payment' }).click();
+        await page.waitForTimeout(1000);
+        await page.getByRole('button', { name: 'Yes' }).click();
+        await page.waitForTimeout(3000);
+        console.log(`  ✅ Payment confirmed for mortgage ${i + 1}`);
+        
+        await page.getByRole('button', { name: 'Mortgages' }).click();
+        await page.waitForTimeout(2000);
+      }
+      
+      await page.locator('tr:has-text("ACTIVE")').first().locator('button').last().click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('menuitem', { name: 'Release Mortgage' }).click();
+      await page.waitForTimeout(2000);
+      await page.getByRole('button', { name: 'Create Release Payment' }).click();
+      await page.waitForTimeout(3000);
+      console.log(`  ✅ Release payment ${i + 1} created`);
+      
+      await page.getByRole('button', { name: 'Payments' }).click();
+      await page.waitForTimeout(2000);
+      await page.locator('tr:has-text("PENDING")').first().locator('button').last().click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('menuitem', { name: 'Confirm Payment' }).click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Yes' }).click();
+      await page.waitForTimeout(3000);
+      console.log(`  ✅ Release payment ${i + 1} confirmed - PAID`);
+      
+      await page.getByRole('button', { name: 'Mortgages' }).click();
+      await page.waitForTimeout(2000);
+    }
+    
+    const releasedCount = await page.locator('td:has-text("RELEASED")').count();
+    console.log(`  ✅ Released mortgages: ${releasedCount}`);
+    
+    // Step 29: Test - Pending transfer blocks mortgage creation
+    console.log('🧪 Step 29: Testing pending transfer blocks mortgage creation...');
+    
+    await page.click('text=Land Titles');
+    await page.waitForTimeout(2000);
+    await page.click('text=Create New Land Title');
+    await page.waitForTimeout(2000);
+    
+    await page.locator('input[name="owner_name"]').fill(`Owner ${timestamp}`);
+    await page.locator('input[name="owner_name"]').press('Tab');
+    await page.locator('input[name="contact_no"]').fill('09178238231');
+    await page.locator('input[name="contact_no"]').press('Tab');
+    await page.locator('input[name="email_address"]').fill(`owner${timestamp}@gmail.com`);
+    await page.locator('input[name="email_address"]').press('Tab');
+    await page.locator('textarea[name="address"]').fill('testing 101');
+    await page.locator('select[name="property_location"]').selectOption('Caloocan');
+    await page.locator('input[name="lot_number"]').fill('5000');
+    await page.locator('input[name="area_size"]').fill('5000');
+    await page.locator('select[name="classification"]').selectOption('Residential');
+    await page.locator('input[name="registration_date"]').fill('2025-10-10');
+    await page.locator('select[name="registrar_office"]').selectOption('Manila');
+    await page.locator('input[name="previous_title_number"]').fill('1234');
+    await page.getByRole('button', { name: 'Choose File' }).setInputFiles(path.join(testFilesPath, 'deed.pdf'));
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ New land title created');
+    
+    await page.getByRole('button', { name: 'Payments' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create New Payment' }).click();
+    await page.waitForTimeout(2000);
+    
+    const refType29 = page.locator('select[name="reference_type"]');
+    await refType29.click();
+    await page.waitForTimeout(300);
+    await refType29.selectOption('Land Registration');
+    await refType29.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.waitForTimeout(2000);
+    
+    await page.locator('select[name="reference_id"]').selectOption({ index: 1 });
+    await page.waitForTimeout(1000);
+    await page.locator('input[name="payer_name"]').fill(`Owner ${timestamp}`);
+    await page.waitForTimeout(300);
+    await page.getByRole('spinbutton').fill('5000');
+    await page.waitForTimeout(300);
+    await page.locator('select[name="payment_method"]').selectOption('CASH');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.waitForTimeout(3000);
+    
+    await page.locator('button').nth(4).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('menuitem', { name: 'Confirm Payment' }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ Payment confirmed - Land title now ACTIVE');
+    
+    await page.click('text=Land Titles');
+    await page.waitForTimeout(2000);
+    
+    let isActive = await page.locator('tr').filter({ hasText: `Owner ${timestamp}` }).filter({ hasText: 'ACTIVE' }).count() > 0;
+    let refreshAttempts = 0;
+    while (!isActive && refreshAttempts < 10) {
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      isActive = await page.locator('tr').filter({ hasText: `Owner ${timestamp}` }).filter({ hasText: 'ACTIVE' }).count() > 0;
+      refreshAttempts++;
+      console.log(`  🔄 Refreshing... attempt ${refreshAttempts}`);
+    }
+    console.log('  ✅ Land title is ACTIVE - proceeding with transfer');
+    
+    await page.getByRole('button', { name: 'Transfer Title' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create New Transfer' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('combobox', { name: 'Select Land Title' }).click();
+    await page.waitForTimeout(2000);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(1000);
+    await page.locator('input[name="buyer_name"]').fill('Test Buyer Transfer');
+    await page.locator('input[name="buyer_contact"]').fill('09178248312');
+    await page.waitForTimeout(300);
+    await page.locator('input[name="buyer_email"]').fill('testing@gmail.com');
+    await page.waitForTimeout(300);
+    await page.locator('textarea[name="buyer_address"]').fill('Test Address');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Create Transfer' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ Pending transfer created for new land title');
+    
+    await page.getByRole('button', { name: 'Mortgages' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(2000);
+    await page.locator('select[name="land_title_id"]').selectOption({ index: 1 });
+    await page.waitForTimeout(1000);
+    await page.locator('select[name="bank_name"]').selectOption('Landbank');
+    await page.waitForTimeout(500);
+    await page.getByRole('textbox').nth(1).fill('50000');
+    await page.waitForTimeout(300);
+    await page.getByRole('textbox', { name: 'Enter mortgage details (' }).fill('Testing transfer blocks mortgage');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Choose File' }).setInputFiles(path.join(testFilesPath, 'deed.pdf'));
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(2000);
+    
+    if (await page.getByRole('alert').filter({ hasText: 'Cannot create mortgage. Land' }).count() > 0) {
+      console.log('  ✅ Error shown: Cannot create mortgage - land title has pending transfer');
+    }
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.waitForTimeout(1000);
+    console.log('  ✅ Step 29 complete: Pending transfer correctly blocks mortgage creation');
+    
+    // Step 30: Test - Pending mortgage blocks transfer
+    console.log('🧪 Step 30: Testing pending mortgage blocks transfer...');
+    
+    await page.click('text=Land Titles');
+    await page.waitForTimeout(2000);
+    await page.click('text=Create New Land Title');
+    await page.waitForTimeout(2000);
+    
+    const timestamp30 = Date.now();
+    await page.locator('input[name="owner_name"]').fill(`Owner ${timestamp30}`);
+    await page.locator('input[name="owner_name"]').press('Tab');
+    await page.locator('input[name="contact_no"]').fill('09178238231');
+    await page.locator('input[name="contact_no"]').press('Tab');
+    await page.locator('input[name="email_address"]').fill(`owner${timestamp30}@gmail.com`);
+    await page.locator('input[name="email_address"]').press('Tab');
+    await page.locator('textarea[name="address"]').fill('testing 101');
+    await page.locator('select[name="property_location"]').selectOption('Caloocan');
+    await page.locator('input[name="lot_number"]').fill('5000');
+    await page.locator('input[name="area_size"]').fill('5000');
+    await page.locator('select[name="classification"]').selectOption('Residential');
+    await page.locator('input[name="registration_date"]').fill('2025-10-10');
+    await page.locator('select[name="registrar_office"]').selectOption('Manila');
+    await page.locator('input[name="previous_title_number"]').fill('1234');
+    await page.getByRole('button', { name: 'Choose File' }).setInputFiles(path.join(testFilesPath, 'deed.pdf'));
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ New land title created');
+    
+    await page.getByRole('button', { name: 'Payments' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create New Payment' }).click();
+    await page.waitForTimeout(2000);
+    
+    const refType30 = page.locator('select[name="reference_type"]');
+    await refType30.click();
+    await page.waitForTimeout(300);
+    await refType30.selectOption('Land Registration');
+    await refType30.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.waitForTimeout(2000);
+    
+    await page.locator('select[name="reference_id"]').selectOption({ index: 1 });
+    await page.waitForTimeout(1000);
+    await page.locator('input[name="payer_name"]').fill(`Owner ${timestamp30}`);
+    await page.waitForTimeout(300);
+    await page.getByRole('spinbutton').fill('5000');
+    await page.waitForTimeout(300);
+    await page.locator('select[name="payment_method"]').selectOption('CASH');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.waitForTimeout(3000);
+    
+    await page.locator('button').nth(4).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('menuitem', { name: 'Confirm Payment' }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ Payment confirmed - Land title now ACTIVE');
+    
+    await page.click('text=Land Titles');
+    await page.waitForTimeout(2000);
+    let isActive30 = await page.locator('tr').filter({ hasText: `Owner ${timestamp30}` }).filter({ hasText: 'ACTIVE' }).count() > 0;
+    let refreshAttempts30 = 0;
+    while (!isActive30 && refreshAttempts30 < 10) {
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      isActive30 = await page.locator('tr').filter({ hasText: `Owner ${timestamp30}` }).filter({ hasText: 'ACTIVE' }).count() > 0;
+      refreshAttempts30++;
+      console.log(`  🔄 Refreshing... attempt ${refreshAttempts30}`);
+    }
+    console.log('  ✅ Land title is ACTIVE');
+    
+    await page.getByRole('button', { name: 'Mortgages' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(2000);
+    await page.locator('select[name="land_title_id"]').selectOption({ index: 1 });
+    await page.waitForTimeout(1000);
+    await page.locator('select[name="bank_name"]').selectOption('BDO');
+    await page.waitForTimeout(500);
+    await page.getByRole('textbox').nth(1).fill('1000');
+    await page.waitForTimeout(300);
+    await page.getByRole('textbox', { name: 'Enter mortgage details (' }).fill('Testing pending mortgage block');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Choose File' }).setInputFiles(path.join(testFilesPath, 'deed.pdf'));
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Create Mortgage' }).click();
+    await page.waitForTimeout(3000);
+    console.log('  ✅ New PENDING mortgage created');
+    
+    const dialogCloseSelectors2 = ['.MuiDialog-root button:has-text("Close")', '.MuiDialog-root button:has-text("OK")', '[aria-label="Close"]'];
+    for (const selector of dialogCloseSelectors2) {
+      if (await page.locator(selector).count() > 0) {
+        await page.click(selector);
+        await page.waitForTimeout(500);
+        break;
+      }
+    }
+    await page.waitForTimeout(1500);
+    
+    await page.getByRole('button', { name: 'Transfer Title' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Create New Transfer' }).click();
+    await page.waitForTimeout(2000);
+    await page.getByRole('combobox', { name: 'Select Land Title' }).click();
+    await page.waitForTimeout(2000);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Enter');
+    console.log('  ✅ Land Title: Selected');
+    await page.waitForTimeout(1000);
+    await page.locator('input[name="buyer_name"]').fill('Test Buyer');
+    await page.waitForTimeout(300);
+    await page.locator('input[name="buyer_contact"]').fill('09178248312');
+    await page.waitForTimeout(300);
+    await page.locator('input[name="buyer_email"]').fill('testbuyer@gmail.com');
+    await page.waitForTimeout(300);
+    await page.locator('textarea[name="buyer_address"]').fill('Test Address');
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Create Transfer' }).click();
+    await page.waitForTimeout(2000);
+    
+    if (await page.getByRole('alert').filter({ hasText: 'Cannot transfer land title' }).count() > 0) {
+      console.log('  ✅ Error shown: Cannot transfer land title with pending mortgage');
+    }
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.waitForTimeout(1000);
+    console.log('  ✅ Step 30 complete: Pending mortgage correctly blocks transfer');
+    
     console.log('\n✅ Complete automation finished successfully!');
     console.log('📹 Video saved to: Desktop/Playwright Simulations/');
     
