@@ -317,6 +317,18 @@ async function automateLandRegistration() {
     await page.waitForTimeout(3000);
     console.log('  ✅ Land title created successfully!');
     
+    // Close success dialog if present
+    try {
+      await page.waitForSelector('.MuiDialog-root', { state: 'visible', timeout: 5000 });
+      const postCreateClose = ['.MuiDialog-root button:has-text("Close")', '.MuiDialog-root button:has-text("OK")'];
+      for (const selector of postCreateClose) {
+        if (await page.locator(selector).count() > 0) {
+          await page.locator(selector).first().click();
+          await page.waitForTimeout(1000);
+          break;
+        }
+      }
+    } catch (e) { /* no dialog */ }
     await page.waitForTimeout(2000);
     
     // Step 11: Navigate to Payments
