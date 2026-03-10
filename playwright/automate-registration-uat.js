@@ -853,16 +853,18 @@ async function automateLandRegistration() {
     }
     await page.waitForTimeout(2000);
     
-    if (await page.locator(refTypeSelector).count() > 0) {
-      await page.locator(refTypeSelector).first().click();
-      await page.waitForTimeout(500);
-      await page.locator(refTypeSelector).first().selectOption({ label: 'Transfer Title' });
-      console.log('  ✅ Reference Type: Transfer Title');
-      await page.waitForFunction(
-        (sel) => { const el = document.querySelector(sel); return el && el.options.length > 1; },
-        'select[name="reference_id"]',
-        { timeout: 15000 }
-      );
+    const refType23 = page.locator('select[name="reference_type"]');
+    await refType23.click();
+    await page.waitForTimeout(300);
+    await refType23.selectOption('Transfer Title');
+    await refType23.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+    console.log('  ✅ Reference Type: Transfer Title');
+    // Poll until reference_id options are populated (retry dispatch if needed)
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await page.waitForTimeout(1000);
+      const optCount = await page.locator('select[name="reference_id"] option').count();
+      if (optCount > 1) break;
+      await refType23.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
     }
     
     if (await page.locator(refIdSelector).count() > 0) {
