@@ -334,6 +334,12 @@ async function automateLandRegistration() {
     
     // Step 11: Navigate to Payments
     console.log('💰 Step 11: Navigating to Payments...');
+    // Force close any lingering dialog first
+    try {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(1000);
+    } catch (e) {}
+    
     const paymentTabSelectors = [
       'text=Payments',
       'a:has-text("Payments")',
@@ -341,11 +347,10 @@ async function automateLandRegistration() {
       '[href*="payment"]',
       'nav a:has-text("Payments")'
     ];
-    
     let paymentTabFound = false;
     for (const selector of paymentTabSelectors) {
       if (await page.locator(selector).count() > 0) {
-        await page.click(selector);
+        await page.locator(selector).first().click({ force: true });
         paymentTabFound = true;
         console.log('  ✅ Payments tab clicked');
         break;
