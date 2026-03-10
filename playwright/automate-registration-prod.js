@@ -840,6 +840,19 @@ async function automateLandRegistration() {
     
     // Step 23: Create payment for transfer
     console.log('➕ Step 23: Creating payment...');
+    // Wait for transfer to be PENDING before proceeding
+    await page.getByRole('button', { name: 'Transfer Title' }).click();
+    await page.waitForTimeout(2000);
+    let transferPending = await page.locator('td:has-text("PENDING")').count() > 0;
+    let transferRefresh = 0;
+    while (!transferPending && transferRefresh < 10) {
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      transferPending = await page.locator('td:has-text("PENDING")').count() > 0;
+      transferRefresh++;
+      console.log(`  🔄 Waiting for transfer PENDING... attempt ${transferRefresh}`);
+    }
+    console.log('  ✅ Transfer status: PENDING');
     try { await page.keyboard.press('Escape'); await page.waitForTimeout(500); } catch (e) {}
     await page.locator('text=Payments').first().click({ force: true });
     await page.waitForTimeout(2000);
