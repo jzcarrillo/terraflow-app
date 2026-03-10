@@ -858,13 +858,17 @@ async function automateLandRegistration() {
       await page.waitForTimeout(500);
       await page.locator(refTypeSelector).first().selectOption({ label: 'Transfer Title' });
       console.log('  ✅ Reference Type: Transfer Title');
-      await page.waitForTimeout(1500);
+      // Wait for reference_id options to load from API
+      await page.waitForFunction(
+        (sel) => { const el = document.querySelector(sel); return el && el.options.length > 1; },
+        'select[name="reference_id"]',
+        { timeout: 15000 }
+      );
     }
     
     if (await page.locator(refIdSelector).count() > 0) {
-      await page.waitForTimeout(1000);
       await page.locator(refIdSelector).first().selectOption({ index: 1 });
-      console.log('  ✅ Reference ID: Selected land title');
+      console.log('  ✅ Reference ID: Selected transfer');
       await page.waitForTimeout(500);
     }
     
