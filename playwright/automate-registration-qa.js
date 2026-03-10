@@ -328,6 +328,7 @@ async function automateLandRegistration() {
           break;
         }
       }
+      await page.waitForSelector('.MuiDialog-root', { state: 'hidden', timeout: 5000 });
     } catch (e) { /* no dialog */ }
     await page.waitForTimeout(2000);
     
