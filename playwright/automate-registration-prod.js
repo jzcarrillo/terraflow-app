@@ -401,6 +401,7 @@ async function automateLandRegistration() {
       await refTypeField.click();
       await page.waitForTimeout(500);
       await refTypeField.selectOption({ index: 1 });
+      await refTypeField.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
       console.log('  ✅ Reference Type: Selected');
       await page.waitForTimeout(1500);
     }
@@ -723,6 +724,7 @@ async function automateLandRegistration() {
       await page.locator(refTypeSelector).first().click();
       await page.waitForTimeout(500);
       await page.locator(refTypeSelector).first().selectOption({ index: 1 });
+      await page.locator(refTypeSelector).first().evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
       console.log('  ✅ Reference Type: Selected');
       await page.waitForTimeout(1500);
     }
@@ -843,6 +845,7 @@ async function automateLandRegistration() {
       await page.locator(refTypeSelector).first().click();
       await page.waitForTimeout(500);
       await page.locator(refTypeSelector).first().selectOption({ label: 'Transfer Title' });
+      await page.locator(refTypeSelector).first().evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
       console.log('  ✅ Reference Type: Transfer Title');
       await page.waitForTimeout(1500);
     }
