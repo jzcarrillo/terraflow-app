@@ -823,38 +823,11 @@ async function automateLandRegistration() {
     await page.getByRole('button', { name: 'Create Transfer' }).click();
     await page.waitForTimeout(3000);
     console.log('  ✅ Land title transferred successfully');
-    
-    // Close success dialog if present
-    try {
-      await page.waitForSelector('.MuiDialog-root', { state: 'visible', timeout: 5000 });
-      for (const selector of ['.MuiDialog-root button:has-text("Close")', '.MuiDialog-root button:has-text("OK")']) {
-        if (await page.locator(selector).count() > 0) {
-          await page.locator(selector).first().click();
-          await page.waitForTimeout(1000);
-          break;
-        }
-      }
-      await page.waitForSelector('.MuiDialog-root', { state: 'hidden', timeout: 5000 });
-    } catch (e) { /* no dialog */ }
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     // Step 23: Create payment for transfer
     console.log('➕ Step 23: Creating payment...');
-    // Wait for transfer to be PENDING before proceeding
-    await page.getByRole('button', { name: 'Transfer Title' }).click();
-    await page.waitForTimeout(2000);
-    let transferPending = await page.locator('td:has-text("PENDING")').count() > 0;
-    let transferRefresh = 0;
-    while (!transferPending && transferRefresh < 10) {
-      await page.reload({ waitUntil: 'networkidle' });
-      await page.waitForTimeout(2000);
-      transferPending = await page.locator('td:has-text("PENDING")').count() > 0;
-      transferRefresh++;
-      console.log(`  🔄 Waiting for transfer PENDING... attempt ${transferRefresh}`);
-    }
-    console.log('  ✅ Transfer status: PENDING');
-    try { await page.keyboard.press('Escape'); await page.waitForTimeout(500); } catch (e) {}
-    await page.locator('text=Payments').first().click({ force: true });
+    await page.click('text=Payments');
     await page.waitForTimeout(2000);
     
     for (const selector of createPaymentSelectors) {
@@ -866,23 +839,18 @@ async function automateLandRegistration() {
     }
     await page.waitForTimeout(2000);
     
-    const refType23 = page.locator('select[name="reference_type"]');
-    await refType23.click();
-    await page.waitForTimeout(300);
-    await refType23.selectOption('Transfer Title');
-    await refType23.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
-    console.log('  ✅ Reference Type: Transfer Title');
-    // Poll until reference_id options are populated (retry dispatch if needed)
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await page.waitForTimeout(1000);
-      const optCount = await page.locator('select[name="reference_id"] option').count();
-      if (optCount > 1) break;
-      await refType23.evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+    if (await page.locator(refTypeSelector).count() > 0) {
+      await page.locator(refTypeSelector).first().click();
+      await page.waitForTimeout(500);
+      await page.locator(refTypeSelector).first().selectOption({ label: 'Transfer Title' });
+      console.log('  ✅ Reference Type: Transfer Title');
+      await page.waitForTimeout(1500);
     }
     
     if (await page.locator(refIdSelector).count() > 0) {
+      await page.waitForTimeout(1000);
       await page.locator(refIdSelector).first().selectOption({ index: 1 });
-      console.log('  ✅ Reference ID: Selected transfer');
+      console.log('  ✅ Reference ID: Selected land title');
       await page.waitForTimeout(500);
     }
     
