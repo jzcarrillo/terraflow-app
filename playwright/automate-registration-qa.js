@@ -825,7 +825,19 @@ async function automateLandRegistration() {
     await page.getByRole('button', { name: 'Create Transfer' }).click();
     await page.waitForTimeout(3000);
     console.log('  ✅ Land title transferred successfully');
-    await page.waitForTimeout(2000);
+    
+    // Close success dialog before navigating
+    try {
+      await page.waitForSelector('.MuiDialog-root', { state: 'visible', timeout: 5000 });
+      for (const sel of ['.MuiDialog-root button:has-text("Close")', '.MuiDialog-root button:has-text("OK")']) {
+        if (await page.locator(sel).count() > 0) {
+          await page.locator(sel).first().click();
+          break;
+        }
+      }
+      await page.waitForSelector('.MuiDialog-root', { state: 'hidden', timeout: 5000 });
+    } catch (e) { /* no dialog */ }
+    await page.waitForTimeout(1000);
     
     // Step 23: Create payment for transfer
     console.log('➕ Step 23: Creating payment...');
