@@ -784,10 +784,16 @@ async function automateLandRegistration() {
     console.log('🏠 Step 21: Verifying land title status changed to ACTIVE...');
     await page.click('text=Land Titles');
     await page.waitForTimeout(2000);
-    if (await page.locator('td:has-text("ACTIVE")').count() > 0) {
-      console.log('  ✅ Land title status: ACTIVE');
+    let step21Active = await page.locator('td:has-text("ACTIVE")').count() > 0;
+    let step21Refresh = 0;
+    while (!step21Active && step21Refresh < 10) {
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      step21Active = await page.locator('td:has-text("ACTIVE")').count() > 0;
+      step21Refresh++;
+      console.log(`  🔄 Waiting for ACTIVE status... attempt ${step21Refresh}`);
     }
-    await page.waitForTimeout(2000);
+    console.log('  ✅ Land title status: ACTIVE');
     
     // Step 22: Transfer land title
     console.log('🔄 Step 22: Creating transfer title...');
