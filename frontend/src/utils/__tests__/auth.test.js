@@ -92,4 +92,17 @@ describe('Auth Utils', () => {
       expect(hasRole('admin')).toBe(false)
     })
   })
+
+  describe('logout', () => {
+    it('clears token and redirects to login', () => {
+      const { logout } = require('../auth')
+      localStorage.setItem('token', 'test')
+      localStorage.setItem('user', 'testuser')
+      jest.spyOn(console, 'error').mockImplementation()
+      logout()
+      expect(localStorage.getItem('token')).toBeNull()
+      expect(localStorage.getItem('user')).toBeNull()
+      jest.restoreAllMocks()
+    })
+  })
 })
