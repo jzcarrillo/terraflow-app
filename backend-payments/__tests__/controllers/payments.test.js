@@ -56,6 +56,15 @@ describe('Payment Controller', () => {
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({ message: 'Payment not found' });
     });
+
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      paymentService.getPaymentById.mockRejectedValue(new Error('DB error'));
+
+      await paymentController.getPaymentById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 
   describe('getPaymentStatus', () => {
@@ -77,6 +86,15 @@ describe('Payment Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
+
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      paymentService.getPaymentStatus.mockRejectedValue(new Error('DB error'));
+
+      await paymentController.getPaymentStatus(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 
   describe('validateLandTitlePayment', () => {
@@ -96,6 +114,15 @@ describe('Payment Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: 'Land title ID is required' });
+    });
+
+    it('should handle errors', async () => {
+      req.query = { land_title_id: 'TCT-001' };
+      paymentService.getExistingPendingPayment.mockRejectedValue(new Error('DB error'));
+
+      await paymentController.validateLandTitlePayment(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 
@@ -122,6 +149,15 @@ describe('Payment Controller', () => {
         exists: false,
         message: 'Payment ID is available'
       });
+    });
+
+    it('should handle errors', async () => {
+      req.params.paymentId = 'PAY-001';
+      paymentService.checkPaymentExists.mockRejectedValue(new Error('DB error'));
+
+      await paymentController.validatePaymentId(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 });
