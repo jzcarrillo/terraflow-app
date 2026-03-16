@@ -67,4 +67,13 @@ describe('Error Handler', () => {
       });
     });
   });
+
+  describe('handleError', () => {
+    it('should handle generic errors', () => {
+      const error = new Error('Test error');
+      ErrorHandler.handleError(error, mockRes, 'Test context');
+
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+  });
 });
