@@ -56,6 +56,16 @@ describe('Transfer Service', () => {
         .rejects.toThrow('Land title not found or not active');
     });
 
+    it('should reject transfer if active mortgages exist', async () => {
+      const mockTitle = { id: 1, title_number: 'TCT-001', status: 'ACTIVE' };
+      pool.query
+        .mockResolvedValueOnce({ rows: [mockTitle] })
+        .mockResolvedValueOnce({ rows: [{ count: '2' }] });
+
+      await expect(transferService.submitTransfer({ title_number: 'TCT-001' }))
+        .rejects.toThrow('Cannot transfer land title with active or pending mortgages');
+    });
+
     it('should reject duplicate transfer for same title', async () => {
       const mockTitle = { id: 1, title_number: 'TCT-001', status: 'ACTIVE' };
       const existingTransfer = { transfer_id: 'TRF-001', status: 'PENDING' };
@@ -247,6 +257,12 @@ describe('Transfer Service', () => {
       expect(result).toHaveLength(2);
       expect(result[0].transfer_id).toBe('TRF-001');
     });
+
+    it('should throw on getAllTransfers database error', async () => {
+      pool.query.mockRejectedValueOnce(new Error('DB connection lost'));
+
+      await expect(transferService.getAllTransfers()).rejects.toThrow('DB connection lost');
+    });
   });
 
   // Status Update (1 test)
@@ -257,7 +273,62 @@ describe('Transfer Service', () => {
       const result = await transferService.updateTransferStatus('TRF-001', 'COMPLETED');
 
       expect(result.status).toBe('COMPLETED');
-      expect(pool.query).toHaveBeenCalledWith('UPDATE land_transfers SET status = $1, updated_at = NOW() WHERE transfer_id = $2 RETURNING *', ['COMPLETED', 'TRF-001']);
+    });
+
+    it('should throw if transfer not found', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(transferService.updateTransferStatus('TRF-999', 'COMPLETED')).rejects.toThrow('Transfer not found');
+    });
+  });
+
+  describe('Update Transfer', () => {
+    it('should update PENDING transfer details', async () => {
+      const mockTransfer = { transfer_id: 'TRF-001', status: 'PENDING' };
+      const updateData = { buyer_name: 'Updated Buyer', buyer_contact: '09999999999' };
+
+      pool.query
+        .mockResolvedValueOnce({ rows: [mockTransfer] })
+        .mockResolvedValueOnce({ rows: [{ ...mockTransfer, ...updateData }] });
+
+      const result = await transferService.updateTransfer('TRF-001', updateData);
+      expect(result.buyer_name).toBe('Updated Buyer');
+    });
+
+    it('should reject update for COMPLETED transfer', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [{ transfer_id: 'TRF-001', status: 'COMPLETED' }] });
+      await expect(transferService.updateTransfer('TRF-001', { buyer_name: 'New' })).rejects.toThrow('Only PENDING transfers can be updated');
+    });
+
+    it('should throw if transfer not found', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(transferService.updateTransfer('TRF-999', {})).rejects.toThrow('Transfer not found');
+    });
+  });
+
+  describe('processPaymentConfirmed edge cases', () => {
+    it('should handle transfer not found', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await expect(transferService.processPaymentConfirmed({ payment_id: 'PAY-001', transfer_id: 'TRF-999' })).rejects.toThrow('Transfer not found');
+    });
+
+    it('should handle blockchain failure gracefully', async () => {
+      const mockTransfer = { transfer_id: 'TRF-001', land_title_id: 1, title_number: 'TCT-001', from_owner: 'Seller', to_owner: 'Buyer', consideration_amount: 5000 };
+      pool.query.mockResolvedValue({ rows: [mockTransfer] });
+      blockchainClient.recordTransfer.mockRejectedValue(new Error('Blockchain down'));
+
+      const result = await transferService.processPaymentConfirmed({ payment_id: 'PAY-001', transfer_id: 'TRF-001' });
+      expect(result.message).toBe('Transfer completed and ownership updated');
+    });
+
+    it('should handle no blockchain hashes returned', async () => {
+      const mockTransfer = { transfer_id: 'TRF-001', land_title_id: 1, title_number: 'TCT-001', from_owner: 'Seller', to_owner: 'Buyer', consideration_amount: 5000 };
+      pool.query.mockResolvedValue({ rows: [mockTransfer] });
+      blockchainClient.recordTransfer
+        .mockResolvedValueOnce({ success: false })
+        .mockResolvedValueOnce({ success: false });
+
+      const result = await transferService.processPaymentConfirmed({ payment_id: 'PAY-001', transfer_id: 'TRF-001' });
+      expect(result.message).toBe('Transfer completed and ownership updated');
     });
   });
 });

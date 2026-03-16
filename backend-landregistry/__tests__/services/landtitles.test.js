@@ -228,4 +228,44 @@ describe('Land Title Service', () => {
       expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE land_titles SET reactivation_hash'), expect.arrayContaining(['reactivate-hash-456']));
     });
   });
+
+  describe('getAllLandTitles', () => {
+    it('should return all land titles with mortgages', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1, title_number: 'TCT-001' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1, mortgage_id: 'M-001' }] });
+
+      const result = await landTitleService.getAllLandTitles();
+      expect(result).toHaveLength(1);
+      expect(result[0].mortgages).toHaveLength(1);
+    });
+
+    it('should handle errors', async () => {
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await expect(landTitleService.getAllLandTitles()).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('getLandTitleById', () => {
+    it('should return land title with mortgages', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1, title_number: 'TCT-001' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1, mortgage_id: 'M-001' }] });
+
+      const result = await landTitleService.getLandTitleById(1);
+      expect(result.title_number).toBe('TCT-001');
+      expect(result.mortgages).toHaveLength(1);
+    });
+
+    it('should return null if not found', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      const result = await landTitleService.getLandTitleById(999);
+      expect(result).toBeNull();
+    });
+
+    it('should handle errors', async () => {
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await expect(landTitleService.getLandTitleById(1)).rejects.toThrow('DB error');
+    });
+  });
 });

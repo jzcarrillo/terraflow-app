@@ -209,5 +209,119 @@ describe('Mortgage Controller', () => {
         message: 'Land title has active mortgages'
       });
     });
+
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      mortgageService.checkTransferEligibility.mockRejectedValue(new Error('Error'));
+      await mortgageController.checkTransferEligibility(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('getAllMortgages error', () => {
+    it('should handle errors', async () => {
+      const { pool } = require('../../config/db');
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await mortgageController.getAllMortgages(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('getMortgagesByLandTitle error', () => {
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      const { pool } = require('../../config/db');
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await mortgageController.getMortgagesByLandTitle(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('getMortgageById error', () => {
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      const { pool } = require('../../config/db');
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await mortgageController.getMortgageById(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('updateMortgage error', () => {
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      mortgageService.updateMortgage.mockRejectedValue(new Error('Error'));
+      await mortgageController.updateMortgage(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('cancelMortgage error', () => {
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      mortgageService.cancelMortgage.mockRejectedValue(new Error('Error'));
+      await mortgageController.cancelMortgage(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('releaseMortgage error', () => {
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      mortgageService.createReleaseMortgage.mockRejectedValue(new Error('Error'));
+      await mortgageController.releaseMortgage(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('getLandTitlesForMortgage error', () => {
+    it('should handle errors', async () => {
+      mortgageService.getLandTitlesForMortgage.mockRejectedValue(new Error('Error'));
+      await mortgageController.getLandTitlesForMortgage(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('getMortgagesForPayment error', () => {
+    it('should handle errors', async () => {
+      req.query.reference_type = 'mortgage';
+      mortgageService.getMortgagesForPayment.mockRejectedValue(new Error('Error'));
+      await mortgageController.getMortgagesForPayment(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('validateMortgageCreation', () => {
+    it('should return validation data', async () => {
+      req.params.id = '1';
+      const { pool } = require('../../config/db');
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ count: '2' }] })
+        .mockResolvedValueOnce({ rows: [{ transfer_id: 'TRF-001' }] });
+
+      await mortgageController.validateMortgageCreation(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ count: 2, hasPendingTransfer: true, transfer_id: 'TRF-001' });
+    });
+
+    it('should return no pending transfer', async () => {
+      req.params.id = '1';
+      const { pool } = require('../../config/db');
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await mortgageController.validateMortgageCreation(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ count: 0, hasPendingTransfer: false, transfer_id: null });
+    });
+
+    it('should handle errors', async () => {
+      req.params.id = '1';
+      const { pool } = require('../../config/db');
+      pool.query.mockRejectedValue(new Error('DB error'));
+      await mortgageController.validateMortgageCreation(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 });

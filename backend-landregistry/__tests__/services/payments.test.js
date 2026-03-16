@@ -20,7 +20,7 @@ describe('Payment Service', () => {
     jest.clearAllMocks();
   });
 
-  // Basic Operations (3 tests)
+  // Basic Operations
   describe('Basic Operations', () => {
     it('should create payment successfully', async () => {
       const paymentData = { title_number: 'TCT-001', amount: 5000 };
@@ -32,6 +32,18 @@ describe('Payment Service', () => {
 
       expect(result.payment_id).toBe('PAY-001');
       expect(result.status).toBe('PENDING');
+    });
+
+    it('should execute inner transaction callback for createPayment', async () => {
+      const paymentData = { title_number: 'TCT-001', amount: 5000 };
+
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ payment_id: 'PAY-001', title_number: 'TCT-001', amount: 5000, status: 'PENDING' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+
+      const result = await paymentService.createPayment(paymentData);
+      expect(result.payment_id).toBe('PAY-001');
     });
 
     it('should confirm payment and update status to PAID', async () => {
@@ -307,7 +319,185 @@ describe('Payment Service', () => {
     });
   });
 
-  // Error Handling (1 test)
+  // Mortgage edge cases
+  describe('Mortgage Edge Cases', () => {
+    it('should throw when max 3 active mortgages reached', async () => {
+      const mockMortgage = { id: 1, land_title_id: 1, status: 'PENDING' };
+      pool.query
+        .mockResolvedValueOnce({ rows: [mockMortgage] })
+        .mockResolvedValueOnce({ rows: [{ count: '3' }] });
+      rabbitmq.publishToQueue.mockResolvedValue();
+
+      await expect(paymentService.paymentStatusUpdate({ reference_id: 1, reference_type: 'mortgage', status: 'PAID' }))
+        .rejects.toThrow('Maximum 3 active mortgages');
+    });
+
+    it('should return currentMortgage for unhandled mortgage status', async () => {
+      const mockMortgage = { id: 1, land_title_id: 1, status: 'RELEASED' };
+      pool.query.mockResolvedValue({ rows: [mockMortgage] });
+
+      const result = await paymentService.paymentStatusUpdate({ reference_id: 1, reference_type: 'mortgage', status: 'UNKNOWN' });
+      expect(result).toEqual(mockMortgage);
+    });
+
+    it('should return currentMortgage for unhandled mortgage release status', async () => {
+      const mockMortgage = { id: 1, mortgage_id: 'MTG-001', status: 'ACTIVE' };
+      pool.query.mockResolvedValue({ rows: [mockMortgage] });
+
+      const result = await paymentService.paymentStatusUpdate({ reference_id: 'MTG-001', reference_type: 'mortgage_release', status: 'UNKNOWN' });
+      expect(result).toEqual(mockMortgage);
+    });
+  });
+
+  // Land title blockchain edge cases
+  describe('Land Title Blockchain Edge Cases', () => {
+    it('should handle invalid land title data in blockchain recording', async () => {
+      const mockLandTitle = { id: 1, title_number: null, status: 'PENDING', transaction_id: 'TXN-001', owner_name: 'Owner', property_location: 'Loc', created_at: new Date() };
+
+      pool.query.mockResolvedValue({ rows: [mockLandTitle] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockLandTitle, title_number: null, status: 'ACTIVE' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      rabbitmq.publishToQueue.mockResolvedValue();
+
+      await paymentService.paymentStatusUpdate({ reference_id: 'TCT-001', status: 'ACTIVE' });
+
+      expect(pool.query).toHaveBeenCalledWith('UPDATE land_titles SET status = $1 WHERE title_number = $2', ['PENDING', 'TCT-001']);
+    });
+
+    it('should handle blockchain response with success false', async () => {
+      const mockLandTitle = { id: 1, title_number: 'TCT-001', status: 'PENDING', transaction_id: 'TXN-001', owner_name: 'Owner', property_location: 'Loc', created_at: new Date() };
+
+      pool.query.mockResolvedValue({ rows: [mockLandTitle] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockLandTitle, status: 'ACTIVE' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordLandTitle.mockResolvedValue({ success: false, message: 'Node unavailable' });
+      rabbitmq.publishToQueue.mockResolvedValue();
+
+      await paymentService.paymentStatusUpdate({ reference_id: 'TCT-001', status: 'ACTIVE' });
+
+      expect(pool.query).toHaveBeenCalledWith('UPDATE land_titles SET status = $1 WHERE title_number = $2', ['PENDING', 'TCT-001']);
+      expect(rabbitmq.publishToQueue).toHaveBeenCalledWith('queue_payments', expect.objectContaining({ event_type: 'PAYMENT_ROLLBACK_REQUIRED' }));
+    });
+
+    it('should handle cancellation blockchain failure gracefully', async () => {
+      const mockLandTitle = { id: 1, title_number: 'TCT-001', status: 'ACTIVE', blockchain_hash: 'hash', transaction_id: 'TXN-001' };
+
+      pool.query.mockResolvedValue({ rows: [mockLandTitle] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockLandTitle, status: 'PENDING' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordCancellation.mockRejectedValue(new Error('Cancellation failed'));
+      rabbitmq.publishToQueue.mockResolvedValue();
+
+      const result = await paymentService.paymentStatusUpdate({ reference_id: 'TCT-001', status: 'PENDING' });
+
+      expect(result.status).toBe('PENDING');
+      expect(rabbitmq.publishToQueue).toHaveBeenCalledWith('queue_payments', expect.objectContaining({ event_type: 'LAND_TITLE_STATUS_UPDATE_SUCCESS' }));
+    });
+
+    it('should catch outer blockchain processing error', async () => {
+      const mockLandTitle = { id: 1, title_number: 'TCT-001', status: 'PENDING', transaction_id: 'TXN-001', owner_name: 'Owner', property_location: 'Loc', created_at: new Date() };
+
+      pool.query.mockResolvedValue({ rows: [mockLandTitle] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockLandTitle, status: 'ACTIVE' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordLandTitle.mockResolvedValue({ success: true, blockchainHash: 'hash' });
+      rabbitmq.publishToQueue.mockRejectedValue(new Error('Queue down'));
+
+      const result = await paymentService.paymentStatusUpdate({ reference_id: 'TCT-001', status: 'ACTIVE' });
+
+      expect(result.status).toBe('ACTIVE');
+    });
+  });
+
+  // Publish failure in paymentStatusUpdate
+  describe('Publish Failure', () => {
+    it('should handle publishToQueue failure when sending failure event', async () => {
+      pool.query.mockResolvedValue({ rows: [] });
+      rabbitmq.publishToQueue.mockRejectedValue(new Error('Queue down'));
+
+      await expect(paymentService.paymentStatusUpdate({ reference_id: 'TCT-999', status: 'ACTIVE' }))
+        .rejects.toThrow('Land title not found');
+    });
+  });
+
+  // Exported handler functions (lines 509-542)
+  describe('Exported Handlers', () => {
+    it('processMortgagePaymentConfirmed should handle PAID status', async () => {
+      const mockMortgage = { id: 1, land_title_id: 1, bank_name: 'Bank', amount: 100000, status: 'PENDING', transaction_id: 'TXN-001' };
+      pool.query.mockResolvedValue({ rows: [mockMortgage] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockMortgage, status: 'ACTIVE' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordMortgage.mockResolvedValue({ success: true, blockchainHash: 'hash' });
+
+      await paymentService.processMortgagePaymentConfirmed({ mortgage_id: 'MTG-001', payment_status: 'PAID' });
+
+      expect(pool.query).toHaveBeenCalled();
+    });
+
+    it('processMortgagePaymentConfirmed should handle CANCELLED status', async () => {
+      const mockMortgage = { id: 1, status: 'ACTIVE', blockchain_hash: 'hash' };
+      pool.query.mockResolvedValue({ rows: [mockMortgage] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockMortgage, status: 'PENDING' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordCancellation.mockResolvedValue({ success: true, blockchainHash: 'cancel-hash' });
+
+      await paymentService.processMortgagePaymentConfirmed({ reference_id: 'MTG-001', payment_status: 'CANCELLED' });
+    });
+
+    it('processMortgagePaymentConfirmed should throw on error', async () => {
+      pool.query.mockResolvedValue({ rows: [] });
+
+      await expect(paymentService.processMortgagePaymentConfirmed({ mortgage_id: 'MTG-999', payment_status: 'PAID' }))
+        .rejects.toThrow('Mortgage not found');
+    });
+
+    it('processMortgageReleasePaymentConfirmed should handle PAID status', async () => {
+      const mockMortgage = { id: 1, mortgage_id: 'MTG-001', land_title_id: 1, status: 'ACTIVE', transaction_id: 'TXN-001', bank_name: 'Bank', amount: 100000 };
+      pool.query
+        .mockResolvedValueOnce({ rows: [mockMortgage] })
+        .mockResolvedValueOnce({ rows: [{ title_number: 'TCT-001' }] })
+        .mockResolvedValue({});
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockMortgage, status: 'RELEASED' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+      blockchainClient.recordMortgageRelease.mockResolvedValue({ success: true, blockchainHash: 'release-hash' });
+
+      await paymentService.processMortgageReleasePaymentConfirmed({ mortgage_id: 'MTG-001', payment_status: 'PAID' });
+    });
+
+    it('processMortgageReleasePaymentConfirmed should handle CANCELLED status', async () => {
+      const mockMortgage = { id: 1, mortgage_id: 'MTG-001', status: 'RELEASED' };
+      pool.query.mockResolvedValue({ rows: [mockMortgage] });
+      transactionManager.executeWithTransaction.mockImplementation(async (ops) => {
+        const mockClient = { query: jest.fn().mockResolvedValue({ rows: [{ ...mockMortgage, status: 'ACTIVE' }] }) };
+        return await Promise.all(ops.map(op => op(mockClient)));
+      });
+
+      await paymentService.processMortgageReleasePaymentConfirmed({ reference_id: 'MTG-001', payment_status: 'CANCELLED' });
+    });
+
+    it('processMortgageReleasePaymentConfirmed should throw on error', async () => {
+      pool.query.mockResolvedValue({ rows: [] });
+
+      await expect(paymentService.processMortgageReleasePaymentConfirmed({ mortgage_id: 'MTG-999', payment_status: 'PAID' }))
+        .rejects.toThrow('Mortgage not found');
+    });
+  });
+
+  // Error Handling
   describe('Error Handling', () => {
     it('should send failure event when land title not found', async () => {
       pool.query.mockResolvedValue({ rows: [] });
