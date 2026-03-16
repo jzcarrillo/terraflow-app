@@ -235,6 +235,19 @@ describe('Document Service Tests', () => {
       );
     });
 
+    it('should get documents by mortgage id', async () => {
+      const mockDocs = [{ id: 3, mortgage_id: 5, file_name: 'mortgage.pdf' }];
+      executeQuery.mockResolvedValue({ rows: mockDocs });
+
+      const result = await documentService.getDocumentsByMortgageId(5);
+
+      expect(result).toHaveLength(1);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('WHERE mortgage_id = $1'),
+        [5]
+      );
+    });
+
     it('should get document by id', async () => {
       const mockDoc = { id: 1, file_name: 'deed.pdf' };
       executeQuery.mockResolvedValue({ rows: [mockDoc] });

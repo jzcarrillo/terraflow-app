@@ -1,6 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/**/*.test.js'],
-  coveragePathIgnorePatterns: ['/node_modules/', '/config/'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/coverage/'],
   testTimeout: 10000
 };

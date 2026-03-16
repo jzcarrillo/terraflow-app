@@ -72,6 +72,31 @@ describe('Document Controller', () => {
     });
   });
 
+  describe('getDocumentsByMortgage', () => {
+    it('should return documents by mortgage', async () => {
+      req.params.mortgageId = '5';
+      const mockDocs = [
+        { id: 1, document_type: 'mortgage_doc', file_name: 'mortgage.pdf', file_size: 2048, mime_type: 'application/pdf', created_at: new Date() }
+      ];
+      documentService.getDocumentsByMortgageId.mockResolvedValue(mockDocs);
+
+      await documentController.getDocumentsByMortgage(req, res);
+
+      expect(res.json).toHaveBeenCalledWith([
+        { id: 1, document_type: 'mortgage_doc', original_name: 'mortgage.pdf', size: 2048, mime_type: 'application/pdf', created_at: expect.any(Date) }
+      ]);
+    });
+
+    it('should handle errors', async () => {
+      req.params.mortgageId = '5';
+      documentService.getDocumentsByMortgageId.mockRejectedValue(new Error('DB error'));
+
+      await documentController.getDocumentsByMortgage(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
   describe('viewDocument', () => {
     it('should view document inline', async () => {
       req.params.documentId = '1';

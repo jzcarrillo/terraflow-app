@@ -1,11 +1,39 @@
 jest.mock('fs');
 
 const fs = require('fs');
-const { saveFile, deleteFile, getFileExtension } = require('../../utils/fileHandler');
+const { streamFile, saveFile, deleteFile, getFileExtension } = require('../../utils/fileHandler');
 
 describe('File Handler Utils Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('streamFile', () => {
+    it('should stream file with correct headers', () => {
+      const mockPipe = jest.fn();
+      fs.existsSync.mockReturnValue(true);
+      fs.createReadStream.mockReturnValue({ pipe: mockPipe });
+
+      const res = {
+        setHeader: jest.fn()
+      };
+
+      streamFile('/uploads/test.pdf', 'test.pdf', 'application/pdf', 1024, res, 'attachment');
+
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="test.pdf"');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Length', 1024);
+      expect(fs.createReadStream).toHaveBeenCalledWith('/uploads/test.pdf');
+      expect(mockPipe).toHaveBeenCalledWith(res);
+    });
+
+    it('should throw if file does not exist', () => {
+      fs.existsSync.mockReturnValue(false);
+      const res = { setHeader: jest.fn() };
+
+      expect(() => streamFile('/uploads/missing.pdf', 'missing.pdf', 'application/pdf', 0, res))
+        .toThrow('File not found on disk');
+    });
   });
 
   describe('saveFile', () => {

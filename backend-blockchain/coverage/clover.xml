@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1773374212365" clover="3.2.0">
-  <project timestamp="1773374212365" name="All files">
+<coverage generated="1773631854792" clover="3.2.0">
+  <project timestamp="1773631854792" name="All files">
     <metrics statements="136" coveredstatements="57" conditionals="57" coveredconditionals="16" methods="23" coveredmethods="13" elements="216" coveredelements="86" complexity="0" loc="136" ncloc="136" packages="1" files="2" classes="2"/>
     <file name="chaincode-service.js" path="/Users/johnchristophermcarrillo/Projects/terraflow-app/backend-blockchain/services/chaincode-service.js">
       <metrics statements="61" coveredstatements="52" conditionals="21" coveredconditionals="16" methods="18" coveredmethods="13"/>
