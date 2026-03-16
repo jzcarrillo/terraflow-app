@@ -595,4 +595,78 @@ describe('Blockchain Service Tests', () => {
       expect(result.blockchain_hash).toBe('');
     });
   });
+
+  describe('Mortgage Operations', () => {
+    it('should record mortgage on blockchain', async () => {
+      mockFabricClient.submitTransaction.mockResolvedValue({
+        transaction_id: 'TXN-M1', block_number: '5', blockchain_hash: 'mortgage_hash'
+      });
+
+      const result = await chaincodeService.recordMortgage({
+        mortgage_id: 1, land_title_id: 10, bank_name: 'Test Bank',
+        amount: 500000, status: 'ACTIVE', timestamp: Date.now(), transaction_id: 'TXN-M1'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.blockchainHash).toBe('mortgage_hash');
+      expect(mockFabricClient.submitTransaction).toHaveBeenCalledWith(
+        'CreateMortgage', '1', '10', 'Test Bank', '500000', 'ACTIVE', expect.any(String), 'TXN-M1'
+      );
+    });
+
+    it('should handle mortgage failure', async () => {
+      mockFabricClient.submitTransaction.mockRejectedValue(new Error('fail'));
+      const result = await chaincodeService.recordMortgage({
+        mortgage_id: 1, land_title_id: 10, bank_name: 'Bank',
+        amount: 100, status: 'ACTIVE', timestamp: Date.now(), transaction_id: 'TXN-M2'
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should record mortgage release on blockchain', async () => {
+      mockFabricClient.submitTransaction.mockResolvedValue({
+        transaction_id: 'TXN-MR1', block_number: '6', blockchain_hash: 'release_hash'
+      });
+
+      const result = await chaincodeService.recordMortgageRelease({
+        mortgage_id: 1, land_title_id: 10, previous_status: 'ACTIVE',
+        new_status: 'RELEASED', timestamp: Date.now(), transaction_id: 'TXN-MR1'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.blockchainHash).toBe('release_hash');
+      expect(mockFabricClient.submitTransaction).toHaveBeenCalledWith(
+        'ReleaseMortgage', '1', '10', 'ACTIVE', 'RELEASED', expect.any(String), 'TXN-MR1'
+      );
+    });
+
+    it('should handle mortgage release failure', async () => {
+      mockFabricClient.submitTransaction.mockRejectedValue(new Error('fail'));
+      const result = await chaincodeService.recordMortgageRelease({
+        mortgage_id: 1, land_title_id: 10, previous_status: 'ACTIVE',
+        new_status: 'RELEASED', timestamp: Date.now(), transaction_id: 'TXN-MR2'
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('Disconnect', () => {
+    it('should disconnect fabric client', async () => {
+      mockFabricClient.disconnect.mockResolvedValue();
+      await chaincodeService.disconnect();
+      expect(mockFabricClient.disconnect).toHaveBeenCalled();
+    });
+  });
+
+  describe('_submitAndRespond edge cases', () => {
+    it('should use fallbackId when result has no transaction_id', async () => {
+      mockFabricClient.submitTransaction.mockResolvedValue({ blockchain_hash: 'h1' });
+      const result = await chaincodeService.recordLandTitle({
+        title_number: 'T1', owner_name: 'O', property_location: 'L',
+        status: 'ACTIVE', reference_id: 'R', timestamp: 1, transaction_id: 'FALLBACK'
+      });
+      expect(result.transaction_id).toBe('FALLBACK');
+      expect(result.block_number).toBe('1');
+    });
+  });
 });
